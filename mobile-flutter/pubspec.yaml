@@ -1,0 +1,40 @@
+name: younme_mobile
+description: "YoUnMe Dating App — Cross-Platform Flutter Mobile Client (v3.2)"
+publish_to: "none"
+version: 3.2.0+1
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # LiveKit Cloud WebRTC Media Engine
+  livekit_client: ^2.1.2
+  # Geospatial Discovery
+  maplibre_gl: ^0.16.0
+  # HTTP & WebSocket Networking
+  dio: ^5.4.3+1
+  web_socket_channel: ^2.4.5
+  # State Management
+  flutter_riverpod: ^2.5.1
+  # Push Notifications
+  firebase_core: ^2.30.0
+  firebase_messaging: ^14.8.0
+  # Secure Storage
+  flutter_secure_storage: ^9.0.0
+  # UI & Animations
+  cached_network_image: ^3.3.1
+  flutter_card_swiper: ^7.0.0
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
