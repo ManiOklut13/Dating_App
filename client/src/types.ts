@@ -68,12 +68,37 @@ export interface MatchItem {
     bio?: string;
     photo_urls?: string[];
     call_avatar_ref?: string;
+    /** Vibe / compatibility score (0-100). Demo-only until the backend serves it. */
+    vibe_score?: number;
   };
   last_message?: {
     body: string;
     type: string;
     created_at: string;
   };
+  /** Unread messages in this conversation. Production source: GET /v1/matches. */
+  unread_count?: number;
+}
+
+/**
+ * A message request. Unlike a match, a request has NOT been accepted yet.
+ * Previews here must never expose phone numbers, social handles, links or real
+ * IDs (see sanitizePreview in ChatTab). Production source:
+ * GET /v1/message-requests?direction=received|sent (not implemented in this build).
+ */
+export interface MessageRequest {
+  id: string;
+  user_id: string;
+  nickname: string;
+  age?: number;
+  avatar: string;
+  is_verified: boolean;
+  is_online?: boolean;
+  city?: string;
+  /** Short intro message — capped at 150 characters by the composer. */
+  message: string;
+  direction: 'received' | 'sent';
+  created_at: string;
 }
 
 export interface MessageItem {

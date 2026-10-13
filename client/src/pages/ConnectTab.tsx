@@ -20,6 +20,12 @@ import {
   MoreVertical,
   Flag,
   RefreshCw,
+  Users,
+  LayoutGrid,
+  Star,
+  Clock,
+  ChevronDown,
+  TrendingUp,
 } from 'lucide-react';
 import { CandidateCard, MatchItem, IncomingLike } from '../types';
 
@@ -108,10 +114,18 @@ const defaultCandidates: CandidateCard[] = [
   },
 ];
 
-const defaultMatches: MatchItem[] = [
+// ============================================================================
+// DEMO DATA — mutual matches.
+// `matches` (component state) holds ONLY real, backend-saved matches and starts
+// empty. When no backend is reachable we display this constant instead and show
+// a "Demo data" chip; nothing here is ever written into the real match state.
+// Production source: GET /v1/matches.
+// NOTE: no phone numbers, social handles or real user IDs are ever rendered.
+// ============================================================================
+const DEMO_MATCHES: MatchItem[] = [
   {
     id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    matched_at: new Date(Date.now() - 86400000).toISOString(),
+    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
     source: 'swipe',
     message_pair_count: 6,
     counterpart: {
@@ -125,11 +139,149 @@ const defaultMatches: MatchItem[] = [
       shared_interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨'],
       bio: 'UI designer & matcha lover 🍵 Seeking someone who laughs at witty dry humor. Let’s explore quaint cafes or art galleries!',
       photo_urls: ['/ananya.jpg'],
+      vibe_score: 96,
     },
     last_message: {
       body: 'Hey Arjun! Saw you love filter kaapi and vinyl records. Have you tried Subko in Bandra?',
       type: 'text',
       created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
+    },
+  },
+  {
+    id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 27).toISOString(),
+    source: 'spark',
+    message_pair_count: 3,
+    counterpart: {
+      user_id: '44444444-4444-4444-4444-444444444444',
+      nickname: 'Riya',
+      age: 23,
+      avatar: '/riya.jpg',
+      city: 'Mumbai (Colaba)',
+      is_verified: true,
+      is_online: true,
+      shared_interests: ['Vintage Fashion 👗', '35mm Film 📷', 'Art Cinema 📽️'],
+      bio: 'Fashion curator & cinema buff 🎬 Weekend flea markets and film photography.',
+      photo_urls: ['/riya.jpg', '/ananya.jpg'],
+      vibe_score: 93,
+    },
+    last_message: { body: 'That film photography walk sounds fun!', type: 'text', created_at: new Date(Date.now() - 3600000 * 5).toISOString() },
+  },
+  {
+    id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 52).toISOString(),
+    source: 'swipe',
+    message_pair_count: 1,
+    counterpart: {
+      user_id: '88888888-8888-8888-8888-888888888888',
+      nickname: 'Meera',
+      age: 26,
+      avatar: '/ananya.jpg',
+      city: 'Mumbai (Andheri)',
+      is_verified: true,
+      is_online: false,
+      shared_interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨'],
+      bio: 'Architect by training, ceramicist at heart. Big on slow mornings ☕',
+      photo_urls: ['/ananya.jpg', '/riya.jpg'],
+      vibe_score: 90,
+    },
+  },
+  {
+    id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 76).toISOString(),
+    source: 'swipe',
+    message_pair_count: 4,
+    counterpart: {
+      user_id: '33333333-3333-3333-3333-333333333333',
+      nickname: 'Rohit',
+      age: 27,
+      avatar: '/rohit.jpg',
+      city: 'Mumbai (Juhu)',
+      is_verified: true,
+      is_online: true,
+      shared_interests: ['Architecture 🏛️', 'Bouldering 🧗', 'Sunset Runs 🌅'],
+      bio: 'Chasing sunsets by evening. Fitness, climbing, and late-night conversations 🌇',
+      photo_urls: ['/rohit.jpg'],
+      vibe_score: 88,
+    },
+    last_message: { body: 'Sunrise climb at Kanheri this weekend?', type: 'text', created_at: new Date(Date.now() - 3600000 * 30).toISOString() },
+  },
+  {
+    id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 101).toISOString(),
+    source: 'like',
+    message_pair_count: 0,
+    counterpart: {
+      user_id: '66666666-6666-6666-6666-666666666666',
+      nickname: 'Priya',
+      age: 25,
+      avatar: '/ananya.jpg',
+      city: 'Mumbai (Worli)',
+      is_verified: true,
+      is_online: false,
+      shared_interests: ['Specialty Coffee ☕', 'Modern Art 🎨', 'Live Jazz 🎷'],
+      bio: 'Product strategist & avid reader 📚 Chai over coffee any day!',
+      photo_urls: ['/ananya.jpg'],
+      vibe_score: 84,
+    },
+  },
+  {
+    id: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(),
+    source: 'swipe',
+    message_pair_count: 2,
+    counterpart: {
+      user_id: '55555555-5555-5555-5555-555555555555',
+      nickname: 'Kabir',
+      age: 26,
+      avatar: '/aditya.jpg',
+      city: 'Mumbai (Khar West)',
+      is_verified: true,
+      is_online: true,
+      shared_interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Night Cycling 🚴'],
+      bio: 'Sound designer & vinyl collector 🎧 Hunting obscure jazz records.',
+      photo_urls: ['/aditya.jpg'],
+      vibe_score: 82,
+    },
+    last_message: { body: 'Sending you a playlist of rare jazz finds.', type: 'text', created_at: new Date(Date.now() - 3600000 * 40).toISOString() },
+  },
+  // Older than 7 days → excluded from the weekly "Matched & Vibed" scoreboard.
+  {
+    id: '11111111-aaaa-aaaa-aaaa-111111111111',
+    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+    source: 'swipe',
+    message_pair_count: 1,
+    counterpart: {
+      user_id: '77777777-7777-7777-7777-777777777777',
+      nickname: 'Tara',
+      age: 24,
+      avatar: '/aditya.jpg',
+      city: 'Mumbai (Juhu)',
+      is_verified: false,
+      is_online: false,
+      shared_interests: ['Sunset Runs 🌅', 'Acoustic Rock 🎸', 'Night Cycling 🚴'],
+      bio: 'Chasing golden hour sunsets along Juhu beach 🌅',
+      photo_urls: ['/aditya.jpg'],
+      vibe_score: 78,
+    },
+  },
+  {
+    id: '22222222-aaaa-aaaa-aaaa-222222222222',
+    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+    source: 'like',
+    message_pair_count: 0,
+    counterpart: {
+      user_id: '99999999-9999-9999-9999-999999999999',
+      nickname: 'Nisha',
+      age: 22,
+      avatar: '/riya.jpg',
+      city: 'Mumbai (Powai)',
+      is_verified: false,
+      is_online: false,
+      shared_interests: ['35mm Film 📷', 'Art Cinema 📽️', 'Italian Cuisine 🍕'],
+      bio: 'Film student documenting Mumbai one frame at a time.',
+      photo_urls: ['/riya.jpg'],
+      vibe_score: 74,
     },
   },
 ];
@@ -248,6 +400,89 @@ const defaultLikesStack: IncomingLike[] = [
   },
 ];
 
+/**
+ * Reusable horizontal row behaviour: mouse drag-to-scroll + one-card paging.
+ * Touch uses the browser's native momentum scrolling (touch-action: pan-x).
+ * The Likes row keeps its own copy; this hook drives the Matches rows.
+ */
+function useHorizontalDragScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  const drag = useRef({ active: false, moved: false, startX: 0, startScrollLeft: 0, pointerId: -1 });
+  const suppressClick = useRef(false);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return; // touch scrolls natively
+    if ((e.target as HTMLElement).closest('button, a, input, select')) return;
+    const el = ref.current;
+    if (!el) return;
+    suppressClick.current = false;
+    drag.current = { active: true, moved: false, startX: e.clientX, startScrollLeft: el.scrollLeft, pointerId: e.pointerId };
+    el.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d.active) return;
+    const dx = e.clientX - d.startX;
+    if (Math.abs(dx) > 4) {
+      d.moved = true;
+      ref.current?.classList.add('is-dragging');
+    }
+    if (ref.current) ref.current.scrollLeft = d.startScrollLeft - dx;
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d.active) return;
+    const el = ref.current;
+    if (el && el.hasPointerCapture?.(d.pointerId)) el.releasePointerCapture(d.pointerId);
+    el?.classList.remove('is-dragging');
+    if (d.moved) suppressClick.current = true; // swallow the click that follows a drag
+    d.active = false;
+  };
+
+  const scrollByCard = (dir: number, selector: string, gap: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const first = el.querySelector<HTMLElement>(selector);
+    const step = first ? first.offsetWidth + gap : Math.round(el.clientWidth * 0.7);
+    el.scrollBy({ left: dir * step, behavior: 'smooth' });
+  };
+
+  const consumeSuppressedClick = () => {
+    if (suppressClick.current) {
+      suppressClick.current = false;
+      return true;
+    }
+    return false;
+  };
+
+  return {
+    ref,
+    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp },
+    scrollByCard,
+    consumeSuppressedClick,
+  };
+}
+
+/** Relative "time ago" label for a match / message timestamp. */
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return 'recently';
+  const diffMs = Date.now() - then;
+  if (diffMs < 0) return 'just now';
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return '1 day ago';
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  return `${months} month${months > 1 ? 's' : ''} ago`;
+}
+
 export const ConnectTab: React.FC<ConnectTabProps> = ({
   onOpenChat,
   onOpenStore,
@@ -263,8 +498,17 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({
   const [allCandidates, setAllCandidates] = useState<CandidateCard[]>(defaultCandidates);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
-  const [matches, setMatches] = useState<MatchItem[]>(defaultMatches);
+  const [matches, setMatches] = useState<MatchItem[]>([]);
   const [likesStack, setLikesStack] = useState<IncomingLike[]>(defaultLikesStack);
+
+  // ── Matches tab state ──────────────────────────────────────────────────────
+  // `matches` holds REAL backend data only (never demo). When unreachable we
+  // render DEMO_MATCHES with a "Demo data" chip, leaving real state untouched.
+  const [matchesLoadState, setMatchesLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [usingDemoMatches, setUsingDemoMatches] = useState(false);
+  const [isConnectionsOpen, setIsConnectionsOpen] = useState(false);
+  const vibeRow = useHorizontalDragScroll();
+  const sparkRow = useHorizontalDragScroll();
 
   // Drag and swipe mechanics — all hot-path values stored in refs to avoid stale closures
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -351,30 +595,51 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({
     }
   }, []);
 
+  // Loads the real matches list. This NEVER writes demo data into `matches`;
+  // when the backend is unavailable we set usingDemoMatches and render the
+  // labelled DEMO_MATCHES constant instead. `asError` powers the manual Retry.
+  const loadMatches = useCallback(async (opts?: { asError?: boolean }) => {
+    setMatchesLoadState('loading');
+    try {
+      const res = await fetch('/v1/matches?user_id=11111111-1111-1111-1111-111111111111');
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.matches)) {
+        setMatches(data.matches);
+        setUsingDemoMatches(false);
+      } else {
+        setMatches([]);
+        setUsingDemoMatches(true);
+      }
+      setMatchesLoadState('ready');
+    } catch (err) {
+      if (opts?.asError) {
+        setMatchesLoadState('error');
+        return;
+      }
+      // No backend in this build → labelled demo fallback.
+      setMatches([]);
+      setUsingDemoMatches(true);
+      setMatchesLoadState('ready');
+    }
+  }, []);
+
   // Fetch deck + matches (best-effort, silent fallback to demo data).
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDeck = async () => {
       try {
-        const [resDeck, resMatches] = await Promise.all([
-          fetch('/v1/discovery/deck?user_id=11111111-1111-1111-1111-111111111111&radius_km=50'),
-          fetch('/v1/matches?user_id=11111111-1111-1111-1111-111111111111'),
-        ]);
+        const resDeck = await fetch('/v1/discovery/deck?user_id=11111111-1111-1111-1111-111111111111&radius_km=50');
         const dataDeck = await resDeck.json();
-        const dataMatches = await resMatches.json();
-
         if (dataDeck?.success && dataDeck.deck?.length > 0) {
           setAllCandidates(dataDeck.deck);
-        }
-        if (dataMatches?.success && dataMatches.matches?.length > 0) {
-          setMatches(dataMatches.matches);
         }
       } catch (err) {
         // Safe local demo data fallback
       }
     };
-    fetchData();
+    fetchDeck();
     loadLikes();
-  }, [loadLikes]);
+    loadMatches();
+  }, [loadLikes, loadMatches]);
 
   // Filtered candidate deck
   const filteredCandidates = allCandidates
@@ -735,6 +1000,67 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({
     setIsProfileMenuOpen(false);
   };
 
+  // ── Matches tab ("Matched & Vibed", Connections, Sparks, History) ──────────
+  // Blocked profiles disappear from every list below.
+  const realOrDemoMatches = usingDemoMatches ? DEMO_MATCHES : matches;
+  const displayedMatches = realOrDemoMatches.filter((m) => !blockedUserIds.has(m.counterpart.user_id));
+
+  const matchToCandidate = (m: MatchItem): CandidateCard => ({
+    user_id: m.counterpart.user_id,
+    nickname: m.counterpart.nickname,
+    age: m.counterpart.age || 24,
+    bio: m.counterpart.bio || 'Matched connection on YoUnMe.',
+    city: m.counterpart.city,
+    distance_km: 1.2,
+    photo_urls: m.counterpart.photo_urls?.length ? m.counterpart.photo_urls : [m.counterpart.avatar],
+    is_verified: m.counterpart.is_verified,
+    is_online: m.counterpart.is_online,
+    shared_interests: m.counterpart.shared_interests || ['Specialty Coffee ☕', 'Indie Vinyl 🎵'],
+    profile_progress: 95,
+    vibe_score: m.counterpart.vibe_score || 90,
+  });
+
+  const openMatchProfile = (m: MatchItem) => {
+    setInspectingProfile(matchToCandidate(m));
+    setInspectingProfileLimited(false);
+    setProfilePhotoIdx(0);
+    setIsProfileMenuOpen(false);
+  };
+
+  // (a) Weekly scoreboard: matches from the last 7 days, ranked by vibe score.
+  const weeklyVibed = [...displayedMatches]
+    .filter((m) => Date.now() - new Date(m.matched_at).getTime() <= 7 * 24 * 3600 * 1000)
+    .sort((a, b) => (b.counterpart.vibe_score || 0) - (a.counterpart.vibe_score || 0));
+
+  // Small stat: best local signal for "all swipes" is the Discovery deck index.
+  // Only shown as a real ratio when we have real matches + a local swipe count;
+  // otherwise a clearly-labelled demo value is shown instead.
+  const localSwipeCount = currentIndex;
+  const localMatchRate =
+    !usingDemoMatches && localSwipeCount > 0 ? Math.round((matches.length / localSwipeCount) * 100) : null;
+
+  // (c) Spark / Mega-Crush profiles: inbound sparks (local likes state) and
+  // sparks we sent. DEMO source is the labelled likes stack. Restricted
+  // profiles are excluded so only fully-visible people are shown.
+  const sparkProfiles: IncomingLike[] = (() => {
+    const byId = new Map<string, IncomingLike>();
+    likesStack.forEach((a) => {
+      if (a.action === 'spark' || sparkedAdmirerIds.has(a.actor_id)) byId.set(a.actor_id, a);
+    });
+    return Array.from(byId.values()).filter(
+      (a) =>
+        !a.is_restricted &&
+        !blockedUserIds.has(a.actor_id) &&
+        !passedAdmirerIds.has(a.actor_id) &&
+        !likedAdmirerIds.has(a.actor_id)
+    );
+  })();
+
+  // (d) History: newest first, capped at 50.
+  const matchesHistory = [...displayedMatches]
+    .sort((a, b) => new Date(b.matched_at).getTime() - new Date(a.matched_at).getTime())
+    .slice(0, 50);
+
   // Card base style — transitions controlled by commitExit / snap-back logic on the DOM node
   const cardStyle: React.CSSProperties = {
     position: 'relative',
@@ -855,7 +1181,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({
           }}
         >
           <Heart size={15} />
-          <span>Matches ({matches.length})</span>
+          <span>Matches ({displayedMatches.length})</span>
         </button>
 
         <button
@@ -1248,121 +1574,297 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({
 
       {/* =========================================================================
           TAB 2: MATCHES (MUTUAL CONNECTIONS LIST & CHAT NAVIGATION)
+          Sections: (a) Matched & Vibed weekly scoreboard, (b) N Connections,
+          (c) Spark / Crush grid, (d) Matches History (recent 50).
+          NOTE(workflow): unlock contact sharing is intentionally NOT part of
+          this tab. TODO(gender): the Matches UI is identical for all viewers;
+          any male/female differences would be introduced server-side only.
+          Only matched_at / opt-in profile fields are rendered (never phone
+          numbers, social handles or real user IDs).
           ========================================================================= */}
       {activeTab === 'matches' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Mutual connections ready to message
-            </span>
-            <span style={{ fontSize: '12px', color: '#00e676', fontWeight: 700 }}>
-              {matches.length} active
-            </span>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', minWidth: 0 }}>
 
-          {matches.length === 0 ? (
-            <div
-              className="glass-panel"
-              style={{
-                padding: '40px 20px',
-                textAlign: 'center',
-                borderRadius: 'var(--radius-lg)',
-              }}
-            >
-              <Heart size={36} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>No mutual matches yet</h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Swipe right on profiles in the Discover deck to form reciprocal matches.
+          {/* Header: title + demo chip + refresh */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Heart size={18} color="#ff2d55" fill="#ff2d55" />
+                Matches
+              </h2>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Weekly vibe, connections, sparks & history
               </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+              {(usingDemoMatches || usingDemoLikes) && (
+                <span
+                  title="Demo data — no backend connected"
+                  style={{ background: 'rgba(255, 215, 0, 0.08)', border: '1px solid rgba(255, 215, 0, 0.25)', borderRadius: 'var(--radius-full)', padding: '4px 10px', fontSize: '10px', fontWeight: 700, color: '#ffd700' }}
+                >
+                  Demo data
+                </span>
+              )}
               <button
-                onClick={() => setActiveTab('discover')}
-                className="btn-primary"
-                style={{ padding: '8px 18px', fontSize: '12px' }}
+                className="tap-target-44 glass-pill"
+                title="Refresh matches from server"
+                aria-label="Refresh matches from server"
+                onClick={() => loadMatches({ asError: true })}
+                style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-glass)', cursor: 'pointer' }}
               >
-                Go to Discover
+                <RefreshCw size={15} />
               </button>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {matches.map((m) => (
-                <div
-                  key={m.id}
-                  className="glass-panel"
-                  style={{
-                    borderRadius: 'var(--radius-md)',
-                    padding: '14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    border: '1px solid rgba(255, 45, 85, 0.25)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ position: 'relative', width: '54px', height: '54px', flexShrink: 0 }}>
-                      <img
-                        src={m.counterpart.avatar}
-                        alt={m.counterpart.nickname}
-                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '2px solid #ff2d55' }}
-                      />
-                      {m.counterpart.is_verified && (
-                        <div className="badge-blue-tick" style={{ position: 'absolute', bottom: 0, right: 0, width: '16px', height: '16px', fontSize: '10px' }}>
-                          ✓
-                        </div>
-                      )}
-                    </div>
+          </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>
-                          {m.counterpart.nickname}, {m.counterpart.age || 24}
-                        </h3>
-                        {m.counterpart.is_online && <span className="status-dot-online" />}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--cyan-vibe)' }}>{m.counterpart.city}</div>
-                      {m.last_message && (
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          💬 "{m.last_message.body}"
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions: View Profile & Chat */}
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      onClick={() =>
-                        setInspectingProfile({
-                          user_id: m.counterpart.user_id,
-                          nickname: m.counterpart.nickname,
-                          age: m.counterpart.age || 24,
-                          bio: m.counterpart.bio || 'Matched connection on YoUnMe.',
-                          city: m.counterpart.city,
-                          distance_km: 1.2,
-                          photo_urls: m.counterpart.photo_urls || [m.counterpart.avatar],
-                          is_verified: m.counterpart.is_verified,
-                          is_online: m.counterpart.is_online,
-                          shared_interests: m.counterpart.shared_interests || ['Specialty Coffee ☕', 'Indie Vinyl 🎵'],
-                          profile_progress: 95,
-                          vibe_score: 95,
-                        })
-                      }
-                      className="btn-ghost"
-                      style={{ flex: 1, padding: '7px 10px', fontSize: '12px' }}
-                    >
-                      View Profile
-                    </button>
-                    <button
-                      onClick={() => onOpenChat(m.id)}
-                      className="btn-primary"
-                      style={{ flex: 1, padding: '7px 10px', fontSize: '12px' }}
-                    >
-                      <MessageSquare size={13} />
-                      Open Chat
-                    </button>
+          {/* ── Loading skeleton ── */}
+          {matchesLoadState === 'loading' && (
+            <div className="match-scroll-row" aria-hidden="true">
+              {[0, 1].map((n) => (
+                <div key={n} className="vibe-card glass-panel" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+                  <div className="skeleton" style={{ height: '180px' }} />
+                  <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div className="skeleton" style={{ height: '13px', width: '65%', borderRadius: '6px' }} />
+                    <div className="skeleton" style={{ height: '10px', width: '40%', borderRadius: '6px' }} />
                   </div>
                 </div>
               ))}
             </div>
+          )}
+
+          {/* ── Error state with Retry ── */}
+          {matchesLoadState === 'error' && (
+            <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '44px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <div style={{ fontSize: '40px' }}>⚠️</div>
+              <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Couldn't load matches</h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '260px' }}>Something went wrong while fetching your matches. Please try again.</p>
+              <button onClick={() => loadMatches()} className="btn-primary" style={{ padding: '10px 22px', fontSize: '13px' }}>
+                <RefreshCw size={14} /> Retry
+              </button>
+            </div>
+          )}
+
+          {matchesLoadState === 'ready' && (
+            <>
+              {/* (a) Matched & Vibed — weekly ranked scoreboard */}
+              <section style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <Star size={15} color="#ffd700" fill="#ffd700" /> Matched & Vibed
+                  </h3>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700 }}>This week</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  <TrendingUp size={12} color="#00e676" />
+                  {localMatchRate !== null
+                    ? `${localMatchRate}% of your swipes became matches`
+                    : '12% of swipes became matches · Demo'}
+                </div>
+
+                {weeklyVibed.length > 0 ? (
+                  <div className="likes-row-wrap match-row-wrap">
+                    <button type="button" className="likes-nav-btn likes-nav-prev" aria-label="Scroll to previous vibed matches" onClick={() => vibeRow.scrollByCard(-1, '.vibe-card', 12)}>
+                      <ChevronLeft size={18} />
+                    </button>
+                    <div className="match-scroll-row" ref={vibeRow.ref} {...vibeRow.handlers}>
+                      {weeklyVibed.map((m, i) => {
+                        const rank = i + 1;
+                        const vibe = m.counterpart.vibe_score || 80;
+                        const photo = m.counterpart.photo_urls?.[0] || m.counterpart.avatar;
+                        return (
+                          <div
+                            key={m.id}
+                            className="vibe-card glass-panel"
+                            onClick={() => { if (!vibeRow.consumeSuppressedClick()) openMatchProfile(m); }}
+                            style={{ position: 'relative', borderRadius: 'var(--radius-lg)', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,45,85,0.3)' }}
+                          >
+                            <div style={{ position: 'relative', height: '180px' }}>
+                              <img src={photo} alt={m.counterpart.nickname} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 30%, rgba(8,10,16,0.92) 100%)' }} />
+                              <span className={`rank-badge${rank === 2 ? ' rank-2' : rank === 3 ? ' rank-3' : ''}`}>{rank}</span>
+                              {m.counterpart.is_verified && (
+                                <div title="Verified" style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(29,161,242,0.85)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <ShieldCheck size={13} color="#ffffff" />
+                                </div>
+                              )}
+                              <div style={{ position: 'absolute', bottom: '10px', left: '12px', right: '12px' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{m.counterpart.nickname}, {m.counterpart.age || 24}</div>
+                                {m.counterpart.is_online && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: '#00e676', marginTop: '2px' }}>
+                                    <span className="status-dot-online" /> Online
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700 }}>
+                                <span style={{ color: '#ffd700' }}>{vibe}% Vibe</span>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>#{rank} this week</span>
+                              </div>
+                              <div className="vibe-meter"><span style={{ width: `${vibe}%` }} /></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <button type="button" className="likes-nav-btn likes-nav-next" aria-label="Scroll to next vibed matches" onClick={() => vibeRow.scrollByCard(1, '.vibe-card', 12)}>
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No vibed matches this week yet.</p>
+                )}
+              </section>
+
+              {/* (b) N Connections — expandable vertical list */}
+              <section className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', minWidth: 0 }}>
+                <button type="button" className="conn-row clickable" onClick={() => setIsConnectionsOpen((v) => !v)} style={{ border: 'none', borderRadius: 0, background: 'transparent' }}>
+                  <span style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,45,85,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Users size={18} color="#ff2d55" />
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: '15px', fontWeight: 800 }}>{displayedMatches.length} Connection{displayedMatches.length === 1 ? '' : 's'}</span>
+                    <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)' }}>{isConnectionsOpen ? 'Hide connections' : 'View connections'}</span>
+                  </span>
+                  <ChevronDown size={18} style={{ transform: isConnectionsOpen ? 'rotate(180deg)' : 'none', transition: 'transform var(--transition-fast)' }} />
+                </button>
+
+                {isConnectionsOpen && (
+                  <div style={{ padding: '4px 10px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {displayedMatches.length === 0 ? (
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '8px 2px' }}>No connections to show.</p>
+                    ) : (
+                      displayedMatches.map((m) => (
+                        <div key={m.id} className="conn-row">
+                          <div style={{ position: 'relative', width: '42px', height: '42px', flexShrink: 0 }}>
+                            <img src={m.counterpart.avatar} alt={m.counterpart.nickname} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                            {m.counterpart.is_verified && (
+                              <div className="badge-blue-tick" style={{ position: 'absolute', bottom: 0, right: 0, width: '15px', height: '15px', fontSize: '9px' }}>✓</div>
+                            )}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.counterpart.nickname}, {m.counterpart.age || 24}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--cyan-vibe)' }}>{m.counterpart.city}</div>
+                          </div>
+                          <button type="button" aria-label={`Chat with ${m.counterpart.nickname}`} onClick={() => onOpenChat(m.id)} className="tap-target-44" style={{ background: 'var(--gradient-flame)', border: 'none', borderRadius: '50%', color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
+                            <MessageSquare size={16} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* (c) Spark / Crush grid — horizontal sliding, fully visible */}
+              <section style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <LayoutGrid size={15} color="#ffa502" /> Sparks & Mega-Crushes
+                  </h3>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700 }}>{sparkProfiles.length} profiles</span>
+                </div>
+
+                {sparkProfiles.length > 0 ? (
+                  <div className="likes-row-wrap match-row-wrap">
+                    <button type="button" className="likes-nav-btn likes-nav-prev" aria-label="Scroll to previous sparks" onClick={() => sparkRow.scrollByCard(-1, '.spark-tile', 12)}>
+                      <ChevronLeft size={18} />
+                    </button>
+                    <div className="match-scroll-row" ref={sparkRow.ref} {...sparkRow.handlers}>
+                      {sparkProfiles.map((a) => (
+                        <div key={a.actor_id} className="spark-tile glass-panel" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1.5px solid rgba(255,165,2,0.5)' }}>
+                          <div style={{ position: 'relative', height: '150px' }}>
+                            <img src={a.photo_urls?.[0] || a.avatar} alt={a.nickname} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 30%, rgba(8,10,16,0.92) 100%)' }} />
+                            <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(255,153,0,0.9)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '9px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              <Sparkles size={10} /> Spark
+                            </span>
+                            {a.is_verified && (
+                              <div title="Verified" style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(29,161,242,0.85)', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <ShieldCheck size={12} color="#ffffff" />
+                              </div>
+                            )}
+                            <div style={{ position: 'absolute', bottom: '8px', left: '10px', right: '10px', fontSize: '13px', fontWeight: 800, color: '#fff' }}>
+                              {a.nickname}, {a.age || 24}
+                            </div>
+                          </div>
+                          <div style={{ padding: '10px' }}>
+                            <button type="button" onClick={() => openAdmirerProfile(a, false)} className="btn-ghost" style={{ width: '100%', minHeight: '44px', padding: '8px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                              <Info size={13} /> View Profile
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className="likes-nav-btn likes-nav-next" aria-label="Scroll to next sparks" onClick={() => sparkRow.scrollByCard(1, '.spark-tile', 12)}>
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No sparks yet. Send a Spark to stand out.</p>
+                )}
+              </section>
+
+              {/* (d) Matches History — newest first, max 50 */}
+              <section style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <Clock size={15} color="var(--cyan-vibe)" /> Matches History
+                  </h3>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700 }}>{matchesHistory.length} recent</span>
+                </div>
+
+                {matchesHistory.length === 0 ? (
+                  <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '44px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ fontSize: '40px' }}>💞</div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, maxWidth: '280px' }}>No matches yet. Keep swiping, your matches will appear here.</h3>
+                    <button onClick={() => setActiveTab('discover')} className="btn-primary" style={{ padding: '9px 20px', fontSize: '12px', marginTop: '4px' }}>
+                      Go to Discover
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {matchesHistory.map((m) => {
+                      const interests = (m.counterpart.shared_interests || []).slice(0, 3);
+                      return (
+                        <div key={m.id} className="glass-panel" style={{ borderRadius: 'var(--radius-md)', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid rgba(255,45,85,0.25)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ position: 'relative', width: '54px', height: '54px', flexShrink: 0 }}>
+                              <img src={m.counterpart.avatar} alt={m.counterpart.nickname} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '2px solid #ff2d55' }} />
+                              {m.counterpart.is_verified && (
+                                <div className="badge-blue-tick" style={{ position: 'absolute', bottom: 0, right: 0, width: '16px', height: '16px', fontSize: '10px' }}>✓</div>
+                              )}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>{m.counterpart.nickname}, {m.counterpart.age || 24}</h3>
+                                {m.counterpart.is_online && <span className="status-dot-online" />}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                <Clock size={11} /> Matched {formatRelativeTime(m.matched_at)}
+                              </div>
+                              {interests.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                                  {interests.map((tag, ti) => (
+                                    <span key={ti} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-full)', padding: '2px 8px', fontSize: '10px', color: '#fff' }}>{tag}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => openMatchProfile(m)} className="btn-ghost" style={{ flex: 1, minHeight: '44px', padding: '7px 10px', fontSize: '12px' }}>View Profile</button>
+                            <button onClick={() => onOpenChat(m.id)} className="btn-primary" style={{ flex: 1, minHeight: '44px', padding: '7px 10px', fontSize: '12px' }}>
+                              <MessageSquare size={13} /> Chat
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </>
           )}
         </div>
       )}

@@ -82,6 +82,13 @@ export const App: React.FC = () => {
           <ChatTab
             selectedConvId={selectedConvId}
             onStartCall={handleOpenCallFromMatch}
+            onOpenChat={(convId) => {
+              setSelectedConvId(convId);
+              setActiveTab('chat');
+            }}
+            onBack={() => setSelectedConvId(undefined)}
+            onOpenStore={() => setIsStoreOpen(true)}
+            onGoToConnect={() => setActiveTab('connect')}
           />
         )}
 
