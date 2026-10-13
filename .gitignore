@@ -19,10 +19,17 @@ yarn-error.log*
 pnpm-debug.log*
 .system_generated/
 
-# Environment variables
+# Environment variables & Credentials
 .env
 .env.*
 !.env.example
+*.json.key
+serviceAccountKey.json
+**/serviceAccountKey.json
+*serviceAccount*.json
+*service-account*.json
+*firebase-adminsdk*.json
+secrets/
 
 # OS generated files
 .DS_Store
