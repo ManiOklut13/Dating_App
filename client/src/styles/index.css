@@ -265,3 +265,245 @@ h1, h2, h3, h4, .font-heading {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* ==========================================================================
+   Home Page Mobile-First Layout & Bottom Nav Utilities
+   ========================================================================== */
+
+.home-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 14px 16px 95px;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .top-nav-tabs {
+    display: none !important;
+  }
+}
+
+.status-dot-online {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00e676;
+  box-shadow: 0 0 8px #00e676;
+  display: inline-block;
+  animation: pulseGlowGreen 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlowGreen {
+  0% { box-shadow: 0 0 4px #00e676; }
+  50% { box-shadow: 0 0 12px #00e676; }
+  100% { box-shadow: 0 0 4px #00e676; }
+}
+
+.call-avatar-card {
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.call-avatar-card:hover, .call-avatar-card:active {
+  transform: translateY(-2px);
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 229, 255, 0.15);
+}
+
+.streak-step-node {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.streak-step-node:hover, .streak-step-node:active {
+  transform: scale(1.04);
+}
+
+/* ==========================================================================
+   Connect Tab & Swipe Deck Animations & Modals
+   ========================================================================== */
+
+.bottom-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.bottom-sheet-content {
+  width: 100%;
+  max-width: 520px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-glass);
+  border-top-left-radius: 26px;
+  border-top-right-radius: 26px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7);
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.filter-pill {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+}
+
+.filter-pill.active {
+  background: rgba(255, 45, 85, 0.15);
+  border-color: #ff2d55;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 45, 85, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-sheet-content,
+  .bottom-sheet-overlay,
+  .radar-spinner,
+  .status-dot-online {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
+   Likes Tab ("X Likes You") — horizontal snap row, skeleton & tap targets
+   ========================================================================== */
+
+.likes-row-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.likes-scroll-row {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  /* allow both axes so vertical page scroll still works while the row pans */
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 24px 12px 2px;
+  scroll-padding-left: 2px;
+  overscroll-behavior-x: contain;
+  cursor: grab;
+}
+
+.likes-scroll-row::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* While mouse-dragging, free-scroll (snap off) and hide selection. */
+.likes-scroll-row.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+
+.likes-card {
+  flex: 0 0 82%;
+  max-width: 320px;
+  scroll-snap-align: start;
+}
+
+/* Row navigation arrows — desktop/wide screens only. */
+.likes-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(18, 22, 36, 0.92);
+  border: 1px solid var(--border-glass);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.likes-nav-btn:hover {
+  background: rgba(30, 36, 54, 0.98);
+}
+
+.likes-nav-prev { left: -6px; }
+.likes-nav-next { right: -6px; }
+
+@media (min-width: 600px) {
+  .likes-nav-btn { display: flex; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.12) 37%,
+    rgba(255, 255, 255, 0.05) 63%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Guarantees a >= 44px tap target for icon-only controls. */
+.tap-target-44 {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none !important;
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .likes-scroll-row {
+    scroll-behavior: auto;
+  }
+  .likes-card img {
+    transition: none !important;
+  }
+}
+
+
+

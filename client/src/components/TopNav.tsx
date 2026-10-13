@@ -1,5 +1,5 @@
-import React from 'react';
-import { Flame, Coins, Sparkles, Compass, Heart, MessageSquare, PhoneCall, UserCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Flame, Coins, Sparkles, Heart, MessageSquare, UserCheck, Bell, X, CheckCircle2 } from 'lucide-react';
 
 interface TopNavProps {
   activeTab: string;
@@ -18,12 +18,21 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenStore,
   onOpenWheel,
 }) => {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+
+  const notifications = [
+    { id: 1, title: '🔥 Daily Streak Active', desc: `Day ${streakDays} streak unlocked with a 1.4x multiplier!`, time: 'Just now' },
+    { id: 2, title: '❤️ Secret Admirer', desc: 'Someone liked your profile in Connect. Unlock stack to reveal.', time: '20m ago' },
+    { id: 3, title: '🎙️ New Audio Prompt', desc: 'Ananya uploaded a new voice prompt in Bandra.', time: '1h ago' },
+  ];
+
   const tabs = [
-    { id: 'discovery', label: 'Discovery', icon: Compass },
+    { id: 'discovery', label: 'Home', icon: Flame },
     { id: 'connect', label: 'Connect', icon: Heart },
     { id: 'chat', label: 'Chat', icon: MessageSquare },
-    { id: 'calls', label: 'LiveKit Calls', icon: PhoneCall },
-    { id: 'profile', label: 'Profile & Ledger', icon: UserCheck },
+    { id: 'profile', label: 'Profile', icon: UserCheck },
+    { id: 'ledger', label: 'Ledger', icon: Coins },
   ];
 
   return (
@@ -45,8 +54,8 @@ export const TopNav: React.FC<TopNavProps> = ({
           </div>
         </div>
 
-        {/* 5-Tab Navigation Pill */}
-        <nav style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.04)', padding: '4px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-glass)' }}>
+        {/* 5-Tab Navigation Pill (Desktop/Tablet) */}
+        <nav className="top-nav-tabs" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.04)', padding: '4px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-glass)' }}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -77,12 +86,13 @@ export const TopNav: React.FC<TopNavProps> = ({
           })}
         </nav>
 
-        {/* Action Widgets (Coins & Daily Streak & Avatar) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Action Widgets (Streak, Coins, Notifications & Avatar) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative' }}>
           {/* Daily Streak Pill */}
           <button
             onClick={onOpenWheel}
             className="glass-pill"
+            title="Daily Streak & Spin Wheel"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -102,6 +112,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           {/* Coin Balance Pill */}
           <button
             onClick={onOpenStore}
+            title="YoUnMe Coins Wallet Store"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -122,9 +133,94 @@ export const TopNav: React.FC<TopNavProps> = ({
             <span style={{ background: '#ffd700', color: '#000', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>+</span>
           </button>
 
+          {/* Notifications Shortcut */}
+          <button
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              setHasUnreadNotifications(false);
+            }}
+            title="Notifications & Activity"
+            className="glass-pill"
+            style={{
+              width: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#ffffff',
+              position: 'relative',
+              border: '1px solid var(--border-glass)',
+            }}
+          >
+            <Bell size={16} />
+            {hasUnreadNotifications && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '6px',
+                  right: '6px',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#ff2d55',
+                  boxShadow: '0 0 6px #ff2d55',
+                }}
+              />
+            )}
+          </button>
+
+          {/* Notifications Dropdown Popover */}
+          {showNotifications && (
+            <div
+              className="glass-panel"
+              style={{
+                position: 'absolute',
+                top: '48px',
+                right: '0',
+                width: '320px',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px',
+                zIndex: 60,
+                boxShadow: 'var(--shadow-lg)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ fontWeight: 700, fontSize: '14px' }}>Notifications & Alerts</span>
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      padding: '10px',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#ffffff', marginBottom: '3px' }}>
+                      <span>{n.title}</span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{n.time}</span>
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{n.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* User Avatar with Blue Tick */}
           <div
             onClick={() => setActiveTab('profile')}
+            title="Profile & Creator Ledger"
             style={{ position: 'relative', width: '38px', height: '38px', cursor: 'pointer' }}
           >
             <img

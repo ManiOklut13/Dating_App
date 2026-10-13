@@ -11,13 +11,44 @@ export interface User {
 export interface CandidateCard {
   user_id: string;
   nickname: string;
+  age?: number;
   bio: string;
   city: string;
   distance_km: number;
   photo_urls: string[];
   is_verified: boolean;
+  is_online?: boolean;
+  shared_interests?: string[];
   profile_progress: number;
   vibe_score?: number;
+}
+
+/**
+ * An incoming "Likes You" entry.
+ * IMPORTANT: a person who liked you is NOT a match — it only becomes a match
+ * after you like them back (see the Like action in ConnectTab).
+ * Production source: GET /v1/connect/likes-you (not implemented in this build).
+ */
+export interface IncomingLike {
+  actor_id: string;
+  nickname: string;
+  age?: number;
+  gender: string;
+  avatar: string;
+  bitmoji?: string;
+  photo_urls: string[];
+  city: string;
+  /** General distance only — never an exact location. */
+  distance_km: number;
+  action: 'like' | 'spark';
+  is_verified: boolean;
+  is_online?: boolean;
+  shared_interests: string[];
+  bio: string;
+  /** Restricted profiles stay limited even within the daily view limit. */
+  is_restricted?: boolean;
+  /** Demo-only match percentage shown over a limited-visibility photo. */
+  match_percent?: number;
 }
 
 export interface MatchItem {
@@ -28,9 +59,14 @@ export interface MatchItem {
   counterpart: {
     user_id: string;
     nickname: string;
+    age?: number;
     avatar: string;
     city: string;
     is_verified: boolean;
+    is_online?: boolean;
+    shared_interests?: string[];
+    bio?: string;
+    photo_urls?: string[];
     call_avatar_ref?: string;
   };
   last_message?: {

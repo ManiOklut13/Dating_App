@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TopNav } from './components/TopNav';
+import { BottomNav } from './components/BottomNav';
 import { CoinStoreModal } from './components/CoinStoreModal';
 import { SpinWheelModal } from './components/SpinWheelModal';
 import { MatchModal } from './components/MatchModal';
@@ -44,24 +44,22 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', minWidth: 0, overflowX: 'hidden' }}>
       
-      {/* Top App Header & Nav */}
-      <TopNav
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        coinBalance={coinBalance}
-        streakDays={streakDays}
-        onOpenStore={() => setIsStoreOpen(true)}
-        onOpenWheel={() => setIsWheelOpen(true)}
-      />
-
       {/* Main Tab View Container */}
-      <main style={{ flex: 1, paddingBottom: '40px' }}>
+      <main style={{ flex: 1, paddingBottom: '70px', minWidth: 0 }}>
         {activeTab === 'discovery' && (
           <DiscoveryTab
             onMutualMatch={handleMutualMatch}
             onCoinDeducted={(newBal) => setCoinBalance(newBal)}
+            coinBalance={coinBalance}
+            streakDays={streakDays}
+            onOpenStore={() => setIsStoreOpen(true)}
+            onOpenWheel={() => setIsWheelOpen(true)}
+            onOpenChat={(convId) => {
+              setSelectedConvId(convId);
+              setActiveTab('chat');
+            }}
           />
         )}
 
@@ -71,8 +69,12 @@ export const App: React.FC = () => {
               setSelectedConvId(convId);
               setActiveTab('chat');
             }}
-            onOpenCall={handleOpenCallFromMatch}
             onOpenStore={() => setIsStoreOpen(true)}
+            onMutualMatch={handleMutualMatch}
+            coinBalance={coinBalance}
+            onCoinsDeducted={(newBal) => setCoinBalance(newBal)}
+            // TODO(auth): read the authenticated user's gender from the profile API.
+            viewerGender="male"
           />
         )}
 
@@ -96,6 +98,16 @@ export const App: React.FC = () => {
             coinBalance={coinBalance}
             onOpenStore={() => setIsStoreOpen(true)}
             onOpenWheel={() => setIsWheelOpen(true)}
+            view="profile"
+          />
+        )}
+
+        {activeTab === 'ledger' && (
+          <ProfileWalletTab
+            coinBalance={coinBalance}
+            onOpenStore={() => setIsStoreOpen(true)}
+            onOpenWheel={() => setIsWheelOpen(true)}
+            view="ledger"
           />
         )}
       </main>
@@ -125,6 +137,9 @@ export const App: React.FC = () => {
         onStartChat={handleOpenChatFromMatch}
         onStartCall={() => handleOpenCallFromMatch()}
       />
+
+      {/* Mobile Fixed Bottom Navigation */}
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
     </div>
   );
