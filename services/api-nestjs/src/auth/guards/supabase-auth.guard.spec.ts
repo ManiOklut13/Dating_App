@@ -1,14 +1,14 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { FirebaseAuthGuard } from './firebase-auth.guard.js';
-import { FirebaseService } from '../../firebase/firebase.service.js';
+import { SupabaseAuthGuard } from './supabase-auth.guard.js';
+import { SupabaseService, SupabaseTokenError } from '../../supabase/supabase.service.js';
 
-describe('FirebaseAuthGuard', () => {
-  let guard: FirebaseAuthGuard;
-  let firebaseService: FirebaseService;
+describe('SupabaseAuthGuard', () => {
+  let guard: SupabaseAuthGuard;
+  let supabaseService: SupabaseService;
 
-  const mockFirebaseService = {
-    verifyIdToken: jest.fn(),
+  const mockSupabaseService = {
+    verifyAccessToken: jest.fn(),
   };
 
   const createMockContext = (authHeader?: string): ExecutionContext => {
@@ -32,16 +32,16 @@ describe('FirebaseAuthGuard', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        FirebaseAuthGuard,
+        SupabaseAuthGuard,
         {
-          provide: FirebaseService,
-          useValue: mockFirebaseService,
+          provide: SupabaseService,
+          useValue: mockSupabaseService,
         },
       ],
     }).compile();
 
-    guard = module.get<FirebaseAuthGuard>(FirebaseAuthGuard);
-    firebaseService = module.get<FirebaseService>(FirebaseService);
+    guard = module.get<SupabaseAuthGuard>(SupabaseAuthGuard);
+    supabaseService = module.get<SupabaseService>(SupabaseService);
   });
 
   it('should be defined', () => {
@@ -69,33 +69,50 @@ describe('FirebaseAuthGuard', () => {
     );
   });
 
-  it('4. should throw UnauthorizedException when Firebase ID token is invalid', async () => {
-    mockFirebaseService.verifyIdToken.mockRejectedValueOnce(new Error('TOKEN_INVALID'));
+  it('4. should throw UnauthorizedException when Supabase access token is invalid', async () => {
+    mockSupabaseService.verifyAccessToken.mockImplementationOnce(() => {
+      throw new SupabaseTokenError('TOKEN_INVALID');
+    });
     const context = createMockContext('Bearer invalid.fake.token');
 
     await expect(guard.canActivate(context)).rejects.toThrow(
-      new UnauthorizedException('Invalid Firebase ID token'),
+      new UnauthorizedException('Invalid Supabase access token'),
     );
-    expect(mockFirebaseService.verifyIdToken).toHaveBeenCalledWith('invalid.fake.token');
+    expect(mockSupabaseService.verifyAccessToken).toHaveBeenCalledWith('invalid.fake.token');
   });
 
-  it('5. should throw UnauthorizedException when Firebase ID token is expired', async () => {
-    mockFirebaseService.verifyIdToken.mockRejectedValueOnce(new Error('TOKEN_EXPIRED'));
+  it('5. should throw UnauthorizedException when Supabase access token is expired', async () => {
+    mockSupabaseService.verifyAccessToken.mockImplementationOnce(() => {
+      throw new SupabaseTokenError('TOKEN_EXPIRED');
+    });
     const context = createMockContext('Bearer expired.token.value');
 
     await expect(guard.canActivate(context)).rejects.toThrow(
-      new UnauthorizedException('Firebase ID token has expired'),
+      new UnauthorizedException('Supabase access token has expired'),
     );
-    expect(mockFirebaseService.verifyIdToken).toHaveBeenCalledWith('expired.token.value');
+    expect(mockSupabaseService.verifyAccessToken).toHaveBeenCalledWith('expired.token.value');
   });
 
-  it('6. should attach user to request and return true for valid Firebase ID token', async () => {
+  it('6. should reject a non-authenticated role token (anon / service_role API keys)', async () => {
+    mockSupabaseService.verifyAccessToken.mockImplementationOnce(() => {
+      throw new SupabaseTokenError('INVALID_ROLE');
+    });
+    const context = createMockContext('Bearer anon.api.key');
+
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      new UnauthorizedException('Token is not an authenticated user token'),
+    );
+  });
+
+  it('7. should attach user to request and return true for a valid access token', async () => {
     const mockDecodedUser = {
-      uid: 'firebase_test_uid_999',
+      id: '11111111-1111-1111-1111-111111111111',
       email: 'test@younme.app',
-      email_verified: true,
+      phone: '+919820011111',
+      role: 'authenticated',
+      session_id: 'session-abc',
     };
-    mockFirebaseService.verifyIdToken.mockResolvedValueOnce(mockDecodedUser);
+    mockSupabaseService.verifyAccessToken.mockReturnValueOnce(mockDecodedUser);
 
     const context = createMockContext('Bearer valid.jwt.token');
     const result = await guard.canActivate(context);
@@ -103,9 +120,11 @@ describe('FirebaseAuthGuard', () => {
     expect(result).toBe(true);
     const request = context.switchToHttp().getRequest();
     expect(request.user).toEqual({
-      uid: 'firebase_test_uid_999',
+      id: '11111111-1111-1111-1111-111111111111',
       email: 'test@younme.app',
-      email_verified: true,
+      phone: '+919820011111',
+      role: 'authenticated',
+      session_id: 'session-abc',
     });
   });
 });

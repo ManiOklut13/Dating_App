@@ -7,10 +7,10 @@ import { CurrentUserResponseDto } from './dto/user-response.dto.js';
 export class AuthService {
   /**
    * Generates the verified sign-in response.
-   * Only trusted claims verified from the Firebase Admin SDK token are returned.
+   * Only trusted claims verified from the Supabase access token are returned.
    */
   signIn(user: AuthenticatedUser): SignInResponseDto {
-    if (!user || !user.uid) {
+    if (!user || !user.id) {
       throw new UnauthorizedException('Authentication credentials could not be verified');
     }
 
@@ -18,8 +18,9 @@ export class AuthService {
       success: true,
       message: 'Sign in successful',
       user: {
-        uid: user.uid,
+        id: user.id,
         email: user.email,
+        phone: user.phone,
       },
     };
   }
@@ -28,15 +29,16 @@ export class AuthService {
    * Returns current authenticated user information.
    */
   getCurrentUser(user: AuthenticatedUser): CurrentUserResponseDto {
-    if (!user || !user.uid) {
+    if (!user || !user.id) {
       throw new UnauthorizedException('Authentication credentials could not be verified');
     }
 
     return {
       success: true,
       user: {
-        uid: user.uid,
+        id: user.id,
         email: user.email,
+        phone: user.phone,
       },
     };
   }

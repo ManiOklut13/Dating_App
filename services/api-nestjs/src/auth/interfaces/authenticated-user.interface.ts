@@ -1,5 +1,8 @@
 export interface AuthenticatedUser {
-  uid: string;
+  /** Supabase auth.users.id (UUID). Replaces the Firebase `uid`. */
+  id: string;
   email?: string;
-  email_verified?: boolean;
+  phone?: string;
+  role?: string;
+  session_id?: string;
 }

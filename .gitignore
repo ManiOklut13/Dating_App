@@ -31,6 +31,9 @@ serviceAccountKey.json
 *firebase-adminsdk*.json
 secrets/
 
+# Generated SQL bundle (rebuild with: npm run db:bundle)
+database/supabase-dashboard-bundle.sql
+
 # OS generated files
 .DS_Store
 Thumbs.db

@@ -21,7 +21,15 @@ const apiProcess = spawn(npmCmd, ['run', 'start'], {
   shell: true,
 });
 
-// 2. Launch Frontend Client
+// 2. Launch Go Real-Time WebSocket Engine
+const goCmd = isWindows ? 'go.exe' : 'go';
+const goProcess = spawn(goCmd, ['run', '.'], {
+  cwd: path.join(rootDir, 'services', 'realtime-go'),
+  stdio: 'inherit',
+  shell: true,
+});
+
+// 3. Launch Frontend Client
 const clientProcess = spawn(npmCmd, ['run', 'dev'], {
   cwd: path.join(rootDir, 'client'),
   stdio: 'inherit',
@@ -31,6 +39,8 @@ const clientProcess = spawn(npmCmd, ['run', 'dev'], {
 process.on('SIGINT', () => {
   console.log('\nGracefully shutting down services...');
   apiProcess.kill();
+  if (goProcess) goProcess.kill();
   clientProcess.kill();
   process.exit(0);
 });
+

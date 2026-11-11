@@ -1,11 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UserDto {
-  @ApiProperty({ example: 'verified-firebase-uid', description: 'Verified Firebase UID' })
-  uid: string;
+  @ApiProperty({
+    example: '11111111-1111-1111-1111-111111111111',
+    description: 'Supabase user id (auth.users.id)',
+  })
+  id: string;
 
   @ApiProperty({ example: 'user@example.com', description: 'Verified user email', required: false })
   email?: string;
+
+  @ApiProperty({
+    example: '+919820011111',
+    description: 'Verified user phone number',
+    required: false,
+  })
+  phone?: string;
 }
 
 export class CurrentUserResponseDto {

@@ -45,7 +45,7 @@ authRouter.post('/otp/whatsapp', (req: Request, res: Response) => {
 
 /**
  * POST /v1/auth/otp/sms-fallback
- * Triggers Firebase Auth Phone SMS fallback on failure
+ * Triggers SMS OTP fallback (Supabase Auth does not send SMS directly)
  */
 authRouter.post('/otp/sms-fallback', (req: Request, res: Response) => {
   const { phone } = req.body;
@@ -60,7 +60,7 @@ authRouter.post('/otp/sms-fallback', (req: Request, res: Response) => {
     expiresAt: Date.now() + 5 * 60 * 1000,
   });
 
-  console.log(`[Firebase SMS Fallback] Dispatched SMS OTP to ${phone}: ${code}`);
+  console.log(`[SMS Fallback] Dispatched SMS OTP to ${phone}: ${code}`);
 
   return res.json({
     success: true,

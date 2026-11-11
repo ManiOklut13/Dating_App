@@ -18,7 +18,10 @@ dependencies:
   web_socket_channel: ^2.4.5
   # State Management
   flutter_riverpod: ^2.5.1
-  # Push Notifications
+  # Authentication (Supabase Auth — replaces Firebase Auth)
+  supabase_flutter: ^2.8.0
+  # Push Notifications (Supabase does not provide FCM — Firebase Messaging is
+  # kept purely for push delivery, not authentication)
   firebase_core: ^2.30.0
   firebase_messaging: ^14.8.0
   # Secure Storage

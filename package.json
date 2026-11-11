@@ -7,16 +7,22 @@
     "start": "node scripts/start-all.js",
     "dev": "node scripts/start-all.js",
     "dev:api": "npm --prefix services/api-nestjs run dev",
+    "dev:realtime": "go run -C services/realtime-go .",
     "dev:client": "npm --prefix client run dev",
     "build:client": "npm --prefix client run build",
-    "install:all": "npm install --prefix services/api-nestjs && npm install --prefix client"
+    "install:all": "npm install --prefix services/api-nestjs && npm install --prefix client",
+    "db:apply": "node scripts/apply-supabase-schema.mjs",
+    "db:apply:dry": "node scripts/apply-supabase-schema.mjs --dry-run",
+    "db:check": "node scripts/apply-supabase-schema.mjs --check",
+    "db:bundle": "node scripts/build-dashboard-bundle.mjs",
+    "schema:check": "node scripts/check-schema-sync.mjs",
+    "verify:cors": "node scripts/verify-cors.mjs"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
   "dependencies": {
     "dotenv": "^18.0.7",
-    "firebase-admin": "^14.5.0",
     "pg": "^8.23.1"
   }
 }

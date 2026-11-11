@@ -1,2 +1,0 @@
-export const FIREBASE_ADMIN_APP = 'FIREBASE_ADMIN_APP';
-export const FIREBASE_AUTH = 'FIREBASE_AUTH';

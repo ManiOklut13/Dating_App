@@ -17,9 +17,10 @@ describe('AuthService', () => {
   describe('signIn', () => {
     it('should return valid user data when user object is provided', () => {
       const mockUser: AuthenticatedUser = {
-        uid: 'firebase-user-123',
+        id: '11111111-1111-1111-1111-111111111111',
         email: 'dinesh@younme.app',
-        email_verified: true,
+        phone: '+919820011111',
+        role: 'authenticated',
       };
 
       const result = authService.signIn(mockUser);
@@ -28,14 +29,15 @@ describe('AuthService', () => {
         success: true,
         message: 'Sign in successful',
         user: {
-          uid: 'firebase-user-123',
+          id: '11111111-1111-1111-1111-111111111111',
           email: 'dinesh@younme.app',
+          phone: '+919820011111',
         },
       });
     });
 
-    it('should throw UnauthorizedException if user is missing uid', () => {
-      const invalidUser = { uid: '', email: 'dinesh@younme.app' } as AuthenticatedUser;
+    it('should throw UnauthorizedException if user is missing an id', () => {
+      const invalidUser = { id: '', email: 'dinesh@younme.app' } as AuthenticatedUser;
       expect(() => authService.signIn(invalidUser)).toThrow(UnauthorizedException);
     });
   });
@@ -43,7 +45,7 @@ describe('AuthService', () => {
   describe('getCurrentUser', () => {
     it('should return current user information', () => {
       const mockUser: AuthenticatedUser = {
-        uid: 'firebase-user-123',
+        id: '11111111-1111-1111-1111-111111111111',
         email: 'dinesh@younme.app',
       };
 
@@ -52,8 +54,9 @@ describe('AuthService', () => {
       expect(result).toEqual({
         success: true,
         user: {
-          uid: 'firebase-user-123',
+          id: '11111111-1111-1111-1111-111111111111',
           email: 'dinesh@younme.app',
+          phone: undefined,
         },
       });
     });

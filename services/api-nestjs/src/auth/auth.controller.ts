@@ -13,29 +13,29 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
-import { FirebaseAuthGuard } from './guards/firebase-auth.guard.js';
+import { SupabaseAuthGuard } from './guards/supabase-auth.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface.js';
 import { SignInResponseDto } from './dto/signin-response.dto.js';
 import { CurrentUserResponseDto } from './dto/user-response.dto.js';
 
 @ApiTags('Auth')
-@ApiBearerAuth('firebase-auth')
+@ApiBearerAuth('supabase-auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   /**
    * POST /v1/auth/signin
-   * Verifies Firebase ID Token and returns verified user identity.
+   * Verifies a Supabase access token and returns the verified user identity.
    */
   @Post('signin')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(FirebaseAuthGuard)
+  @UseGuards(SupabaseAuthGuard)
   @ApiOperation({
-    summary: 'Sign In via Firebase ID Token',
+    summary: 'Sign In via Supabase Access Token',
     description:
-      'Verifies the client-provided Firebase ID token via Firebase Admin SDK. Returns verified UID and email.',
+      'Verifies the client-provided Supabase access token (HS256, signed with SUPABASE_JWT_SECRET). Only tokens with role=authenticated are accepted — the anon and service_role API keys are rejected. Returns the verified user id and email.',
   })
   @ApiResponse({
     status: 200,
@@ -46,7 +46,7 @@ export class AuthController {
         success: true,
         message: 'Sign in successful',
         user: {
-          uid: 'verified-firebase-uid',
+          id: '11111111-1111-1111-1111-111111111111',
           email: 'user@example.com',
         },
       },
@@ -58,7 +58,7 @@ export class AuthController {
     schema: {
       example: {
         statusCode: 401,
-        message: 'Firebase ID token has expired',
+        message: 'Supabase access token has expired',
         error: 'Unauthorized',
       },
     },
@@ -69,11 +69,11 @@ export class AuthController {
 
   /**
    * GET /v1/auth/me
-   * Returns current authenticated user information from verified token.
+   * Returns current authenticated user information from the verified token.
    */
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(FirebaseAuthGuard)
+  @UseGuards(SupabaseAuthGuard)
   @ApiOperation({
     summary: 'Get Current Authenticated User',
     description:
@@ -87,7 +87,7 @@ export class AuthController {
       example: {
         success: true,
         user: {
-          uid: 'verified-firebase-uid',
+          id: '11111111-1111-1111-1111-111111111111',
           email: 'user@example.com',
         },
       },

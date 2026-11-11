@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
-import { FirebaseAuthGuard } from './guards/firebase-auth.guard.js';
-import { FirebaseService } from '../firebase/firebase.service.js';
+import { SupabaseAuthGuard } from './guards/supabase-auth.guard.js';
+import { SupabaseService } from '../supabase/supabase.service.js';
 import { AuthenticatedUser } from './interfaces/authenticated-user.interface.js';
 
 describe('AuthController', () => {
@@ -10,9 +10,10 @@ describe('AuthController', () => {
   let authService: AuthService;
 
   const mockUser: AuthenticatedUser = {
-    uid: 'firebase-user-abc',
+    id: '11111111-1111-1111-1111-111111111111',
     email: 'dinesh@younme.app',
-    email_verified: true,
+    phone: '+919820011111',
+    role: 'authenticated',
   };
 
   const mockAuthService = {
@@ -20,21 +21,23 @@ describe('AuthController', () => {
       success: true,
       message: 'Sign in successful',
       user: {
-        uid: mockUser.uid,
+        id: mockUser.id,
         email: mockUser.email,
+        phone: mockUser.phone,
       },
     }),
     getCurrentUser: jest.fn().mockReturnValue({
       success: true,
       user: {
-        uid: mockUser.uid,
+        id: mockUser.id,
         email: mockUser.email,
+        phone: mockUser.phone,
       },
     }),
   };
 
-  const mockFirebaseService = {
-    verifyIdToken: jest.fn(),
+  const mockSupabaseService = {
+    verifyAccessToken: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -46,10 +49,10 @@ describe('AuthController', () => {
           useValue: mockAuthService,
         },
         {
-          provide: FirebaseService,
-          useValue: mockFirebaseService,
+          provide: SupabaseService,
+          useValue: mockSupabaseService,
         },
-        FirebaseAuthGuard,
+        SupabaseAuthGuard,
       ],
     }).compile();
 
@@ -68,8 +71,9 @@ describe('AuthController', () => {
         success: true,
         message: 'Sign in successful',
         user: {
-          uid: 'firebase-user-abc',
+          id: '11111111-1111-1111-1111-111111111111',
           email: 'dinesh@younme.app',
+          phone: '+919820011111',
         },
       });
       expect(authService.signIn).toHaveBeenCalledWith(mockUser);
@@ -82,8 +86,9 @@ describe('AuthController', () => {
       expect(response).toEqual({
         success: true,
         user: {
-          uid: 'firebase-user-abc',
+          id: '11111111-1111-1111-1111-111111111111',
           email: 'dinesh@younme.app',
+          phone: '+919820011111',
         },
       });
       expect(authService.getCurrentUser).toHaveBeenCalledWith(mockUser);

@@ -1,0 +1,11 @@
+$kind: http-request
+name: http://localhost:8080/v1/auth/signin
+description: ""
+url: http://localhost:8080/v1/auth/signin
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: |
+      3985a2c791fc7f5b5308b6008dfbf4d3908f958ac3be8c9661f1c6c7ea6885ef
+order: 1000

@@ -19,7 +19,54 @@ import { workerService } from '../../worker-bullmq/src/worker.js';
 export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors({ origin: '*' });
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  const defaultOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:8080',
+  ];
+
+  const origins = Array.from(new Set([...allowedOrigins, ...defaultOrigins]));
+
+  app.enableCors({
+    origin: (requestOrigin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, Postman)
+      if (!requestOrigin) return callback(null, true);
+
+      // In development or if origin matches allowed list or localhost regex
+      if (
+        process.env.NODE_ENV !== 'production' ||
+        origins.includes(requestOrigin) ||
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(requestOrigin)
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${requestOrigin}`), false);
+    },
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'apikey',
+      'X-Client-Info',
+      'prefer',
+    ],
+    exposedHeaders: ['Content-Range', 'X-Total-Count'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
 
   // Configure Global /v1 prefix
   app.setGlobalPrefix('v1', {
@@ -30,7 +77,7 @@ export async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('YoUnMe Dating App API')
     .setDescription(
-      'YoUnMe RESTful Core API Gateway with Firebase Authentication, Discovery, Calls, and Ledger.',
+      'YoUnMe RESTful Core API Gateway with Supabase Authentication, Discovery, Calls, and Ledger.',
     )
     .setVersion('1.0')
     .addBearerAuth(
@@ -39,10 +86,10 @@ export async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'Authorization',
-        description: 'Provide valid Firebase ID Token (Bearer <token>)',
+        description: 'Provide a valid Supabase access token (Bearer <token>)',
         in: 'header',
       },
-      'firebase-auth',
+      'supabase-auth',
     )
     .build();
 
@@ -68,7 +115,7 @@ export async function bootstrap() {
         worker: 'BullMQ + Redis Worker',
         database: 'PostgreSQL + PostGIS',
         media: 'LiveKit Cloud WebRTC SFU',
-        auth: 'Firebase Authentication (Admin SDK)',
+        auth: 'Supabase Authentication (GoTrue access tokens)',
       },
       timestamp: new Date().toISOString(),
     });

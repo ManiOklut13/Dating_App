@@ -3,7 +3,7 @@
 > **Production Topology:** Google Cloud Run Tri-Microservices (`asia-south1` Mumbai)  
 > **Backend Stack:** Node.js / NestJS API • Go Real-Time Engine • Cloud Run Worker (BullMQ + Redis)  
 > **Database & Spatial:** Supabase Pro Managed PostgreSQL + PostGIS (`ST_DWithin` & Spatial Indexing)  
-> **Media & Communications:** LiveKit Cloud WebRTC SFU • Twilio WhatsApp OTP (Firebase SMS Fallback)  
+> **Media & Communications:** LiveKit Cloud WebRTC SFU • Twilio WhatsApp OTP (SMS Fallback) • Supabase Auth (GoTrue)  
 > **Client Applications:** Cross-Platform Web MVP & Flutter Mobile Client (iOS & Android)  
 
 ---
