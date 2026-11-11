@@ -1,0 +1,3134 @@
+{
+  "timestamp": "2026-10-28T12:41:46.188Z",
+  "total": 51,
+  "passed": 51,
+  "failed": 0,
+  "avgLatency": "874.5",
+  "results": [
+    {
+      "module": "Health",
+      "endpoint": "GET /health",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 123,
+      "ok": true,
+      "error": null,
+      "summary": "{\"status\":\"healthy\",\"service\":\"YoUnMe Tri-Microservices API Gateway\",\"region\":\"asia-south1 (Mumbai)\",\"stack\":{\"api\":\"NestJS RESTful Service\",\"realtime\":\"Go WebSocket Engine / Gatew...",
+      "data": {
+        "status": "healthy",
+        "service": "YoUnMe Tri-Microservices API Gateway",
+        "region": "asia-south1 (Mumbai)",
+        "stack": {
+          "api": "NestJS RESTful Service",
+          "realtime": "Go WebSocket Engine / Gateway",
+          "worker": "BullMQ + Redis Worker",
+          "database": "GCP Cloud SQL + PostGIS (ST_DWithin)",
+          "cache": "GCP Memorystore Redis",
+          "media": "LiveKit Cloud WebRTC SFU"
+        },
+        "timestamp": "2026-10-28T12:41:01.690Z"
+      }
+    },
+    {
+      "module": "Health",
+      "endpoint": "GET /v1/health",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1526,
+      "ok": true,
+      "error": null,
+      "summary": "{\"status\":\"healthy\",\"service\":\"YoUnMe Core API Gateway (NestJS)\",\"timestamp\":\"2026-10-28T12:41:03.231Z\",\"connections\":{\"database\":{\"engine\":\"Supabase PostgreSQL (AWS ap-northeast-2...",
+      "data": {
+        "status": "healthy",
+        "service": "YoUnMe Core API Gateway (NestJS)",
+        "timestamp": "2026-10-28T12:41:03.231Z",
+        "connections": {
+          "database": {
+            "engine": "Supabase PostgreSQL (AWS ap-northeast-2 pooler)",
+            "pool_connected": true,
+            "live_query": true,
+            "public_tables": 24
+          },
+          "redis": {
+            "engine": "Upstash Redis Cloud (Mumbai)",
+            "connected": true,
+            "ping": "PONG",
+            "host": "central-dog-109470.upstash.io"
+          },
+          "supabase_auth": {
+            "initialized": true,
+            "mode": "REST & JWT HS256/ES256 Verification"
+          }
+        }
+      }
+    },
+    {
+      "module": "Health",
+      "endpoint": "GET /v1/health/db-check",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 142,
+      "ok": true,
+      "error": null,
+      "summary": "{\"status\":\"online\",\"connectedToSupabase\":true,\"latency_ms\":136,\"details\":{\"current_time\":\"2026-10-28T12:41:03.047Z\",\"database\":\"postgres\",\"pg_version\":\"PostgreSQL 17.11 on aarch64-...",
+      "data": {
+        "status": "online",
+        "connectedToSupabase": true,
+        "latency_ms": 136,
+        "details": {
+          "current_time": "2026-10-28T12:41:03.047Z",
+          "database": "postgres",
+          "pg_version": "PostgreSQL 17.11 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit"
+        },
+        "message": "Successfully verified live connection to Supabase PostgreSQL!",
+        "timestamp": "2026-10-28T12:41:03.373Z"
+      }
+    },
+    {
+      "module": "Health",
+      "endpoint": "GET /v1/health/redis-check",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 310,
+      "ok": true,
+      "error": null,
+      "summary": "{\"status\":\"online\",\"connectedToRedis\":true,\"latency_ms\":306,\"read_write_verified\":true,\"ping\":\"PONG\",\"engine\":\"Upstash Redis Cloud (Mumbai)\",\"timestamp\":\"2026-10-28T12:41:03.683Z\"}",
+      "data": {
+        "status": "online",
+        "connectedToRedis": true,
+        "latency_ms": 306,
+        "read_write_verified": true,
+        "ping": "PONG",
+        "engine": "Upstash Redis Cloud (Mumbai)",
+        "timestamp": "2026-10-28T12:41:03.683Z"
+      }
+    },
+    {
+      "module": "Auth",
+      "endpoint": "POST /v1/auth/signin",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1547,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"Sign in successful\",\"user\":{\"uid\":\"11111111-1111-1111-1111-111111111111\",\"email\":\"demo@younme.app\"}}",
+      "data": {
+        "success": true,
+        "message": "Sign in successful",
+        "user": {
+          "uid": "11111111-1111-1111-1111-111111111111",
+          "email": "demo@younme.app"
+        }
+      }
+    },
+    {
+      "module": "Auth",
+      "endpoint": "GET /v1/auth/me",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 906,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"user\":{\"uid\":\"11111111-1111-1111-1111-111111111111\",\"email\":\"demo@younme.app\"}}",
+      "data": {
+        "success": true,
+        "user": {
+          "uid": "11111111-1111-1111-1111-111111111111",
+          "email": "demo@younme.app"
+        }
+      }
+    },
+    {
+      "module": "Onboarding",
+      "endpoint": "POST /v1/onboarding/wizard",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1704,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"step_saved\":\"bio\",\"profile_progress\":95,\"blue_tick_awarded\":true,\"profile\":{\"user_id\":\"11111111-1111-1111-1111-111111111111\",\"first_name\":\"Arjun\",\"nickname\":\"Aarav...",
+      "data": {
+        "success": true,
+        "step_saved": "bio",
+        "profile_progress": 95,
+        "blue_tick_awarded": true,
+        "profile": {
+          "user_id": "11111111-1111-1111-1111-111111111111",
+          "first_name": "Arjun",
+          "nickname": "Aarav (Verified)",
+          "date_of_birth": "1998-05-13T18:30:00.000Z",
+          "gender": "male",
+          "sexual_orientations": [],
+          "looking_for": [],
+          "languages": [
+            "English",
+            "Hindi",
+            "Marathi"
+          ],
+          "interests": [],
+          "bio": "Architect & Specialty Coffee Connoisseur exploring Mumbai.",
+          "profession": null,
+          "education": null,
+          "city": "Mumbai",
+          "country_code": null,
+          "avatar_object_key": null,
+          "random_avatar_object_key": null,
+          "app_language": "en",
+          "app_theme": "dark",
+          "chat_lock_passcode_hash": null,
+          "read_receipts_status": true,
+          "profile_visibility": "everyone",
+          "show_online_status": true,
+          "who_can_message": "everyone",
+          "who_can_message_request": "everyone",
+          "push_notifications_enabled": true,
+          "push_notifications": {},
+          "email_notifications_enabled": true,
+          "email_notifications": {},
+          "min_age": 18,
+          "max_age": 50,
+          "max_distance_km": 50,
+          "is_verified": true,
+          "verification_status": "not_started",
+          "is_voice_verified": false,
+          "liveness_verified": true,
+          "face_embedding_vector": null,
+          "profile_progress": 95,
+          "location": "0101000020E61000000C022B871635524073D712F2410F3340",
+          "location_updated_at": "2026-10-23T04:51:07.094Z",
+          "last_active_at": null,
+          "created_at": "2026-10-23T04:51:07.094Z",
+          "updated_at": "2026-10-28T12:41:07.279Z"
+        },
+        "user": {
+          "id": "11111111-1111-1111-1111-111111111111",
+          "authentication_uid": "auth_arjun_111111",
+          "email": "arjun.mehta@younme.social",
+          "email_verified": true,
+          "phone_country_code": "+91",
+          "phone_number": "9820011111",
+          "full_phone_number": "+919820011111",
+          "phone_verified": true,
+          "account_status": "active",
+          "role": "user",
+          "referral_code": null,
+          "referred_by_user_id": null,
+          "created_at": "2026-10-23T04:51:07.094Z",
+          "updated_at": "2026-10-23T04:51:07.094Z"
+        },
+        "breakdown": {
+          "nickname": 10,
+          "date_of_birth": 10,
+          "gender": 10,
+          "bio": 20,
+          "photos": 25,
+          "liveness": 15,
+          "avatar": 0,
+          "languages": 5,
+          "total": 95
+        }
+      }
+    },
+    {
+      "module": "Onboarding",
+      "endpoint": "GET /v1/onboarding/status/11111111-1111-1111-1111-111111111111",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 756,
+      "ok": true,
+      "error": null,
+      "summary": "{\"user_id\":\"11111111-1111-1111-1111-111111111111\",\"progress\":95,\"is_verified\":true,\"missing_items\":[\"Upload at least 3 photos (required for discovery deck)\",\"Avatar preference\"],\"b...",
+      "data": {
+        "user_id": "11111111-1111-1111-1111-111111111111",
+        "progress": 95,
+        "is_verified": true,
+        "missing_items": [
+          "Upload at least 3 photos (required for discovery deck)",
+          "Avatar preference"
+        ],
+        "breakdown": {
+          "nickname": 10,
+          "date_of_birth": 10,
+          "gender": 10,
+          "bio": 20,
+          "photos": 25,
+          "liveness": 15,
+          "avatar": 0,
+          "languages": 5,
+          "total": 95
+        }
+      }
+    },
+    {
+      "module": "Onboarding",
+      "endpoint": "PUT /v1/onboarding/profile/11111111-1111-1111-1111-111111111111",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1849,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"profile_progress\":95,\"blue_tick_awarded\":true,\"profile\":{\"user_id\":\"11111111-1111-1111-1111-111111111111\",\"first_name\":\"Arjun\",\"nickname\":\"Aarav Sharma\",\"date_of_b...",
+      "data": {
+        "success": true,
+        "profile_progress": 95,
+        "blue_tick_awarded": true,
+        "profile": {
+          "user_id": "11111111-1111-1111-1111-111111111111",
+          "first_name": "Arjun",
+          "nickname": "Aarav Sharma",
+          "date_of_birth": "1998-05-13T18:30:00.000Z",
+          "gender": "male",
+          "sexual_orientations": [],
+          "looking_for": [],
+          "languages": [
+            "English",
+            "Hindi",
+            "Marathi"
+          ],
+          "interests": [],
+          "bio": "Architect, Specialty Coffee Connoisseur & Indie Musician.",
+          "profession": null,
+          "education": null,
+          "city": "Mumbai",
+          "country_code": null,
+          "avatar_object_key": null,
+          "random_avatar_object_key": null,
+          "app_language": "en",
+          "app_theme": "dark",
+          "chat_lock_passcode_hash": null,
+          "read_receipts_status": true,
+          "profile_visibility": "everyone",
+          "show_online_status": true,
+          "who_can_message": "everyone",
+          "who_can_message_request": "everyone",
+          "push_notifications_enabled": true,
+          "push_notifications": {},
+          "email_notifications_enabled": true,
+          "email_notifications": {},
+          "min_age": 18,
+          "max_age": 50,
+          "max_distance_km": 50,
+          "is_verified": true,
+          "verification_status": "not_started",
+          "is_voice_verified": false,
+          "liveness_verified": true,
+          "face_embedding_vector": null,
+          "profile_progress": 95,
+          "location": "0101000020E61000000C022B871635524073D712F2410F3340",
+          "location_updated_at": "2026-10-23T04:51:07.094Z",
+          "last_active_at": null,
+          "created_at": "2026-10-23T04:51:07.094Z",
+          "updated_at": "2026-10-28T12:41:10.043Z"
+        },
+        "user": {
+          "id": "11111111-1111-1111-1111-111111111111",
+          "authentication_uid": "auth_arjun_111111",
+          "email": "arjun.mehta@younme.social",
+          "email_verified": true,
+          "phone_country_code": "+91",
+          "phone_number": "9820011111",
+          "full_phone_number": "+919820011111",
+          "phone_verified": true,
+          "account_status": "active",
+          "role": "user",
+          "referral_code": null,
+          "referred_by_user_id": null,
+          "created_at": "2026-10-23T04:51:07.094Z",
+          "updated_at": "2026-10-23T04:51:07.094Z"
+        },
+        "breakdown": {
+          "nickname": 10,
+          "date_of_birth": 10,
+          "gender": 10,
+          "bio": 20,
+          "photos": 25,
+          "liveness": 15,
+          "avatar": 0,
+          "languages": 5,
+          "total": 95
+        }
+      }
+    },
+    {
+      "module": "Home",
+      "endpoint": "GET /v1/home/feed",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 430,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"wallet_header\":{\"balance\":250,\"currency\":\"YoUnMe Coins\"},\"streak\":{\"current_days\":4,\"fire_level\":\"active_flame\",\"spin_available\":true,\"multiplier\":1.4},\"profile_co...",
+      "data": {
+        "success": true,
+        "wallet_header": {
+          "balance": 250,
+          "currency": "YoUnMe Coins"
+        },
+        "streak": {
+          "current_days": 4,
+          "fire_level": "active_flame",
+          "spin_available": true,
+          "multiplier": 1.4
+        },
+        "profile_completion_nudge": {
+          "percentage": 95,
+          "show_nudge": true,
+          "missing_highlight": "Add more profile photos!"
+        },
+        "icebreakers": [
+          {
+            "id": "ib_1",
+            "prompt": "Subko Coffee or Blue Tokai?",
+            "response_type": "poll",
+            "category": "lifestyle"
+          },
+          {
+            "id": "ib_2",
+            "prompt": "Best sunset spot in Mumbai?",
+            "response_type": "text",
+            "category": "travel"
+          },
+          {
+            "id": "ib_3",
+            "prompt": "What song is stuck in your head today?",
+            "response_type": "audio",
+            "category": "music"
+          }
+        ],
+        "top_picks": [
+          {
+            "user_id": "33333333-3333-3333-3333-333333333333",
+            "nickname": "Rohit",
+            "bio": "Architecting spaces by day, chasing sunsets by evening. Fitness, rock climbing, and deep late-night conversations 🌇🧗‍♂️",
+            "city": "Mumbai",
+            "distance_km": 5.3,
+            "photo_urls": [
+              "/rohit.jpg",
+              "/rohit-2.jpg",
+              "/rohit-3.jpg"
+            ],
+            "is_verified": true,
+            "profile_progress": 88,
+            "avatar_object_key": "avatar_ocean_breeze",
+            "vibe_score": 84
+          },
+          {
+            "user_id": "44444444-4444-4444-4444-444444444444",
+            "nickname": "Riya",
+            "bio": "Curating art exhibitions, vintage bookstores, and jazz nights. Swipe right if you have an eclectic Spotify playlist 🎨🎷",
+            "city": "Mumbai",
+            "distance_km": 15.3,
+            "photo_urls": [
+              "/riya.jpg",
+              "/riya-2.jpg",
+              "/riya-3.jpg"
+            ],
+            "is_verified": true,
+            "profile_progress": 85,
+            "avatar_object_key": "avatar_midnight_pearl",
+            "vibe_score": 75
+          }
+        ]
+      }
+    },
+    {
+      "module": "Home",
+      "endpoint": "POST /v1/home/spin-wheel",
+      "status": 201,
+      "expectedStatus": [
+        200,
+        201,
+        400
+      ],
+      "latency": 755,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"base_coins\":15,\"multiplier\":1.4,\"awarded_coins\":21,\"new_balance\":271,\"streak_days\":5,\"message\":\"🎉 Won 21 coins with a 1.4x streak multiplier!\"}",
+      "data": {
+        "success": true,
+        "base_coins": 15,
+        "multiplier": 1.4,
+        "awarded_coins": 21,
+        "new_balance": 271,
+        "streak_days": 5,
+        "message": "🎉 Won 21 coins with a 1.4x streak multiplier!"
+      }
+    },
+    {
+      "module": "Discovery",
+      "endpoint": "GET /v1/discovery/deck?radius_km=50&min_age=20&max_age=35",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1038,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"deck\":[{\"user_id\":\"33333333-3333-3333-3333-333333333333\",\"nickname\":\"Rohit\",\"bio\":\"Architecting spaces by day, chasing sunsets by evening. Fitness, rock climbing, ...",
+      "data": {
+        "success": true,
+        "deck": [
+          {
+            "user_id": "33333333-3333-3333-3333-333333333333",
+            "nickname": "Rohit",
+            "bio": "Architecting spaces by day, chasing sunsets by evening. Fitness, rock climbing, and deep late-night conversations 🌇🧗‍♂️",
+            "city": "Mumbai",
+            "distance_km": 5.3,
+            "age": 28,
+            "photo_urls": [
+              "/ananya.jpg"
+            ],
+            "is_verified": true,
+            "profile_progress": 88,
+            "avatar_object_key": "avatar_neon_tiger"
+          },
+          {
+            "user_id": "55555555-5555-5555-5555-555555555555",
+            "nickname": "Tanya",
+            "bio": "Singer-songwriter & verified creator. Live acoustic jams, travel vlogs, and spicy food quests 🎤🎸",
+            "city": "Mumbai",
+            "distance_km": 10.4,
+            "age": 26,
+            "photo_urls": [
+              "/ananya.jpg"
+            ],
+            "is_verified": true,
+            "profile_progress": 90,
+            "avatar_object_key": "avatar_neon_tiger"
+          },
+          {
+            "user_id": "44444444-4444-4444-4444-444444444444",
+            "nickname": "Riya",
+            "bio": "Curating art exhibitions, vintage bookstores, and jazz nights. Swipe right if you have an eclectic Spotify playlist 🎨🎷",
+            "city": "Mumbai",
+            "distance_km": 15.2,
+            "age": 25,
+            "photo_urls": [
+              "/ananya.jpg"
+            ],
+            "is_verified": true,
+            "profile_progress": 85,
+            "avatar_object_key": "avatar_neon_tiger"
+          }
+        ],
+        "count": 3,
+        "quotas": {
+          "sparks_remaining_free": 5,
+          "reverts_remaining_free": 5
+        },
+        "meta": {
+          "geo_engine": "PostgreSQL PostGIS ST_DWithin (geography)",
+          "radius_km": 50,
+          "age_range": "20-35"
+        }
+      }
+    },
+    {
+      "module": "Discovery",
+      "endpoint": "GET /v1/discovery/deck?radius_km=50&min_age=20&max_age=35",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 765,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"deck\":[{\"user_id\":\"33333333-3333-3333-3333-333333333333\",\"nickname\":\"Rohit\",\"bio\":\"Architecting spaces by day, chasing sunsets by evening. Fitness, rock climbing, ...",
+      "data": {
+        "success": true,
+        "deck": [
+          {
+            "user_id": "33333333-3333-3333-3333-333333333333",
+            "nickname": "Rohit",
+            "bio": "Architecting spaces by day, chasing sunsets by evening. Fitness, rock climbing, and deep late-night conversations 🌇🧗‍♂️",
+            "city": "Mumbai",
+            "distance_km": 5.3,
+            "age": 28,
+            "photo_urls": [
+              "/ananya.jpg"
+            ],
+            "is_verified": true,
+            "profile_progress": 88,
+            "avatar_object_key": "avatar_neon_tiger"
+          },
+          {
+            "user_id": "55555555-5555-5555-5555-555555555555",
+            "nickname": "Tanya",
+            "bio": "Singer-songwriter & verified creator. Live acoustic jams, travel vlogs, and spicy food quests 🎤🎸",
+            "city": "Mumbai",
+            "distance_km": 10.4,
+            "age": 26,
+            "photo_urls": [
+              "/ananya.jpg"
+            ],
+            "is_verified": true,
+            "profile_progress": 90,
+            "avatar_object_key": "avatar_neon_tiger"
+          },
+          {
+            "user_id": "44444444-4444-4444-4444-444444444444",
+            "nickname": "Riya",
+            "bio": "Curating art exhibitions, vintage bookstores, and jazz nights. Swipe right if you have an eclectic Spotify playlist 🎨🎷",
+            "city": "Mumbai",
+            "distance_km": 15.2,
+            "age": 25,
+            "photo_urls": [
+              "/ananya.jpg"
+            ],
+            "is_verified": true,
+            "profile_progress": 85,
+            "avatar_object_key": "avatar_neon_tiger"
+          }
+        ],
+        "count": 3,
+        "quotas": {
+          "sparks_remaining_free": 5,
+          "reverts_remaining_free": 5
+        },
+        "meta": {
+          "geo_engine": "PostgreSQL PostGIS ST_DWithin (geography)",
+          "radius_km": 50,
+          "age_range": "20-35"
+        }
+      }
+    },
+    {
+      "module": "Discovery",
+      "endpoint": "GET /v1/discovery/map",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 461,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"radar_users\":[{\"user_id\":\"22222222-2222-2222-2222-222222222222\",\"nickname\":\"Ananya\",\"city\":\"Mumbai\",\"is_verified\":true,\"avatar_object_key\":null,\"coordinates\":{\"lng...",
+      "data": {
+        "success": true,
+        "radar_users": [
+          {
+            "user_id": "22222222-2222-2222-2222-222222222222",
+            "nickname": "Ananya",
+            "city": "Mumbai",
+            "is_verified": true,
+            "avatar_object_key": null,
+            "coordinates": {
+              "lng": 72.828,
+              "lat": 19.065
+            }
+          },
+          {
+            "user_id": "33333333-3333-3333-3333-333333333333",
+            "nickname": "Rohit",
+            "city": "Mumbai",
+            "is_verified": true,
+            "avatar_object_key": null,
+            "coordinates": {
+              "lng": 72.8263,
+              "lat": 19.1075
+            }
+          },
+          {
+            "user_id": "44444444-4444-4444-4444-444444444444",
+            "nickname": "Riya",
+            "city": "Mumbai",
+            "is_verified": true,
+            "avatar_object_key": null,
+            "coordinates": {
+              "lng": 72.8347,
+              "lat": 18.922
+            }
+          },
+          {
+            "user_id": "55555555-5555-5555-5555-555555555555",
+            "nickname": "Tanya",
+            "city": "Mumbai",
+            "is_verified": true,
+            "avatar_object_key": null,
+            "coordinates": {
+              "lng": 72.9051,
+              "lat": 19.1197
+            }
+          }
+        ]
+      }
+    },
+    {
+      "module": "Discovery",
+      "endpoint": "POST /v1/swipes",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 621,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"action\":\"like\",\"is_match\":false,\"match_id\":null,\"matched_profile\":null}",
+      "data": {
+        "success": true,
+        "action": "like",
+        "is_match": false,
+        "match_id": null,
+        "matched_profile": null
+      }
+    },
+    {
+      "module": "Discovery",
+      "endpoint": "POST /v1/swipes/revert",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 483,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"Previous swipe reverted successfully.\",\"reverted_target_id\":\"22222222-2222-2222-2222-222222222222\"}",
+      "data": {
+        "success": true,
+        "message": "Previous swipe reverted successfully.",
+        "reverted_target_id": "22222222-2222-2222-2222-222222222222"
+      }
+    },
+    {
+      "module": "Chat",
+      "endpoint": "GET /v1/matches",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 326,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"matches\":[{\"id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"matched_at\":\"2026-10-27T12:37:54.207Z\",\"status\":\"active\",\"counterpart\":{\"user_id\":\"22222222-2222-2222-2222-...",
+      "data": {
+        "success": true,
+        "matches": [
+          {
+            "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "matched_at": "2026-10-27T12:37:54.207Z",
+            "status": "active",
+            "counterpart": {
+              "user_id": "22222222-2222-2222-2222-222222222222",
+              "nickname": "Ananya",
+              "avatar": "/ananya.jpg",
+              "city": "Mumbai",
+              "is_verified": true
+            },
+            "last_message": {
+              "id": "1793191074207-sczy4qz_3",
+              "raw_content": "Haha great taste! What indie records are currently spinning on your turntable?",
+              "sender_id": "22222222-2222-2222-2222-222222222222",
+              "status": "delivered",
+              "created_at": "2026-10-28T02:37:54.207Z"
+            },
+            "unread_count": 0
+          }
+        ]
+      }
+    },
+    {
+      "module": "Chat",
+      "endpoint": "GET /v1/connect/likes-you",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 363,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"count\":1,\"likes_stack\":[{\"actor_user_id\":\"22222222-2222-2222-2222-222222222222\",\"nickname\":\"A***\",\"age\":23,\"blurred_avatar\":\"/ananya.jpg\",\"city\":\"Mumbai\",\"action_t...",
+      "data": {
+        "success": true,
+        "count": 1,
+        "likes_stack": [
+          {
+            "actor_user_id": "22222222-2222-2222-2222-222222222222",
+            "nickname": "A***",
+            "age": 23,
+            "blurred_avatar": "/ananya.jpg",
+            "city": "Mumbai",
+            "action_type": "like",
+            "created_at": "2026-10-27T12:37:54.207Z",
+            "blur_hash": "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
+          }
+        ],
+        "unlock_fee_coins": 50
+      }
+    },
+    {
+      "module": "Chat",
+      "endpoint": "POST /v1/messages",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 895,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":{\"id\":\"msg_1793191276584_mdxji\",\"room_id\":\"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\",\"sender_id\":\"11111111-1111-1111-1111-111111111111\",\"message_type\":\"text\",...",
+      "data": {
+        "success": true,
+        "message": {
+          "id": "msg_1793191276584_mdxji",
+          "room_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "sender_id": "11111111-1111-1111-1111-111111111111",
+          "message_type": "text",
+          "raw_content": "Hey! Loved your profile. Excited for our upcoming coffee meetup! ☕",
+          "is_view_once": false,
+          "scan_status": "clean",
+          "is_flagged": false,
+          "is_message_pinned": false,
+          "status": "sent",
+          "sent_at": "2026-10-28T12:41:16.584Z",
+          "created_at": "2026-10-28T12:41:16.584Z"
+        }
+      }
+    },
+    {
+      "module": "Chat",
+      "endpoint": "GET /v1/messages/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 510,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"room_id\":\"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\",\"match_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"active_days\":1,\"messages\":[{\"id\":\"1793191074207-ln4xwho_1\",\"room...",
+      "data": {
+        "success": true,
+        "room_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "active_days": 1,
+        "messages": [
+          {
+            "id": "1793191074207-ln4xwho_1",
+            "room_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "sender_id": "22222222-2222-2222-2222-222222222222",
+            "message_type": "text",
+            "raw_content": "Hey Arjun! Saw you love filter kaapi and vinyl records. Have you tried Subko in Bandra?",
+            "is_view_once": false,
+            "scan_status": "clean",
+            "is_flagged": false,
+            "is_message_pinned": false,
+            "status": "read",
+            "created_at": "2026-10-28T00:37:54.207Z"
+          },
+          {
+            "id": "1793191074207-t70lvm5_2",
+            "room_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "sender_id": "11111111-1111-1111-1111-111111111111",
+            "message_type": "text",
+            "raw_content": "Subko is practically my second office! Their sourdough croissants and pour-over are unbeatable.",
+            "is_view_once": false,
+            "scan_status": "clean",
+            "is_flagged": false,
+            "is_message_pinned": false,
+            "status": "read",
+            "created_at": "2026-10-28T01:37:54.207Z"
+          },
+          {
+            "id": "1793191074207-sczy4qz_3",
+            "room_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "sender_id": "22222222-2222-2222-2222-222222222222",
+            "message_type": "text",
+            "raw_content": "Haha great taste! What indie records are currently spinning on your turntable?",
+            "is_view_once": false,
+            "scan_status": "clean",
+            "is_flagged": false,
+            "is_message_pinned": false,
+            "status": "delivered",
+            "created_at": "2026-10-28T02:37:54.207Z"
+          },
+          {
+            "id": "msg_1793191276584_mdxji",
+            "room_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            "sender_id": "11111111-1111-1111-1111-111111111111",
+            "message_type": "text",
+            "raw_content": "Hey! Loved your profile. Excited for our upcoming coffee meetup! ☕",
+            "is_view_once": false,
+            "scan_status": "clean",
+            "is_flagged": false,
+            "is_message_pinned": false,
+            "status": "sent",
+            "sent_at": "2026-10-28T12:41:16.584Z",
+            "created_at": "2026-10-28T12:41:16.584Z"
+          }
+        ]
+      }
+    },
+    {
+      "module": "Wallet",
+      "endpoint": "GET /v1/wallet",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1388,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"user_id\":\"11111111-1111-1111-1111-111111111111\",\"balance\":20,\"is_verified_creator\":true,\"cashout_eligible\":false,\"cashout_minimum_threshold\":500,\"packages\":[{\"id\":...",
+      "data": {
+        "success": true,
+        "user_id": "11111111-1111-1111-1111-111111111111",
+        "balance": 20,
+        "is_verified_creator": true,
+        "cashout_eligible": false,
+        "cashout_minimum_threshold": 500,
+        "packages": [
+          {
+            "id": "pack_100",
+            "name": "Starter Spark",
+            "coins": 100,
+            "price_inr": 99,
+            "bonus": 0
+          },
+          {
+            "id": "pack_500",
+            "name": "Popular Flame",
+            "coins": 500,
+            "price_inr": 399,
+            "bonus": 50
+          },
+          {
+            "id": "pack_1200",
+            "name": "VIP Inferno",
+            "coins": 1200,
+            "price_inr": 799,
+            "bonus": 200
+          }
+        ],
+        "ledger": [
+          {
+            "id": "49df37dc-fc4f-4264-bbc3-4d007006e27b",
+            "direction": "outgoing",
+            "tx_type": "sparks_coins_spent",
+            "coin_amount": 20,
+            "balance_after": 20,
+            "created_at": "2026-10-28T12:36:00.687Z"
+          },
+          {
+            "id": "82d0a66d-5780-455c-a427-685d5bc7d5a4",
+            "direction": "outgoing",
+            "tx_type": "admin_adjustment",
+            "coin_amount": 25,
+            "balance_after": 40,
+            "created_at": "2026-10-28T12:35:56.008Z"
+          },
+          {
+            "id": "55eb2c43-0a97-484c-819e-4ab4ab56c98c",
+            "direction": "outgoing",
+            "tx_type": "offline_date_coins_spend",
+            "coin_amount": 100,
+            "balance_after": 65,
+            "created_at": "2026-10-28T12:35:51.642Z"
+          },
+          {
+            "id": "64444a72-2a17-480a-beb3-9a6510f877e6",
+            "direction": "outgoing",
+            "tx_type": "audio_call_spend",
+            "coin_amount": 20,
+            "balance_after": 165,
+            "created_at": "2026-10-28T12:35:46.824Z"
+          },
+          {
+            "id": "fd90716b-8ef6-4ae0-b36f-8523df7d7556",
+            "direction": "incoming",
+            "tx_type": "purchase",
+            "coin_amount": 100,
+            "balance_after": 185,
+            "created_at": "2026-10-28T12:35:42.566Z"
+          },
+          {
+            "id": "5430d587-9191-4d98-a986-0ea5d550d288",
+            "direction": "incoming",
+            "tx_type": "rewards",
+            "coin_amount": 50,
+            "balance_after": 85,
+            "created_at": "2026-10-28T12:32:37.564Z"
+          },
+          {
+            "id": "e8b57a07-7e10-4602-8ad9-8155cc28412e",
+            "direction": "outgoing",
+            "tx_type": "virtual_date_coins_spent",
+            "coin_amount": 50,
+            "balance_after": 35,
+            "created_at": "2026-10-28T12:32:36.290Z"
+          },
+          {
+            "id": "f4eb8ddb-14ff-43b3-bc53-7c5c82d2676f",
+            "direction": "outgoing",
+            "tx_type": "sparks_coins_spent",
+            "coin_amount": 20,
+            "balance_after": 85,
+            "created_at": "2026-10-28T12:32:32.100Z"
+          },
+          {
+            "id": "3cfe24bb-4f60-4505-9b7c-32ce6abded9a",
+            "direction": "outgoing",
+            "tx_type": "admin_adjustment",
+            "coin_amount": 25,
+            "balance_after": 105,
+            "created_at": "2026-10-28T12:32:26.919Z"
+          },
+          {
+            "id": "bd64ccf2-45e5-47d1-989b-1c6e26595ca1",
+            "direction": "outgoing",
+            "tx_type": "offline_date_coins_spend",
+            "coin_amount": 100,
+            "balance_after": 130,
+            "created_at": "2026-10-28T12:32:23.372Z"
+          },
+          {
+            "id": "f0d2cb41-3e31-4f5a-a96f-d87e9f118be3",
+            "direction": "incoming",
+            "tx_type": "purchase",
+            "coin_amount": 100,
+            "balance_after": 230,
+            "created_at": "2026-10-28T12:32:20.632Z"
+          },
+          {
+            "id": "b1fcc0c5-fd8a-49e1-a553-e045998afb02",
+            "direction": "outgoing",
+            "tx_type": "virtual_date_coins_spent",
+            "coin_amount": 50,
+            "balance_after": 130,
+            "created_at": "2026-10-28T12:02:20.774Z"
+          },
+          {
+            "id": "ca8d3a72-a755-4b73-8ba5-f0c443e225f8",
+            "direction": "incoming",
+            "tx_type": "rewards",
+            "coin_amount": 80,
+            "balance_after": 180,
+            "created_at": "2026-10-28T12:02:19.095Z"
+          },
+          {
+            "id": "de74d1b1-fdc7-4e1c-b9ba-30ce83e93d5b",
+            "direction": "outgoing",
+            "tx_type": "offline_date_coins_spend",
+            "coin_amount": 100,
+            "balance_after": 100,
+            "created_at": "2026-10-28T12:02:16.639Z"
+          },
+          {
+            "id": "a4b8922c-41b8-474d-9486-125a41ef92ed",
+            "direction": "incoming",
+            "tx_type": "rewards",
+            "coin_amount": 50,
+            "balance_after": 200,
+            "created_at": "2026-10-28T12:02:15.069Z"
+          },
+          {
+            "id": "0530fd45-38d2-4aaa-845f-5634b0a132f4",
+            "direction": "outgoing",
+            "tx_type": "virtual_date_coins_spent",
+            "coin_amount": 50,
+            "balance_after": 150,
+            "created_at": "2026-10-28T12:02:13.464Z"
+          },
+          {
+            "id": "6c2416a3-3d0c-4062-936c-fa19d0ccd156",
+            "direction": "outgoing",
+            "tx_type": "sparks_coins_spent",
+            "coin_amount": 20,
+            "balance_after": 200,
+            "created_at": "2026-10-28T12:02:07.528Z"
+          },
+          {
+            "id": "7bbd64f2-00e2-487f-8fe4-f31936286956",
+            "direction": "outgoing",
+            "tx_type": "admin_adjustment",
+            "coin_amount": 25,
+            "balance_after": 220,
+            "created_at": "2026-10-28T12:02:01.074Z"
+          },
+          {
+            "id": "a164a097-2b5d-4182-9b3c-316e5232c990",
+            "direction": "outgoing",
+            "tx_type": "offline_date_coins_spend",
+            "coin_amount": 100,
+            "balance_after": 245,
+            "created_at": "2026-10-28T12:01:56.875Z"
+          },
+          {
+            "id": "74393913-aa01-4d15-b026-bdb3d03ccc7b",
+            "direction": "incoming",
+            "tx_type": "rewards",
+            "coin_amount": 80,
+            "balance_after": 345,
+            "created_at": "2026-10-28T11:59:42.969Z"
+          }
+        ]
+      }
+    },
+    {
+      "module": "Wallet",
+      "endpoint": "POST /v1/wallet/purchase",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 1479,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"Successfully credited 1400 coins to wallet!\",\"coins_added\":1400,\"new_balance\":1420,\"tx_id\":\"378a0519-f01c-4c64-842c-7001faf730aa\"}",
+      "data": {
+        "success": true,
+        "message": "Successfully credited 1400 coins to wallet!",
+        "coins_added": 1400,
+        "new_balance": 1420,
+        "tx_id": "378a0519-f01c-4c64-842c-7001faf730aa"
+      }
+    },
+    {
+      "module": "Wallet",
+      "endpoint": "POST /v1/wallet/payout",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 1269,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"Cash-out request for 500 coins initiated. Payout dispatched within 24 hours.\",\"payout_id\":\"89102551-cda0-4bd4-8af9-f4bea6159f70\",\"remaining_balance\":920,...",
+      "data": {
+        "success": true,
+        "message": "Cash-out request for 500 coins initiated. Payout dispatched within 24 hours.",
+        "payout_id": "89102551-cda0-4bd4-8af9-f4bea6159f70",
+        "remaining_balance": 920,
+        "fiat_payout_inr": "250.00",
+        "status": "processing"
+      }
+    },
+    {
+      "module": "Calls",
+      "endpoint": "POST /v1/calls/token",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 867,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"call_id\":\"call_1793191281965_mohpj\",\"livekit_room_name\":\"rm_audio_call_1793191281965_mohpj\",\"livekit_room_sid\":\"rm_audio_call_1793191281965_mohpj\",\"livekit_token\":...",
+      "data": {
+        "success": true,
+        "call_id": "call_1793191281965_mohpj",
+        "livekit_room_name": "rm_audio_call_1793191281965_mohpj",
+        "livekit_room_sid": "rm_audio_call_1793191281965_mohpj",
+        "livekit_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ5b3VyX2xpdmVraXRfYXBpX2tleSIsInN1YiI6IjExMTExMTExLTExMTEtMTExMS0xMTExLTExMTExMTExMTExMSIsIm5iZiI6MTc5MzE5MTI3NywiZXhwIjoxNzkzMTk4NDgyLCJ2aWRlbyI6eyJyb29tIjoicm1fYXVkaW9fY2FsbF8xNzkzMTkxMjgxOTY1X21vaHBqIiwicm9vbUpvaW4iOnRydWUsImNhblB1Ymxpc2giOnRydWUsImNhblN1YnNjcmliZSI6dHJ1ZSwiY2FuUHVibGlzaERhdGEiOnRydWV9LCJuYW1lIjoiQ2FsbGVyIiwibWV0YWRhdGEiOiJ7XCJpc19jYWxsZXJcIjp0cnVlLFwiaXNfdmlkZW9cIjpmYWxzZX0ifQ.WMkQlay2UHtCDEYauw4fhYnGIeDYocnpimcow73bo4o",
+        "rates": {
+          "spend": 20,
+          "earn": 5
+        },
+        "caller_balance": 920
+      }
+    },
+    {
+      "module": "Calls",
+      "endpoint": "POST /v1/calls/call_1793191281965_mohpj/heartbeat",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 1890,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"call_id\":\"call_1793191281965_mohpj\",\"duration_seconds\":60,\"coins_deducted\":20,\"creator_coins_earned\":5,\"caller_remaining_balance\":900,\"session_status\":\"active\"}",
+      "data": {
+        "success": true,
+        "call_id": "call_1793191281965_mohpj",
+        "duration_seconds": 60,
+        "coins_deducted": 20,
+        "creator_coins_earned": 5,
+        "caller_remaining_balance": 900,
+        "session_status": "active"
+      }
+    },
+    {
+      "module": "Calls",
+      "endpoint": "POST /v1/calls/webhook",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 132,
+      "ok": true,
+      "error": null,
+      "summary": "{\"received\":true,\"action\":\"session_completed\",\"duration_seconds\":60}",
+      "data": {
+        "received": true,
+        "action": "session_completed",
+        "duration_seconds": 60
+      }
+    },
+    {
+      "module": "Calls",
+      "endpoint": "POST /v1/calls/call_1793191281965_mohpj/end",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 829,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"call_id\":\"call_1793191281965_mohpj\",\"rating\":5,\"feedback\":\"Crystal clear HD video & pristine audio quality!\",\"message\":\"Call session ended and feedback logged succ...",
+      "data": {
+        "success": true,
+        "call_id": "call_1793191281965_mohpj",
+        "rating": 5,
+        "feedback": "Crystal clear HD video & pristine audio quality!",
+        "message": "Call session ended and feedback logged successfully."
+      }
+    },
+    {
+      "module": "Calls",
+      "endpoint": "POST /v1/calls/call_1793191281965_mohpj/rating",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 818,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"call_id\":\"call_1793191281965_mohpj\",\"rating\":5,\"feedback\":\"Wonderful conversational chemistry!\",\"message\":\"Call session ended and feedback logged successfully.\"}",
+      "data": {
+        "success": true,
+        "call_id": "call_1793191281965_mohpj",
+        "rating": 5,
+        "feedback": "Wonderful conversational chemistry!",
+        "message": "Call session ended and feedback logged successfully."
+      }
+    },
+    {
+      "module": "Calls",
+      "endpoint": "POST /v1/calls/random/match",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 1001,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"call_id\":\"call_1793191286639_nqnel\",\"livekit_room_name\":\"rm_random_call_1793191286639_nqnel\",\"livekit_room_sid\":\"rm_random_call_1793191286639_nqnel\",\"livekit_token...",
+      "data": {
+        "success": true,
+        "call_id": "call_1793191286639_nqnel",
+        "livekit_room_name": "rm_random_call_1793191286639_nqnel",
+        "livekit_room_sid": "rm_random_call_1793191286639_nqnel",
+        "livekit_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ5b3VyX2xpdmVraXRfYXBpX2tleSIsInN1YiI6IjExMTExMTExLTExMTEtMTExMS0xMTExLTExMTExMTExMTExMSIsIm5iZiI6MTc5MzE5MTI4MSwiZXhwIjoxNzkzMTk4NDg2LCJ2aWRlbyI6eyJyb29tIjoicm1fcmFuZG9tX2NhbGxfMTc5MzE5MTI4NjYzOV9ucW5lbCIsInJvb21Kb2luIjp0cnVlLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlfSwibmFtZSI6IkFub255bW91cyBDYWxsZXIiLCJtZXRhZGF0YSI6IntcImlzX2NhbGxlclwiOnRydWUsXCJpc192aWRlb1wiOmZhbHNlfSJ9.u5VQEUQlr5P38DXUSO3yqjBYR3ss9iGlvjqO9fGUEhQ",
+        "rates": {
+          "spend": 20,
+          "earn": 5
+        },
+        "caller_balance": 900
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "POST /v1/meetup/schedule",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 1284,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"meetup\":{\"id\":\"613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff\",\"match_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"proposer_user_id\":\"11111111-1111-1111-1111-111111111111\",\"p...",
+      "data": {
+        "success": true,
+        "meetup": {
+          "id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "offline",
+          "date_type": "dinner",
+          "scheduled_start_at": "2026-10-31T12:41:26.770Z",
+          "scheduled_end_at": "2026-10-31T15:41:26.771Z",
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-10-31T10:41:26.770Z",
+          "status": "pending",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 4000
+          },
+          "dress_code": "Smart Casual",
+          "todo_list": [
+            {
+              "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+              "text": "Reserve table",
+              "created_at": "2026-10-28T12:41:27.915Z",
+              "assigned_to": "11111111-1111-1111-1111-111111111111",
+              "is_completed": true
+            }
+          ],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Bastian, Bandra West",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "debit_tx_id": "9b0130e2-3314-44e4-9e6b-975b27414b16",
+            "coins_debited": 100,
+            "free_date_used": false,
+            "required_coins": 100
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:27.725Z",
+          "updated_at": "2026-10-28T12:41:27.725Z",
+          "theme_id": "candlelight_romance"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "GET /v1/meetup",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 825,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"count\":14,\"meetups\":[{\"id\":\"9e6800de-bed3-4168-a07a-8d68aa7aa85c\",\"match_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"proposer_user_id\":\"11111111-1111-1111-1111-111...",
+      "data": {
+        "success": true,
+        "count": 14,
+        "meetups": [
+          {
+            "id": "9e6800de-bed3-4168-a07a-8d68aa7aa85c",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "dinner",
+            "scheduled_start_at": "2026-11-02T12:35:55.722Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": "2026-10-28T12:36:03.936Z",
+            "reminder_at": "2026-11-02T10:35:55.722Z",
+            "status": "reported",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 4000
+            },
+            "dress_code": "Cocktail Attire",
+            "todo_list": [
+              {
+                "id": "a6263f16-0a7e-4143-bab2-bc6a52655b30",
+                "text": "Reserve table",
+                "created_at": "2026-10-28T12:35:52.677Z",
+                "assigned_to": "11111111-1111-1111-1111-111111111111",
+                "is_completed": true
+              }
+            ],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Bastian At The Top, Dadar",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {
+              "debit_tx_id": "55eb2c43-0a97-484c-819e-4ab4ab56c98c",
+              "coins_debited": 100,
+              "free_date_used": false,
+              "required_coins": 100,
+              "reschedule_penalties": [
+                {
+                  "tx_id": "82d0a66d-5780-455c-a427-685d5bc7d5a4",
+                  "reason": "Slight schedule conflict",
+                  "user_id": "11111111-1111-1111-1111-111111111111",
+                  "timestamp": "2026-10-28T12:35:56.834Z",
+                  "penalty_coins": 25
+                }
+              ]
+            },
+            "proposer_ratings_json": {
+              "chemistry": 5,
+              "punctuality": 5,
+              "conversation": 5
+            },
+            "partner_ratings_json": {},
+            "proposer_overall_rating": 5,
+            "partner_overall_rating": null,
+            "proposer_feedback": "Wonderful conversation and atmosphere!",
+            "partner_feedback": null,
+            "created_at": "2026-10-28T12:35:52.497Z",
+            "updated_at": "2026-10-28T12:36:04.996Z",
+            "theme_id": "rooftop_sunset",
+            "memories": [
+              {
+                "id": "34953712-4b10-46ed-a239-ea67c8ce38bd",
+                "date_id": "9e6800de-bed3-4168-a07a-8d68aa7aa85c",
+                "uploaded_by_user_id": "11111111-1111-1111-1111-111111111111",
+                "photo_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg",
+                "generated_sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?style=chibi_sunset_couple_sticker",
+                "bitmoji_pack_json": [
+                  {
+                    "id": "stk_couple_1",
+                    "name": "Heart Sparks",
+                    "style": "chibi_sunset_couple",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=heart_sparks"
+                  },
+                  {
+                    "id": "stk_couple_2",
+                    "name": "Vibe Check 100",
+                    "style": "chibi_sunset_couple",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=vibe_check"
+                  },
+                  {
+                    "id": "stk_couple_3",
+                    "name": "Coffee Chemistry",
+                    "style": "chibi_sunset_couple",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=coffee_chemistry"
+                  },
+                  {
+                    "id": "stk_couple_4",
+                    "name": "Unforgettable Date",
+                    "style": "chibi_sunset_couple",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=unforgettable"
+                  }
+                ],
+                "custom_gift_note": "Spectacular sunset view of the Mumbai coastline!",
+                "created_at": "2026-10-28T12:35:59.559066+00:00"
+              }
+            ]
+          },
+          {
+            "id": "df08a2b7-8799-47bf-a57d-735a99e0ff04",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "dinner",
+            "scheduled_start_at": "2026-11-02T12:32:26.630Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": "2026-10-28T12:32:34.961Z",
+            "reminder_at": "2026-11-02T10:32:26.630Z",
+            "status": "reported",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 4000
+            },
+            "dress_code": "Cocktail Attire",
+            "todo_list": [
+              {
+                "id": "ea3a0cbf-32ba-447e-b9f6-f84eb6e05d8e",
+                "text": "Reserve table",
+                "created_at": "2026-10-28T12:32:24.203Z",
+                "assigned_to": "11111111-1111-1111-1111-111111111111",
+                "is_completed": true
+              }
+            ],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Bastian At The Top, Dadar",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {
+              "debit_tx_id": "bd64ccf2-45e5-47d1-989b-1c6e26595ca1",
+              "coins_debited": 100,
+              "free_date_used": false,
+              "required_coins": 100,
+              "reschedule_penalties": [
+                {
+                  "tx_id": "3cfe24bb-4f60-4505-9b7c-32ce6abded9a",
+                  "reason": "Slight schedule conflict",
+                  "user_id": "11111111-1111-1111-1111-111111111111",
+                  "timestamp": "2026-10-28T12:32:27.740Z",
+                  "penalty_coins": 25
+                }
+              ]
+            },
+            "proposer_ratings_json": {
+              "chemistry": 5,
+              "punctuality": 5,
+              "conversation": 5
+            },
+            "partner_ratings_json": {},
+            "proposer_overall_rating": 5,
+            "partner_overall_rating": null,
+            "proposer_feedback": "Wonderful conversation and atmosphere!",
+            "partner_feedback": null,
+            "created_at": "2026-10-28T12:32:24.027Z",
+            "updated_at": "2026-10-28T12:32:35.701Z",
+            "theme_id": "rooftop_sunset",
+            "memories": [
+              {
+                "id": "54efb61d-11a3-4685-9913-1e1cc6e120ea",
+                "date_id": "df08a2b7-8799-47bf-a57d-735a99e0ff04",
+                "uploaded_by_user_id": "11111111-1111-1111-1111-111111111111",
+                "photo_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg",
+                "generated_sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?style=chibi_sunset_couple_sticker",
+                "bitmoji_pack_json": [
+                  {
+                    "id": "stk_couple_1",
+                    "name": "Heart Sparks",
+                    "style": "chibi_sunset_couple",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=heart_sparks"
+                  },
+                  {
+                    "id": "stk_couple_2",
+                    "name": "Vibe Check 100",
+                    "style": "chibi_sunset_couple",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=vibe_check"
+                  },
+                  {
+                    "id": "stk_couple_3",
+                    "name": "Coffee Chemistry",
+                    "style": "chibi_sunset_couple",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=coffee_chemistry"
+                  },
+                  {
+                    "id": "stk_couple_4",
+                    "name": "Unforgettable Date",
+                    "style": "chibi_sunset_couple",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=unforgettable"
+                  }
+                ],
+                "custom_gift_note": "Spectacular sunset view of the Mumbai coastline!",
+                "created_at": "2026-10-28T12:32:30.564201+00:00"
+              }
+            ]
+          },
+          {
+            "id": "3bcd2845-af06-400e-b2dd-be74b22dea39",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "dinner",
+            "scheduled_start_at": "2026-11-02T12:02:00.276Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": "2026-10-28T12:02:10.497Z",
+            "reminder_at": "2026-11-02T10:02:00.276Z",
+            "status": "reported",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 4500,
+              "partner_percentage": 50,
+              "proposer_percentage": 50
+            },
+            "dress_code": "Black Tie Elegance",
+            "todo_list": [
+              {
+                "id": "933fd466-4db6-46a7-8cbb-819c46709db5",
+                "text": "Reserve window table",
+                "created_at": "2026-10-28T12:01:57.898Z",
+                "assigned_to": "11111111-1111-1111-1111-111111111111",
+                "is_completed": true
+              },
+              {
+                "id": "7a489ea4-e4f6-4c49-bb2e-dd55c5b189b8",
+                "text": "Pick up flowers",
+                "created_at": "2026-10-28T12:01:57.898Z",
+                "assigned_to": "11111111-1111-1111-1111-111111111111",
+                "is_completed": false
+              }
+            ],
+            "proposer_custom_notes": "Updated table booking to rooftop lounge.",
+            "partner_custom_notes": null,
+            "venue_name": "Bastian At The Top, Dadar",
+            "osm_place_id": null,
+            "latitude": 19.0601,
+            "longitude": 72.8361,
+            "coins_json": {
+              "debit_tx_id": "a164a097-2b5d-4182-9b3c-316e5232c990",
+              "coins_debited": 100,
+              "free_date_used": false,
+              "required_coins": 100,
+              "reschedule_penalties": [
+                {
+                  "tx_id": "7bbd64f2-00e2-487f-8fe4-f31936286956",
+                  "reason": "Flight delayed by a day",
+                  "user_id": "11111111-1111-1111-1111-111111111111",
+                  "timestamp": "2026-10-28T12:02:02.135Z",
+                  "penalty_coins": 25
+                }
+              ]
+            },
+            "proposer_ratings_json": {
+              "courtesy": 5,
+              "vibe_match": 5,
+              "punctuality": 5,
+              "conversation": 5
+            },
+            "partner_ratings_json": {
+              "courtesy": 5,
+              "vibe_match": 5,
+              "punctuality": 5,
+              "conversation": 5
+            },
+            "proposer_overall_rating": 5,
+            "partner_overall_rating": 5,
+            "proposer_feedback": "Incredible chemistry, great conversation and food!",
+            "partner_feedback": "Loved the venue choice and thoughtful surprises!",
+            "created_at": "2026-10-28T12:01:57.768Z",
+            "updated_at": "2026-10-28T12:02:12.338Z",
+            "theme_id": "rooftop_sunset",
+            "memories": [
+              {
+                "id": "d85099c2-dc16-467c-a9cb-7a893f15c737",
+                "date_id": "3bcd2845-af06-400e-b2dd-be74b22dea39",
+                "uploaded_by_user_id": "11111111-1111-1111-1111-111111111111",
+                "photo_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg",
+                "generated_sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?style=chibi_sunset_lovers_sticker",
+                "bitmoji_pack_json": [
+                  {
+                    "id": "stk_couple_1",
+                    "name": "Heart Sparks",
+                    "style": "chibi_sunset_lovers",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?filter=heart_sparks"
+                  },
+                  {
+                    "id": "stk_couple_2",
+                    "name": "Vibe Check 100",
+                    "style": "chibi_sunset_lovers",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?filter=vibe_check"
+                  },
+                  {
+                    "id": "stk_couple_3",
+                    "name": "Coffee Chemistry",
+                    "style": "chibi_sunset_lovers",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?filter=coffee_chemistry"
+                  },
+                  {
+                    "id": "stk_couple_4",
+                    "name": "Unforgettable Date",
+                    "style": "chibi_sunset_lovers",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?filter=unforgettable"
+                  }
+                ],
+                "custom_gift_note": "The most magical sunset overlooking the Sea Link!",
+                "created_at": "2026-10-28T12:02:06.005428+00:00"
+              }
+            ]
+          },
+          {
+            "id": "f39acf13-85fb-4b9f-87f9-20f60412e7f4",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "dinner",
+            "scheduled_start_at": "2026-11-02T11:59:25.975Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": "2026-10-28T11:59:35.363Z",
+            "reminder_at": "2026-11-02T09:59:25.975Z",
+            "status": "reported",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 4500,
+              "partner_percentage": 50,
+              "proposer_percentage": 50
+            },
+            "dress_code": "Black Tie Elegance",
+            "todo_list": [
+              {
+                "id": "02e41098-adfa-4c4f-8118-21e5378c7a8d",
+                "text": "Reserve window table",
+                "created_at": "2026-10-28T11:59:24.169Z",
+                "assigned_to": "11111111-1111-1111-1111-111111111111",
+                "is_completed": true
+              },
+              {
+                "id": "06fbf501-fb25-4a9c-9f24-703f8870780d",
+                "text": "Pick up flowers",
+                "created_at": "2026-10-28T11:59:24.169Z",
+                "assigned_to": "11111111-1111-1111-1111-111111111111",
+                "is_completed": false
+              }
+            ],
+            "proposer_custom_notes": "Updated table booking to rooftop lounge.",
+            "partner_custom_notes": null,
+            "venue_name": "Bastian At The Top, Dadar",
+            "osm_place_id": null,
+            "latitude": 19.0601,
+            "longitude": 72.8361,
+            "coins_json": {
+              "debit_tx_id": "44f57ea6-9ed8-4085-bd6b-9dd79d186056",
+              "coins_debited": 100,
+              "free_date_used": false,
+              "required_coins": 100,
+              "reschedule_penalties": [
+                {
+                  "tx_id": "9ad04887-bc68-4c59-aba6-fbc2389c8bc9",
+                  "reason": "Flight delayed by a day",
+                  "user_id": "11111111-1111-1111-1111-111111111111",
+                  "timestamp": "2026-10-28T11:59:27.702Z",
+                  "penalty_coins": 25
+                }
+              ]
+            },
+            "proposer_ratings_json": {
+              "courtesy": 5,
+              "vibe_match": 5,
+              "punctuality": 5,
+              "conversation": 5
+            },
+            "partner_ratings_json": {
+              "courtesy": 5,
+              "vibe_match": 5,
+              "punctuality": 5,
+              "conversation": 5
+            },
+            "proposer_overall_rating": 5,
+            "partner_overall_rating": 5,
+            "proposer_feedback": "Incredible chemistry, great conversation and food!",
+            "partner_feedback": "Loved the venue choice and thoughtful surprises!",
+            "created_at": "2026-10-28T11:59:24.031Z",
+            "updated_at": "2026-10-28T11:59:36.786Z",
+            "theme_id": "rooftop_sunset",
+            "memories": [
+              {
+                "id": "209128ff-13bd-4829-b2ec-dd42f2c2aeb6",
+                "date_id": "f39acf13-85fb-4b9f-87f9-20f60412e7f4",
+                "uploaded_by_user_id": "11111111-1111-1111-1111-111111111111",
+                "photo_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg",
+                "generated_sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?style=chibi_sunset_lovers_sticker",
+                "bitmoji_pack_json": [
+                  {
+                    "id": "stk_couple_1",
+                    "name": "Heart Sparks",
+                    "style": "chibi_sunset_lovers",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?filter=heart_sparks"
+                  },
+                  {
+                    "id": "stk_couple_2",
+                    "name": "Vibe Check 100",
+                    "style": "chibi_sunset_lovers",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?filter=vibe_check"
+                  },
+                  {
+                    "id": "stk_couple_3",
+                    "name": "Coffee Chemistry",
+                    "style": "chibi_sunset_lovers",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?filter=coffee_chemistry"
+                  },
+                  {
+                    "id": "stk_couple_4",
+                    "name": "Unforgettable Date",
+                    "style": "chibi_sunset_lovers",
+                    "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop_sunset.jpg?filter=unforgettable"
+                  }
+                ],
+                "custom_gift_note": "The most magical sunset overlooking the Sea Link!",
+                "created_at": "2026-10-28T11:59:31.259523+00:00"
+              }
+            ]
+          },
+          {
+            "id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "dinner",
+            "scheduled_start_at": "2026-10-31T12:41:26.770Z",
+            "scheduled_end_at": "2026-10-31T15:41:26.771Z",
+            "date_started_at": null,
+            "date_ended_at": null,
+            "reminder_at": "2026-10-31T10:41:26.770Z",
+            "status": "pending",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 4000
+            },
+            "dress_code": "Smart Casual",
+            "todo_list": [
+              {
+                "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+                "text": "Reserve table",
+                "created_at": "2026-10-28T12:41:27.915Z",
+                "assigned_to": "11111111-1111-1111-1111-111111111111",
+                "is_completed": true
+              }
+            ],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Bastian, Bandra West",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {
+              "debit_tx_id": "9b0130e2-3314-44e4-9e6b-975b27414b16",
+              "coins_debited": 100,
+              "free_date_used": false,
+              "required_coins": 100
+            },
+            "proposer_ratings_json": {},
+            "partner_ratings_json": {},
+            "proposer_overall_rating": null,
+            "partner_overall_rating": null,
+            "proposer_feedback": null,
+            "partner_feedback": null,
+            "created_at": "2026-10-28T12:41:27.725Z",
+            "updated_at": "2026-10-28T12:41:27.725Z",
+            "theme_id": "candlelight_romance",
+            "memories": []
+          },
+          {
+            "id": "3fe3c794-6448-40f5-8ba0-fa22581274da",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "online",
+            "date_type": "coffee",
+            "scheduled_start_at": "2026-10-31T00:32:36.009Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": null,
+            "reminder_at": "2026-10-30T22:32:36.009Z",
+            "status": "declined",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 1000
+            },
+            "dress_code": null,
+            "todo_list": [],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Cafe Mocha, Bandra West",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {
+              "refunded": true,
+              "debit_tx_id": "e8b57a07-7e10-4602-8ad9-8155cc28412e",
+              "refund_tx_id": "5430d587-9191-4d98-a986-0ea5d550d288",
+              "coins_debited": 50,
+              "refund_amount": 50,
+              "refund_status": "full_refund_100_percent",
+              "decline_reason": "Busy this weekend",
+              "free_date_used": false,
+              "required_coins": 50
+            },
+            "proposer_ratings_json": {},
+            "partner_ratings_json": {},
+            "proposer_overall_rating": null,
+            "partner_overall_rating": null,
+            "proposer_feedback": null,
+            "partner_feedback": null,
+            "created_at": "2026-10-28T12:32:36.941Z",
+            "updated_at": "2026-10-28T12:32:38.210Z",
+            "theme_id": "default",
+            "memories": []
+          },
+          {
+            "id": "5d4e94e5-1b7e-4ca6-b515-139887947ef7",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "online",
+            "date_type": "virtual_watch_party",
+            "scheduled_start_at": "2026-10-31T00:02:12.643Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": null,
+            "reminder_at": "2026-10-30T22:02:12.643Z",
+            "status": "declined",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 1000
+            },
+            "dress_code": null,
+            "todo_list": [],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Cafe Mocha, Bandra West",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {
+              "refunded": true,
+              "debit_tx_id": "0530fd45-38d2-4aaa-845f-5634b0a132f4",
+              "refund_tx_id": "a4b8922c-41b8-474d-9486-125a41ef92ed",
+              "coins_debited": 50,
+              "refund_amount": 50,
+              "refund_status": "full_refund_100_percent",
+              "decline_reason": "Busy with work this weekend, apologies!",
+              "free_date_used": false,
+              "required_coins": 50
+            },
+            "proposer_ratings_json": {},
+            "partner_ratings_json": {},
+            "proposer_overall_rating": null,
+            "partner_overall_rating": null,
+            "proposer_feedback": null,
+            "partner_feedback": null,
+            "created_at": "2026-10-28T12:02:14.302Z",
+            "updated_at": "2026-10-28T12:02:15.922Z",
+            "theme_id": "netflix_chill",
+            "memories": []
+          },
+          {
+            "id": "aa11c722-5331-4057-b640-a8678dde91ce",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "online",
+            "date_type": "virtual_watch_party",
+            "scheduled_start_at": "2026-10-30T23:59:37.059Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": null,
+            "reminder_at": "2026-10-30T21:59:37.059Z",
+            "status": "declined",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 1000
+            },
+            "dress_code": null,
+            "todo_list": [],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Cafe Mocha, Bandra West",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {
+              "refunded": true,
+              "debit_tx_id": "fbcc2097-688a-4489-af67-2066f746a77d",
+              "refund_tx_id": "ed95a4e5-971b-4e27-9a0b-388d6138d143",
+              "coins_debited": 50,
+              "refund_amount": 50,
+              "refund_status": "full_refund_100_percent",
+              "decline_reason": "Busy with work this weekend, apologies!",
+              "free_date_used": false,
+              "required_coins": 50
+            },
+            "proposer_ratings_json": {},
+            "partner_ratings_json": {},
+            "proposer_overall_rating": null,
+            "partner_overall_rating": null,
+            "proposer_feedback": null,
+            "partner_feedback": null,
+            "created_at": "2026-10-28T11:59:38.173Z",
+            "updated_at": "2026-10-28T11:59:39.688Z",
+            "theme_id": "netflix_chill",
+            "memories": []
+          },
+          {
+            "id": "726bd1c8-a6d7-488b-9f03-eb8bc65c9138",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "coffee",
+            "scheduled_start_at": "2026-10-30T14:02:16.231Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": null,
+            "reminder_at": "2026-10-30T12:02:16.231Z",
+            "status": "cancelled",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 1000
+            },
+            "dress_code": null,
+            "todo_list": [],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Blue Tokai, Pali Hill",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {
+              "refunded": true,
+              "debit_tx_id": "de74d1b1-fdc7-4e1c-b9ba-30ce83e93d5b",
+              "refund_tx_id": "ca8d3a72-a755-4b73-8ba5-f0c443e225f8",
+              "coins_debited": 100,
+              "refund_amount": 80,
+              "refund_status": "80_percent_refund_processed",
+              "free_date_used": false,
+              "required_coins": 100,
+              "cancellation_fee": 20,
+              "cancellation_reason": "Urgent family emergency arose."
+            },
+            "proposer_ratings_json": {},
+            "partner_ratings_json": {},
+            "proposer_overall_rating": null,
+            "partner_overall_rating": null,
+            "proposer_feedback": null,
+            "partner_feedback": null,
+            "created_at": "2026-10-28T12:02:17.662Z",
+            "updated_at": "2026-10-28T12:02:20.007Z",
+            "theme_id": "casual_coffee",
+            "memories": []
+          },
+          {
+            "id": "5a2cf26c-8ebb-45dc-ab5d-3fdb1737bbd1",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "coffee",
+            "scheduled_start_at": "2026-10-30T13:59:39.986Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": null,
+            "reminder_at": "2026-10-30T11:59:39.986Z",
+            "status": "cancelled",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 1000
+            },
+            "dress_code": null,
+            "todo_list": [],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Blue Tokai, Pali Hill",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {
+              "refunded": true,
+              "debit_tx_id": "249ef07e-2730-4956-b465-6589403e63bb",
+              "refund_tx_id": "74393913-aa01-4d15-b026-bdb3d03ccc7b",
+              "coins_debited": 100,
+              "refund_amount": 80,
+              "refund_status": "80_percent_refund_processed",
+              "free_date_used": false,
+              "required_coins": 100,
+              "cancellation_fee": 20,
+              "cancellation_reason": "Urgent family emergency arose."
+            },
+            "proposer_ratings_json": {},
+            "partner_ratings_json": {},
+            "proposer_overall_rating": null,
+            "partner_overall_rating": null,
+            "proposer_feedback": null,
+            "partner_feedback": null,
+            "created_at": "2026-10-28T11:59:41.399Z",
+            "updated_at": "2026-10-28T11:59:43.849Z",
+            "theme_id": "casual_coffee",
+            "memories": []
+          },
+          {
+            "id": "6332e270-b003-4253-8bf3-fc5b6ac285b0",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "online",
+            "date_type": "coffee",
+            "scheduled_start_at": "2026-10-30T12:02:20.283Z",
+            "scheduled_end_at": null,
+            "date_started_at": null,
+            "date_ended_at": null,
+            "reminder_at": "2026-10-30T10:02:20.283Z",
+            "status": "scheduled",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 1000
+            },
+            "dress_code": null,
+            "todo_list": [],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Cafe Mocha, Bandra West",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {
+              "debit_tx_id": "b1fcc0c5-fd8a-49e1-a553-e045998afb02",
+              "coins_debited": 50,
+              "free_date_used": false,
+              "required_coins": 50
+            },
+            "proposer_ratings_json": {},
+            "partner_ratings_json": {},
+            "proposer_overall_rating": null,
+            "partner_overall_rating": null,
+            "proposer_feedback": null,
+            "partner_feedback": null,
+            "created_at": "2026-10-28T12:02:21.658Z",
+            "updated_at": "2026-10-28T12:02:22.475Z",
+            "theme_id": "lock_test",
+            "memories": []
+          },
+          {
+            "id": "90e6cc75-b4d4-4561-a112-e79d09bea020",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "coffee",
+            "scheduled_start_at": "2026-10-29T12:18:48.474Z",
+            "scheduled_end_at": null,
+            "date_started_at": "2026-10-27T12:18:52.342Z",
+            "date_ended_at": "2026-10-27T12:18:52.342Z",
+            "reminder_at": "2026-10-29T10:18:48.474Z",
+            "status": "completed",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "proposed",
+              "estimated_cost_inr": 1000
+            },
+            "dress_code": "Smart Casual",
+            "todo_list": [],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Starbucks Reserve #8474",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {},
+            "proposer_ratings_json": {},
+            "partner_ratings_json": {},
+            "proposer_overall_rating": null,
+            "partner_overall_rating": null,
+            "proposer_feedback": null,
+            "partner_feedback": null,
+            "created_at": "2026-10-27T12:18:51.671Z",
+            "updated_at": "2026-10-27T12:18:52.342Z",
+            "theme_id": "default",
+            "memories": []
+          },
+          {
+            "id": "4bee64be-9dc2-4cd1-93bd-fda62accc446",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "coffee",
+            "scheduled_start_at": "2026-10-28T12:20:51.537Z",
+            "scheduled_end_at": null,
+            "date_started_at": "2026-10-27T12:20:56.241Z",
+            "date_ended_at": "2026-10-27T12:20:56.728Z",
+            "reminder_at": "2026-10-28T10:20:51.537Z",
+            "status": "completed",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "agreed",
+              "estimated_cost_inr": 1200
+            },
+            "dress_code": "Smart Casual",
+            "todo_list": [],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Blue Tokai Cafe, Bandra West",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {},
+            "proposer_ratings_json": {
+              "score": 5
+            },
+            "partner_ratings_json": {},
+            "proposer_overall_rating": 5,
+            "partner_overall_rating": null,
+            "proposer_feedback": "Had a wonderful time and great conversations!",
+            "partner_feedback": null,
+            "created_at": "2026-10-27T12:20:54.729Z",
+            "updated_at": "2026-10-27T12:20:57.867Z",
+            "theme_id": "default",
+            "memories": [
+              {
+                "id": "14e474bd-2509-4801-bb21-465e83821a67",
+                "date_id": "4bee64be-9dc2-4cd1-93bd-fda62accc446",
+                "uploaded_by_user_id": "11111111-1111-1111-1111-111111111111",
+                "photo_uri": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38",
+                "generated_sticker_uri": null,
+                "bitmoji_pack_json": [],
+                "custom_gift_note": "Unforgettable evening at Blue Tokai!",
+                "created_at": "2026-10-27T12:20:58.740394+00:00"
+              }
+            ]
+          },
+          {
+            "id": "57cea880-872c-46f5-a734-af8ee35c6ba5",
+            "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+            "partner_user_id": "22222222-2222-2222-2222-222222222222",
+            "date_mode": "offline",
+            "date_type": "coffee",
+            "scheduled_start_at": "2026-10-28T10:57:31.295Z",
+            "scheduled_end_at": null,
+            "date_started_at": "2026-10-27T10:57:36.016Z",
+            "date_ended_at": "2026-10-27T10:57:36.016Z",
+            "reminder_at": "2026-10-28T08:57:31.295Z",
+            "status": "completed",
+            "split_bill_config": {
+              "mode": "50_50",
+              "status": "agreed",
+              "estimated_cost_inr": 1200
+            },
+            "dress_code": "Smart Casual",
+            "todo_list": [],
+            "proposer_custom_notes": null,
+            "partner_custom_notes": null,
+            "venue_name": "Blue Tokai Cafe, Bandra West",
+            "osm_place_id": null,
+            "latitude": null,
+            "longitude": null,
+            "coins_json": {},
+            "proposer_ratings_json": {
+              "score": 5
+            },
+            "partner_ratings_json": {},
+            "proposer_overall_rating": 5,
+            "partner_overall_rating": null,
+            "proposer_feedback": "Had a wonderful time and great conversations!",
+            "partner_feedback": null,
+            "created_at": "2026-10-27T10:57:34.528Z",
+            "updated_at": "2026-10-27T10:57:37.085Z",
+            "theme_id": "default",
+            "memories": [
+              {
+                "id": "e6bc5209-7629-4992-bcec-13caead10cae",
+                "date_id": "57cea880-872c-46f5-a734-af8ee35c6ba5",
+                "uploaded_by_user_id": "11111111-1111-1111-1111-111111111111",
+                "photo_uri": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38",
+                "generated_sticker_uri": null,
+                "bitmoji_pack_json": [],
+                "custom_gift_note": "Unforgettable evening at Blue Tokai!",
+                "created_at": "2026-10-27T10:57:37.553833+00:00"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "GET /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 770,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"meetup\":{\"id\":\"613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff\",\"match_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"proposer_user_id\":\"11111111-1111-1111-1111-111111111111\",\"p...",
+      "data": {
+        "success": true,
+        "meetup": {
+          "id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "offline",
+          "date_type": "dinner",
+          "scheduled_start_at": "2026-10-31T12:41:26.770Z",
+          "scheduled_end_at": "2026-10-31T15:41:26.771Z",
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-10-31T10:41:26.770Z",
+          "status": "pending",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 4000
+          },
+          "dress_code": "Smart Casual",
+          "todo_list": [
+            {
+              "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+              "text": "Reserve table",
+              "created_at": "2026-10-28T12:41:27.915Z",
+              "assigned_to": "11111111-1111-1111-1111-111111111111",
+              "is_completed": true
+            }
+          ],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Bastian, Bandra West",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "debit_tx_id": "9b0130e2-3314-44e4-9e6b-975b27414b16",
+            "coins_debited": 100,
+            "free_date_used": false,
+            "required_coins": 100
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:27.725Z",
+          "updated_at": "2026-10-28T12:41:27.725Z",
+          "theme_id": "candlelight_romance",
+          "memories": []
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "PATCH /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/accept",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 693,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"status\":\"scheduled\",\"meetup\":{\"id\":\"613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff\",\"match_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"proposer_user_id\":\"11111111-1111-1111-...",
+      "data": {
+        "success": true,
+        "status": "scheduled",
+        "meetup": {
+          "id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "offline",
+          "date_type": "dinner",
+          "scheduled_start_at": "2026-10-31T12:41:26.770Z",
+          "scheduled_end_at": "2026-10-31T15:41:26.771Z",
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-10-31T10:41:26.770Z",
+          "status": "scheduled",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 4000
+          },
+          "dress_code": "Smart Casual",
+          "todo_list": [
+            {
+              "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+              "text": "Reserve table",
+              "created_at": "2026-10-28T12:41:27.915Z",
+              "assigned_to": "11111111-1111-1111-1111-111111111111",
+              "is_completed": true
+            }
+          ],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Bastian, Bandra West",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "debit_tx_id": "9b0130e2-3314-44e4-9e6b-975b27414b16",
+            "coins_debited": 100,
+            "free_date_used": false,
+            "required_coins": 100
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:27.725Z",
+          "updated_at": "2026-10-28T12:41:30.023Z",
+          "theme_id": "candlelight_romance"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "PUT /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 617,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"meetup\":{\"id\":\"613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff\",\"match_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"proposer_user_id\":\"11111111-1111-1111-1111-111111111111\",\"p...",
+      "data": {
+        "success": true,
+        "meetup": {
+          "id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "offline",
+          "date_type": "dinner",
+          "scheduled_start_at": "2026-10-31T12:41:26.770Z",
+          "scheduled_end_at": "2026-10-31T15:41:26.771Z",
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-10-31T10:41:26.770Z",
+          "status": "scheduled",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 4000
+          },
+          "dress_code": "Cocktail Attire",
+          "todo_list": [
+            {
+              "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+              "text": "Reserve table",
+              "created_at": "2026-10-28T12:41:27.915Z",
+              "assigned_to": "11111111-1111-1111-1111-111111111111",
+              "is_completed": true
+            }
+          ],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Bastian At The Top, Dadar",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "debit_tx_id": "9b0130e2-3314-44e4-9e6b-975b27414b16",
+            "coins_debited": 100,
+            "free_date_used": false,
+            "required_coins": 100
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:27.725Z",
+          "updated_at": "2026-10-28T12:41:30.640Z",
+          "theme_id": "rooftop_sunset"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "PATCH /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/reschedule",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1247,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"Date rescheduled successfully. 25-coin reschedule penalty debited.\",\"penalty_coins\":25,\"penalty_tx_id\":\"a8760ce8-4fbc-49b9-8313-b72331ff5ca2\",\"scheduled_...",
+      "data": {
+        "success": true,
+        "message": "Date rescheduled successfully. 25-coin reschedule penalty debited.",
+        "penalty_coins": 25,
+        "penalty_tx_id": "a8760ce8-4fbc-49b9-8313-b72331ff5ca2",
+        "scheduled_start_at": "2026-11-02T12:41:30.960Z",
+        "meetup": {
+          "id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "offline",
+          "date_type": "dinner",
+          "scheduled_start_at": "2026-11-02T12:41:30.960Z",
+          "scheduled_end_at": null,
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-11-02T10:41:30.960Z",
+          "status": "scheduled",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 4000
+          },
+          "dress_code": "Cocktail Attire",
+          "todo_list": [
+            {
+              "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+              "text": "Reserve table",
+              "created_at": "2026-10-28T12:41:27.915Z",
+              "assigned_to": "11111111-1111-1111-1111-111111111111",
+              "is_completed": true
+            }
+          ],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Bastian At The Top, Dadar",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "debit_tx_id": "9b0130e2-3314-44e4-9e6b-975b27414b16",
+            "coins_debited": 100,
+            "free_date_used": false,
+            "required_coins": 100,
+            "reschedule_penalties": [
+              {
+                "tx_id": "a8760ce8-4fbc-49b9-8313-b72331ff5ca2",
+                "reason": "Slight schedule conflict",
+                "user_id": "11111111-1111-1111-1111-111111111111",
+                "timestamp": "2026-10-28T12:41:32.076Z",
+                "penalty_coins": 25
+              }
+            ]
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:27.725Z",
+          "updated_at": "2026-10-28T12:41:31.886Z",
+          "theme_id": "rooftop_sunset"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "GET /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/todos",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 658,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"meetup_id\":\"613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff\",\"todos\":[{\"id\":\"5ded384b-1458-4bdd-9d5e-778240d81d3a\",\"text\":\"Reserve table\",\"created_at\":\"2026-10-28T12:41:27.91...",
+      "data": {
+        "success": true,
+        "meetup_id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+        "todos": [
+          {
+            "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+            "text": "Reserve table",
+            "created_at": "2026-10-28T12:41:27.915Z",
+            "assigned_to": "11111111-1111-1111-1111-111111111111",
+            "is_completed": true
+          }
+        ]
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "POST /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/todos",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 921,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"added_todo\":{\"id\":\"3bc05123-f612-4ef3-b543-41d504ee8628\",\"text\":\"Order flowers & favorite dessert\",\"assigned_to\":\"11111111-1111-1111-1111-111111111111\",\"is_complet...",
+      "data": {
+        "success": true,
+        "added_todo": {
+          "id": "3bc05123-f612-4ef3-b543-41d504ee8628",
+          "text": "Order flowers & favorite dessert",
+          "assigned_to": "11111111-1111-1111-1111-111111111111",
+          "is_completed": false,
+          "created_at": "2026-10-28T12:41:33.581Z"
+        },
+        "todos": [
+          {
+            "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+            "text": "Reserve table",
+            "created_at": "2026-10-28T12:41:27.915Z",
+            "assigned_to": "11111111-1111-1111-1111-111111111111",
+            "is_completed": true
+          },
+          {
+            "id": "3bc05123-f612-4ef3-b543-41d504ee8628",
+            "text": "Order flowers & favorite dessert",
+            "assigned_to": "11111111-1111-1111-1111-111111111111",
+            "is_completed": false,
+            "created_at": "2026-10-28T12:41:33.581Z"
+          }
+        ]
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "PATCH /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/todos/3bc05123-f612-4ef3-b543-41d504ee8628",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 764,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"updated_todo\":{\"id\":\"3bc05123-f612-4ef3-b543-41d504ee8628\",\"text\":\"Order flowers & favorite dessert\",\"created_at\":\"2026-10-28T12:41:33.581Z\",\"assigned_to\":\"1111111...",
+      "data": {
+        "success": true,
+        "updated_todo": {
+          "id": "3bc05123-f612-4ef3-b543-41d504ee8628",
+          "text": "Order flowers & favorite dessert",
+          "created_at": "2026-10-28T12:41:33.581Z",
+          "assigned_to": "11111111-1111-1111-1111-111111111111",
+          "is_completed": true
+        },
+        "todos": [
+          {
+            "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+            "text": "Reserve table",
+            "created_at": "2026-10-28T12:41:27.915Z",
+            "assigned_to": "11111111-1111-1111-1111-111111111111",
+            "is_completed": true
+          },
+          {
+            "id": "3bc05123-f612-4ef3-b543-41d504ee8628",
+            "text": "Order flowers & favorite dessert",
+            "created_at": "2026-10-28T12:41:33.581Z",
+            "assigned_to": "11111111-1111-1111-1111-111111111111",
+            "is_completed": true
+          }
+        ]
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "DELETE /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/todos/3bc05123-f612-4ef3-b543-41d504ee8628",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 774,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"Todo item \\\"3bc05123-f612-4ef3-b543-41d504ee8628\\\" deleted.\",\"todos\":[{\"id\":\"5ded384b-1458-4bdd-9d5e-778240d81d3a\",\"text\":\"Reserve table\",\"created_at\":\"2...",
+      "data": {
+        "success": true,
+        "message": "Todo item \"3bc05123-f612-4ef3-b543-41d504ee8628\" deleted.",
+        "todos": [
+          {
+            "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+            "text": "Reserve table",
+            "created_at": "2026-10-28T12:41:27.915Z",
+            "assigned_to": "11111111-1111-1111-1111-111111111111",
+            "is_completed": true
+          }
+        ]
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "POST /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/memories",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 720,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"memory\":{\"id\":\"e896de29-b8f1-4d2a-a7d6-7274f77e56c5\",\"date_id\":\"613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff\",\"uploaded_by_user_id\":\"11111111-1111-1111-1111-111111111111\",...",
+      "data": {
+        "success": true,
+        "memory": {
+          "id": "e896de29-b8f1-4d2a-a7d6-7274f77e56c5",
+          "date_id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+          "uploaded_by_user_id": "11111111-1111-1111-1111-111111111111",
+          "photo_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg",
+          "generated_sticker_uri": null,
+          "bitmoji_pack_json": [],
+          "custom_gift_note": "Spectacular sunset view of the Mumbai coastline!",
+          "created_at": "2026-10-28T12:41:35.646Z"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "GET /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/memories",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 508,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"date_id\":\"613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff\",\"memories\":[{\"id\":\"e896de29-b8f1-4d2a-a7d6-7274f77e56c5\",\"date_id\":\"613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff\",\"uploaded...",
+      "data": {
+        "success": true,
+        "date_id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+        "memories": [
+          {
+            "id": "e896de29-b8f1-4d2a-a7d6-7274f77e56c5",
+            "date_id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+            "uploaded_by_user_id": "11111111-1111-1111-1111-111111111111",
+            "photo_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg",
+            "generated_sticker_uri": null,
+            "bitmoji_pack_json": [],
+            "custom_gift_note": "Spectacular sunset view of the Mumbai coastline!",
+            "created_at": "2026-10-28T12:41:35.646Z"
+          }
+        ]
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "POST /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/memories/generate-stickers",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1368,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"AI Bitmoji stickers generated successfully. 20 coins debited.\",\"memory_id\":\"e896de29-b8f1-4d2a-a7d6-7274f77e56c5\",\"generated_sticker_uri\":\"https://storag...",
+      "data": {
+        "success": true,
+        "message": "AI Bitmoji stickers generated successfully. 20 coins debited.",
+        "memory_id": "e896de29-b8f1-4d2a-a7d6-7274f77e56c5",
+        "generated_sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?style=chibi_sunset_couple_sticker",
+        "bitmoji_pack": [
+          {
+            "id": "stk_couple_1",
+            "name": "Heart Sparks",
+            "style": "chibi_sunset_couple",
+            "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=heart_sparks"
+          },
+          {
+            "id": "stk_couple_2",
+            "name": "Vibe Check 100",
+            "style": "chibi_sunset_couple",
+            "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=vibe_check"
+          },
+          {
+            "id": "stk_couple_3",
+            "name": "Coffee Chemistry",
+            "style": "chibi_sunset_couple",
+            "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=coffee_chemistry"
+          },
+          {
+            "id": "stk_couple_4",
+            "name": "Unforgettable Date",
+            "style": "chibi_sunset_couple",
+            "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=unforgettable"
+          }
+        ],
+        "coins_debited": 20,
+        "balance_after": 755
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "POST /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/memories/share-chat",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 896,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"Memory Card successfully shared to match chat thread.\",\"room_id\":\"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\",\"dispatched_to_realtime_engine\":false,\"memory_car...",
+      "data": {
+        "success": true,
+        "message": "Memory Card successfully shared to match chat thread.",
+        "room_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "dispatched_to_realtime_engine": false,
+        "memory_card": {
+          "card_type": "memory_card",
+          "meetup_id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+          "memory_id": "e896de29-b8f1-4d2a-a7d6-7274f77e56c5",
+          "photo_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg",
+          "generated_sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?style=chibi_sunset_couple_sticker",
+          "stickers": [
+            {
+              "id": "stk_couple_1",
+              "name": "Heart Sparks",
+              "style": "chibi_sunset_couple",
+              "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=heart_sparks"
+            },
+            {
+              "id": "stk_couple_2",
+              "name": "Vibe Check 100",
+              "style": "chibi_sunset_couple",
+              "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=vibe_check"
+            },
+            {
+              "id": "stk_couple_3",
+              "name": "Coffee Chemistry",
+              "style": "chibi_sunset_couple",
+              "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=coffee_chemistry"
+            },
+            {
+              "id": "stk_couple_4",
+              "name": "Unforgettable Date",
+              "style": "chibi_sunset_couple",
+              "sticker_uri": "https://storage.younme.app/memories/bastian_rooftop.jpg?filter=unforgettable"
+            }
+          ],
+          "custom_note": "Spectacular sunset view of the Mumbai coastline!",
+          "venue_name": "Bastian At The Top, Dadar",
+          "date_type": "dinner",
+          "shared_by_user_id": "11111111-1111-1111-1111-111111111111",
+          "custom_message": "Look at our date memory! 💖",
+          "created_at": "2026-10-28T12:41:38.534Z"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "POST /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/rating",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 609,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"Meetup rating and feedback logged successfully for proposer.\",\"status\":\"completed\",\"meetup\":{\"id\":\"613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff\",\"match_id\":\"aaaa...",
+      "data": {
+        "success": true,
+        "message": "Meetup rating and feedback logged successfully for proposer.",
+        "status": "completed",
+        "meetup": {
+          "id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "offline",
+          "date_type": "dinner",
+          "scheduled_start_at": "2026-11-02T12:41:30.960Z",
+          "scheduled_end_at": null,
+          "date_started_at": null,
+          "date_ended_at": "2026-10-28T12:41:39.105Z",
+          "reminder_at": "2026-11-02T10:41:30.960Z",
+          "status": "completed",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 4000
+          },
+          "dress_code": "Cocktail Attire",
+          "todo_list": [
+            {
+              "id": "5ded384b-1458-4bdd-9d5e-778240d81d3a",
+              "text": "Reserve table",
+              "created_at": "2026-10-28T12:41:27.915Z",
+              "assigned_to": "11111111-1111-1111-1111-111111111111",
+              "is_completed": true
+            }
+          ],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Bastian At The Top, Dadar",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "debit_tx_id": "9b0130e2-3314-44e4-9e6b-975b27414b16",
+            "coins_debited": 100,
+            "free_date_used": false,
+            "required_coins": 100,
+            "reschedule_penalties": [
+              {
+                "tx_id": "a8760ce8-4fbc-49b9-8313-b72331ff5ca2",
+                "reason": "Slight schedule conflict",
+                "user_id": "11111111-1111-1111-1111-111111111111",
+                "timestamp": "2026-10-28T12:41:32.076Z",
+                "penalty_coins": 25
+              }
+            ]
+          },
+          "proposer_ratings_json": {
+            "chemistry": 5,
+            "punctuality": 5,
+            "conversation": 5
+          },
+          "partner_ratings_json": {},
+          "proposer_overall_rating": 5,
+          "partner_overall_rating": null,
+          "proposer_feedback": "Wonderful conversation and atmosphere!",
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:27.725Z",
+          "updated_at": "2026-10-28T12:41:39.105Z",
+          "theme_id": "rooftop_sunset"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "POST /v1/meetup/613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff/report",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 716,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"message\":\"Moderation ticket created successfully. The date has been flagged for safety review.\",\"ticket_id\":\"2d5f7fbe-bbd8-47be-95be-77c68fb84415\",\"meetup_id\":\"613...",
+      "data": {
+        "success": true,
+        "message": "Moderation ticket created successfully. The date has been flagged for safety review.",
+        "ticket_id": "2d5f7fbe-bbd8-47be-95be-77c68fb84415",
+        "meetup_id": "613cafbb-fc4d-4fd4-b5c1-bfd20e0285ff",
+        "action_location": "offline_date",
+        "status": "reported"
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "POST /v1/meetup/schedule",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 1241,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"meetup\":{\"id\":\"8a6524e6-e3d1-4c97-9a8c-cf154257d712\",\"match_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"proposer_user_id\":\"11111111-1111-1111-1111-111111111111\",\"p...",
+      "data": {
+        "success": true,
+        "meetup": {
+          "id": "8a6524e6-e3d1-4c97-9a8c-cf154257d712",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "online",
+          "date_type": "coffee",
+          "scheduled_start_at": "2026-10-31T00:41:40.141Z",
+          "scheduled_end_at": null,
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-10-30T22:41:40.141Z",
+          "status": "pending",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 1000
+          },
+          "dress_code": null,
+          "todo_list": [],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Cafe Mocha, Bandra West",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "debit_tx_id": "3d0bf072-d356-4496-bd88-dd3d07ac0e67",
+            "coins_debited": 50,
+            "free_date_used": false,
+            "required_coins": 50
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:41.061Z",
+          "updated_at": "2026-10-28T12:41:41.061Z",
+          "theme_id": "default"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "PATCH /v1/meetup/8a6524e6-e3d1-4c97-9a8c-cf154257d712/decline",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1262,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"status\":\"declined\",\"message\":\"Date proposal declined. 100% refund issued to proposer.\",\"refund\":{\"refund_coins\":50,\"tx_id\":\"34e494b9-4caa-4caa-9b4b-ad2d2f8c5d62\"},...",
+      "data": {
+        "success": true,
+        "status": "declined",
+        "message": "Date proposal declined. 100% refund issued to proposer.",
+        "refund": {
+          "refund_coins": 50,
+          "tx_id": "34e494b9-4caa-4caa-9b4b-ad2d2f8c5d62"
+        },
+        "meetup": {
+          "id": "8a6524e6-e3d1-4c97-9a8c-cf154257d712",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "online",
+          "date_type": "coffee",
+          "scheduled_start_at": "2026-10-31T00:41:40.141Z",
+          "scheduled_end_at": null,
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-10-30T22:41:40.141Z",
+          "status": "declined",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 1000
+          },
+          "dress_code": null,
+          "todo_list": [],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Cafe Mocha, Bandra West",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "refunded": true,
+            "debit_tx_id": "3d0bf072-d356-4496-bd88-dd3d07ac0e67",
+            "refund_tx_id": "34e494b9-4caa-4caa-9b4b-ad2d2f8c5d62",
+            "coins_debited": 50,
+            "refund_amount": 50,
+            "refund_status": "full_refund_100_percent",
+            "decline_reason": "Busy this weekend",
+            "free_date_used": false,
+            "required_coins": 50
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:41.061Z",
+          "updated_at": "2026-10-28T12:41:42.322Z",
+          "theme_id": "default"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "POST /v1/meetup/schedule",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 1255,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"meetup\":{\"id\":\"a4d06765-42e7-4a5f-9ebe-a434c7a614a7\",\"match_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"proposer_user_id\":\"11111111-1111-1111-1111-111111111111\",\"p...",
+      "data": {
+        "success": true,
+        "meetup": {
+          "id": "a4d06765-42e7-4a5f-9ebe-a434c7a614a7",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "offline",
+          "date_type": "coffee",
+          "scheduled_start_at": "2026-10-31T10:41:42.644Z",
+          "scheduled_end_at": null,
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-10-31T08:41:42.644Z",
+          "status": "pending",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 1000
+          },
+          "dress_code": null,
+          "todo_list": [],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Cafe Mocha, Bandra West",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "debit_tx_id": "a65210c2-ccba-4e26-96bf-f1f38735f1e5",
+            "coins_debited": 100,
+            "free_date_used": false,
+            "required_coins": 100
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:43.580Z",
+          "updated_at": "2026-10-28T12:41:43.580Z",
+          "theme_id": "default"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "PATCH /v1/meetup/a4d06765-42e7-4a5f-9ebe-a434c7a614a7/accept",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 602,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"status\":\"scheduled\",\"meetup\":{\"id\":\"a4d06765-42e7-4a5f-9ebe-a434c7a614a7\",\"match_id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"proposer_user_id\":\"11111111-1111-1111-...",
+      "data": {
+        "success": true,
+        "status": "scheduled",
+        "meetup": {
+          "id": "a4d06765-42e7-4a5f-9ebe-a434c7a614a7",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "offline",
+          "date_type": "coffee",
+          "scheduled_start_at": "2026-10-31T10:41:42.644Z",
+          "scheduled_end_at": null,
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-10-31T08:41:42.644Z",
+          "status": "scheduled",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 1000
+          },
+          "dress_code": null,
+          "todo_list": [],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Cafe Mocha, Bandra West",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "debit_tx_id": "a65210c2-ccba-4e26-96bf-f1f38735f1e5",
+            "coins_debited": 100,
+            "free_date_used": false,
+            "required_coins": 100
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:43.580Z",
+          "updated_at": "2026-10-28T12:41:44.181Z",
+          "theme_id": "default"
+        }
+      }
+    },
+    {
+      "module": "Meetup",
+      "endpoint": "PATCH /v1/meetup/a4d06765-42e7-4a5f-9ebe-a434c7a614a7/cancel",
+      "status": 200,
+      "expectedStatus": 200,
+      "latency": 1251,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"status\":\"cancelled\",\"message\":\"Date cancelled. 80% coin refund credited (20% platform fee retained).\",\"refund\":{\"refund_amount\":80,\"platform_fee_retained\":20,\"refu...",
+      "data": {
+        "success": true,
+        "status": "cancelled",
+        "message": "Date cancelled. 80% coin refund credited (20% platform fee retained).",
+        "refund": {
+          "refund_amount": 80,
+          "platform_fee_retained": 20,
+          "refund_percentage": "80%",
+          "tx_id": "2188a7a5-5895-4974-a0fb-c0f3b2154cf6"
+        },
+        "meetup": {
+          "id": "a4d06765-42e7-4a5f-9ebe-a434c7a614a7",
+          "match_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "proposer_user_id": "11111111-1111-1111-1111-111111111111",
+          "partner_user_id": "22222222-2222-2222-2222-222222222222",
+          "date_mode": "offline",
+          "date_type": "coffee",
+          "scheduled_start_at": "2026-10-31T10:41:42.644Z",
+          "scheduled_end_at": null,
+          "date_started_at": null,
+          "date_ended_at": null,
+          "reminder_at": "2026-10-31T08:41:42.644Z",
+          "status": "cancelled",
+          "split_bill_config": {
+            "mode": "50_50",
+            "status": "proposed",
+            "estimated_cost_inr": 1000
+          },
+          "dress_code": null,
+          "todo_list": [],
+          "proposer_custom_notes": null,
+          "partner_custom_notes": null,
+          "venue_name": "Cafe Mocha, Bandra West",
+          "osm_place_id": null,
+          "latitude": null,
+          "longitude": null,
+          "coins_json": {
+            "refunded": true,
+            "debit_tx_id": "a65210c2-ccba-4e26-96bf-f1f38735f1e5",
+            "refund_tx_id": "2188a7a5-5895-4974-a0fb-c0f3b2154cf6",
+            "coins_debited": 100,
+            "refund_amount": 80,
+            "refund_status": "80_percent_refund_processed",
+            "free_date_used": false,
+            "required_coins": 100,
+            "cancellation_fee": 20,
+            "cancellation_reason": "Emergency rescheduling"
+          },
+          "proposer_ratings_json": {},
+          "partner_ratings_json": {},
+          "proposer_overall_rating": null,
+          "partner_overall_rating": null,
+          "proposer_feedback": null,
+          "partner_feedback": null,
+          "created_at": "2026-10-28T12:41:43.580Z",
+          "updated_at": "2026-10-28T12:41:45.434Z",
+          "theme_id": "default"
+        }
+      }
+    },
+    {
+      "module": "Worker",
+      "endpoint": "POST /v1/worker/vision-scan",
+      "status": 201,
+      "expectedStatus": 201,
+      "latency": 434,
+      "ok": true,
+      "error": null,
+      "summary": "{\"success\":true,\"scan_result\":{\"success\":true,\"scan_result\":{\"passed\":true,\"safe_search\":{\"adult\":\"VERY_UNLIKELY\",\"racy\":\"VERY_UNLIKELY\",\"violence\":\"VERY_UNLIKELY\"},\"detected_text\"...",
+      "data": {
+        "success": true,
+        "scan_result": {
+          "success": true,
+          "scan_result": {
+            "passed": true,
+            "safe_search": {
+              "adult": "VERY_UNLIKELY",
+              "racy": "VERY_UNLIKELY",
+              "violence": "VERY_UNLIKELY"
+            },
+            "detected_text": [],
+            "action_taken": "APPROVED"
+          }
+        }
+      }
+    }
+  ]
+}
