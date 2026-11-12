@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Heart, MessageSquare, User, Coins } from 'lucide-react';
+import { Flame, Heart, MessageSquare, User } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -7,33 +7,26 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
+  // STRICTLY 4 TABS: Home, Connect, Chat, Profile
   const navItems = [
     { id: 'discovery', label: 'Home', icon: Flame },
     { id: 'connect', label: 'Connect', icon: Heart },
     { id: 'chat', label: 'Chat', icon: MessageSquare },
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'ledger', label: 'Ledger', icon: Coins },
   ];
 
   return (
     <nav
-      className="mobile-bottom-nav"
       style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '62px',
-        backgroundColor: 'rgba(8, 10, 16, 0.95)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        height: '60px',
+        backgroundColor: '#111318',
         borderTop: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
         zIndex: 50,
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5)',
+        position: 'relative',
+        boxSizing: 'border-box',
       }}
     >
       {navItems.map((item) => {
@@ -43,6 +36,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
         return (
           <button
             key={item.id}
+            type="button"
             onClick={() => setActiveTab(item.id)}
             style={{
               flex: 1,
@@ -55,43 +49,37 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              color: isActive ? '#ff2d55' : 'var(--text-secondary)',
-              transition: 'all var(--transition-fast)',
-              padding: '4px 0',
+              color: isActive ? '#f8fafc' : '#94a3b8',
               position: 'relative',
-              WebkitTapHighlightColor: 'transparent',
+              padding: '6px 0',
+              transition: 'all 0.15s ease',
             }}
           >
-            {/* Active Indicator Top Pill */}
+            {/* Top Indicator Line */}
             {isActive && (
               <span
                 style={{
                   position: 'absolute',
                   top: 0,
-                  width: '28px',
-                  height: '3px',
-                  borderRadius: '0 0 3px 3px',
-                  background: 'var(--gradient-flame)',
-                  boxShadow: '0 0 10px rgba(255, 45, 85, 0.6)',
+                  width: '24px',
+                  height: '2.5px',
+                  borderRadius: '0 0 2px 2px',
+                  background: '#f43f5e',
                 }}
               />
             )}
 
             <Icon
-              size={20}
-              color={isActive ? '#ff2d55' : 'currentColor'}
-              style={{
-                filter: isActive ? 'drop-shadow(0 0 6px rgba(255, 45, 85, 0.5))' : 'none',
-                transition: 'transform var(--transition-fast)',
-                transform: isActive ? 'scale(1.1)' : 'scale(1)',
-              }}
+              size={19}
+              color={isActive ? '#f43f5e' : '#94a3b8'}
+              strokeWidth={isActive ? 2.3 : 1.8}
             />
             <span
               style={{
                 fontSize: '11px',
                 fontWeight: isActive ? 700 : 500,
-                letterSpacing: '-0.2px',
-                color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                color: isActive ? '#f8fafc' : '#94a3b8',
+                letterSpacing: '-0.1px',
               }}
             >
               {item.label}

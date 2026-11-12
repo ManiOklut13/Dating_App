@@ -42,3 +42,7 @@ Thumbs.db
 .packages
 .pub-cache/
 .pub/
+
+*repomix-output*.xml
+
+*repomix-output*.xml

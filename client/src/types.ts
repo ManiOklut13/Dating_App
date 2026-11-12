@@ -20,6 +20,9 @@ export interface CandidateCard {
   is_online?: boolean;
   shared_interests?: string[];
   profile_progress: number;
+  gender?: string;
+  last_active?: string;
+  preference?: string;
   vibe_score?: number;
 }
 
@@ -121,4 +124,39 @@ export interface TransactionItem {
   reference_id?: string;
   idempotency_key: string;
   created_at: string;
+}
+
+
+export type Gender = 'male' | 'female' | 'non-binary' | 'other';
+
+export interface CallHistoryEntry {
+  id: string;
+  calleeId: string;
+  name: string;
+  avatar: string;
+  city?: string;
+  timestamp: string;
+  duration: string;
+  status: 'completed' | 'missed' | 'declined';
+  vibeScore?: number;
+}
+
+export interface ScheduledDate {
+  id: string;
+  with_user_id: string;
+  nickname: string;
+  avatar: string;
+  venue: string;
+  address: string;
+  city: string;
+  scheduled_at: string;
+  duration_mins: number;
+  is_date: boolean;
+  activity_type: string;
+  dress_code: string;
+  table_reservation?: string;
+  romantic_milestone?: string;
+  shared_playlist?: string;
+  vibe_notes?: string;
+  status: 'confirmed' | 'pending' | 'rescheduled';
 }

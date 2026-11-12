@@ -7,6 +7,8 @@ interface ProfileWalletTabProps {
   onOpenStore: () => void;
   onOpenWheel: () => void;
   view?: 'profile' | 'ledger' | 'all';
+  onLogout?: () => void;
+  onTestOnboarding?: () => void;
 }
 
 export const ProfileWalletTab: React.FC<ProfileWalletTabProps> = ({
@@ -14,6 +16,8 @@ export const ProfileWalletTab: React.FC<ProfileWalletTabProps> = ({
   onOpenStore,
   onOpenWheel,
   view = 'all',
+  onLogout,
+  onTestOnboarding,
 }) => {
   const [ledger, setLedger] = useState<TransactionItem[]>([]);
   const [profileProgress, setProfileProgress] = useState(92);
@@ -95,6 +99,55 @@ export const ProfileWalletTab: React.FC<ProfileWalletTabProps> = ({
               <div style={{ fontSize: '26px', fontWeight: 800, color: '#00e676', margin: '2px 0' }}>{profileProgress}%</div>
               <div style={{ fontSize: '11px', color: '#1da1f2' }}>Auto-awarded Blue Tick (&gt;=70%)</div>
             </div>
+          </div>
+
+          
+          {/* Action Row: Logout / Switch Account & Test Onboarding */}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '16px', marginBottom: '24px' }}>
+            <button
+              type="button"
+              onClick={onTestOnboarding}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                borderRadius: 'var(--radius-md)',
+                background: 'rgba(254, 114, 139, 0.12)',
+                border: '1px solid rgba(254, 114, 139, 0.35)',
+                color: '#FE728B',
+                fontSize: '13px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+              }}
+            >
+              <Sparkles size={16} />
+              <span>Test Onboarding Wizard</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onLogout}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                borderRadius: 'var(--radius-md)',
+                background: 'rgba(255, 82, 119, 0.12)',
+                border: '1px solid rgba(255, 82, 119, 0.35)',
+                color: '#FF5277',
+                fontSize: '13px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+              }}
+            >
+              <span>Log Out & Splash</span>
+            </button>
           </div>
 
           {/* Onboarding Verification Checklist */}

@@ -233,7 +233,7 @@ const DEMO_REQUESTS_RECEIVED: MessageRequest[] = [
     id: 'req-recv-2',
     user_id: 'r2222222-2222-2222-2222-222222222222',
     nickname: 'Aryan',
-    age: 28,
+    age: 30,
     avatar: '/rohit.jpg',
     is_verified: true,
     is_online: false,
@@ -340,6 +340,7 @@ function formatRelativeTime(iso: string): string {
 
 interface ChatTabProps {
   selectedConvId?: string;
+  initialDraft?: string;
   onStartCall: (calleeId: string, name: string, avatar: string) => void;
   /** Opens a conversation (sets selectedConvId + switches to the chat tab). */
   onOpenChat: (convId: string) => void;
@@ -425,6 +426,7 @@ export const ChatTab: React.FC<ChatTabProps> = (props) => {
         counterpart={active?.counterpart}
         onStartCall={props.onStartCall}
         onBack={props.onBack}
+        initialDraft={props.initialDraft}
       />
     );
   }
@@ -677,10 +679,10 @@ const ChatList: React.FC<ChatListProps> = ({
     filter === 'unread'
       ? 'No unread chats'
       : filter === 'online'
-      ? 'No one is online right now'
-      : filter === 'verified'
-      ? 'No verified chats yet'
-      : 'No chats yet. Start from Connect';
+        ? 'No one is online right now'
+        : filter === 'verified'
+          ? 'No verified chats yet'
+          : 'No chats yet. Start from Connect';
 
   // ==========================================================================
   // RENDER
@@ -1377,18 +1379,19 @@ const MenuItem: React.FC<{
 interface ChatRoomProps {
   convId: string;
   counterpart?: MatchItem['counterpart'];
+  initialDraft?: string;
   onStartCall: (calleeId: string, name: string, avatar: string) => void;
   onBack: () => void;
 }
 
-const ChatRoom: React.FC<ChatRoomProps> = ({ convId, counterpart, onStartCall, onBack }) => {
+const ChatRoom: React.FC<ChatRoomProps> = ({ convId, counterpart, onStartCall, onBack, initialDraft }) => {
   const name = counterpart?.nickname || 'Ananya';
   const avatar = counterpart?.avatar || '/ananya.jpg';
   const uid = counterpart?.user_id || '22222222-2222-2222-2222-222222222222';
   const city = counterpart?.city || 'Bandra Pali Hill';
 
   const [messages, setMessages] = useState<MessageItem[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState(initialDraft || '');
   const [isVanishMode, setIsVanishMode] = useState(false);
   const [guardAlert, setGuardAlert] = useState<{ reason: string; strikes: number } | null>(null);
   const [contactUnlocked, setContactUnlocked] = useState(false);

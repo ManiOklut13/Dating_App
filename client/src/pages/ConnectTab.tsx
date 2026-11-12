@@ -1,2648 +1,3080 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Heart,
-  X,
   Sparkles,
-  Zap,
-  MessageSquare,
-  ShieldCheck,
-  Lock,
-  MapPin,
-  RotateCcw,
+  Flame,
+  Phone,
+  MessageCircle,
+  PhoneCall,
+  PhoneOff,
+  Video,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
   SlidersHorizontal,
-  AlertTriangle,
-  Ban,
-  Info,
-  ChevronRight,
-  ChevronLeft,
-  Coins,
-  Check,
-  MoreVertical,
-  Flag,
-  RefreshCw,
+  CheckCircle2,
   Users,
-  LayoutGrid,
+  Compass,
+  X,
+  Search,
+  RefreshCw,
+  Lock,
+  Send,
+  Trophy,
   Star,
-  Clock,
-  ChevronDown,
-  TrendingUp,
+  Zap,
+  Shield,
+  Square,
+  Play,
+  Calendar,
 } from 'lucide-react';
-import { CandidateCard, MatchItem, IncomingLike } from '../types';
+import confetti from 'canvas-confetti';
+import { CandidateCard } from '../types';
+import { DEMO_PROFILES } from '../data/profilesData';
+import { RefreshAnimation } from '../components/RefreshAnimation';
 
-interface ConnectTabProps {
-  onOpenChat: (convId: string) => void;
-  onOpenStore: () => void;
+export interface ConnectTabProps {
+  onOpenChat: (convId: string, initialDraft?: string) => void;
+  onStartCall?: (calleeId: string, name: string, avatar: string, mode?: 'audio' | 'video') => void;
+  onOpenStore?: () => void;
   onMutualMatch?: (profile: CandidateCard) => void;
-  /** Current coin balance, used to gate Sparks. */
   coinBalance?: number;
-  /** Called after a (demo) coin spend so the wallet stays in sync. */
   onCoinsDeducted?: (newBalance: number) => void;
-  /**
-   * Viewer gender. The Likes UI stays identical for everyone, but female
-   * viewers are steered to the earn/convert flow instead of "Buy Coins".
-   * TODO(auth): read this from the authenticated user profile.
-   */
   viewerGender?: string;
 }
 
-/**
- * How many full profiles a free-tier v1 user can reveal per day.
- * TODO(backend): this MUST be supplied by the backend (daily counter +
- * subscription tier). Hard-coded for the demo only.
- */
-const DAILY_LIKES_VIEW_LIMIT = 5;
+// Spark & Crush items
+export interface SparkCrushItem {
+  id: string;
+  name: string;
+  age: number;
+  city: string;
+  avatar: string;
+  type: 'spark' | 'mega_crush';
+  direction: 'received' | 'sent';
+  message?: string;
+  timestamp: string;
+  interests: string[];
+}
 
-/** Cost of one Spark / Mega-Crush in coins. TODO(backend): server-authoritative. */
-const SPARK_COST = 10;
+// Match History item (Max 50)
+export interface MatchHistoryItem {
+  id: string;
+  userId: string;
+  name: string;
+  age: number;
+  gender: string;
+  city: string;
+  avatar: string;
+  matchPercentage: number;
+  vibeScore: number;
+  matched_at: string;
+  lastActive: string;
+  distance_km: number;
+  preferences: string;
+  bio: string;
+  sharedInterests: string[];
+  suggestedIcebreakers: string[];
+}
 
-const defaultCandidates: CandidateCard[] = [
+// Like History item (Max 50)
+export interface LikeHistoryItem {
+  id: string;
+  userId: string;
+  name: string;
+  age: number;
+  gender: string;
+  city: string;
+  avatar: string;
+  type: 'like' | 'spark' | 'mega_crush' | 'passed';
+  timestamp: string;
+  interests: string[];
+  bio: string;
+}
+
+// Seed 50 realistic match history items from DEMO_PROFILES
+const generate50Matches = (): MatchHistoryItem[] => {
+  const list: MatchHistoryItem[] = [];
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3600 * 1000).toISOString();
+  for (let i = 0; i < 50; i++) {
+    const p = DEMO_PROFILES[i % DEMO_PROFILES.length];
+    list.push({
+      id: `match_${i + 1}`,
+      userId: p.user_id,
+      name: p.nickname,
+      age: p.age || 24,
+      gender: p.gender || 'female',
+      city: p.city,
+      avatar: p.photo_urls[0],
+      matchPercentage: Math.max(78, 99 - (i % 20)),
+      vibeScore: Math.max(80, 98 - (i % 15)),
+      matched_at: hoursAgo(i * 3 + 2),
+      lastActive: i % 4 === 0 ? 'Active now' : `Active ${(i % 55) + 5}m ago`,
+      distance_km: p.distance_km || 2.4,
+      preferences: p.preference || 'Long-term relationship',
+      bio: p.bio,
+      sharedInterests: p.shared_interests || ['Coffee ☕', 'Vinyl 🎵', 'Art 🎨'],
+      suggestedIcebreakers: [
+        `What's your go-to weekend cafe in ${p.city.split(',')[0]}?`,
+        'Which song do you currently have on repeat?',
+        'Are you more into sunrise coffee or late night drives?',
+      ],
+    });
+  }
+  return list;
+};
+
+// Seed 50 realistic like history items
+const generate50History = (): LikeHistoryItem[] => {
+  const list: LikeHistoryItem[] = [];
+  const types: ('like' | 'spark' | 'mega_crush' | 'passed')[] = ['like', 'spark', 'mega_crush', 'passed', 'like'];
+  for (let i = 0; i < 50; i++) {
+    const p = DEMO_PROFILES[i % DEMO_PROFILES.length];
+    const itemType = types[i % types.length];
+    list.push({
+      id: `lh_${i + 1}`,
+      userId: p.user_id,
+      name: p.nickname,
+      age: p.age || 24,
+      gender: p.gender || 'female',
+      city: p.city,
+      avatar: p.photo_urls[0],
+      type: itemType,
+      timestamp: i < 5 ? `${(i + 1) * 2}h ago` : i < 15 ? `Yesterday` : `${Math.floor(i / 7) + 2}d ago`,
+      interests: p.shared_interests || ['Music 🎵', 'Food 🍲', 'Travel ✈️'],
+      bio: p.bio,
+    });
+  }
+  return list;
+};
+
+// Spark / Crush items (received or sent)
+const SPARK_CRUSH_LIST: SparkCrushItem[] = [
   {
-    user_id: '22222222-2222-2222-2222-222222222222',
-    nickname: 'Ananya',
+    id: 'sc-1',
+    name: 'Ananya',
     age: 24,
-    bio: 'UI designer & matcha lover 🍵 Seeking someone who laughs at witty dry humor. Let’s explore quaint cafes or art galleries!',
-    city: 'Mumbai (Bandra)',
-    distance_km: 0.8,
-    photo_urls: ['/ananya.jpg'],
-    is_verified: true,
-    is_online: true,
-    shared_interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨', 'Bandra Cafes 🥐'],
-    profile_progress: 95,
-    vibe_score: 95,
+    city: 'Hyderabad, Jubilee Hills',
+    avatar: DEMO_PROFILES[0].photo_urls[0],
+    type: 'mega_crush',
+    direction: 'received',
+    message: 'Loved your playlist choice! Coffee this weekend?',
+    timestamp: '15m ago',
+    interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨'],
   },
   {
-    user_id: '33333333-3333-3333-3333-333333333333',
-    nickname: 'Rohit',
-    age: 27,
-    bio: 'Architecting spaces by day, chasing sunsets by evening. Fitness, rock climbing, and deep late-night conversations 🌇🧗‍♂️',
-    city: 'Mumbai (Juhu)',
-    distance_km: 5.3,
-    photo_urls: ['/rohit.jpg'],
-    is_verified: true,
-    is_online: true,
-    shared_interests: ['Architecture 🏛️', 'Bouldering 🧗', 'Sunset Runs 🌅', 'Acoustic Rock 🎸'],
-    profile_progress: 88,
-    vibe_score: 88,
-  },
-  {
-    user_id: '44444444-4444-4444-4444-444444444444',
-    nickname: 'Riya',
+    id: 'sc-2',
+    name: 'Kavya',
     age: 23,
-    bio: 'Fashion curator & cinema buff 🎬 Weekend flea markets, film photography, and finding the best artisanal gelatos in town.',
-    city: 'Mumbai (Colaba)',
-    distance_km: 15.2,
-    photo_urls: ['/riya.jpg'],
-    is_verified: true,
-    is_online: false,
-    shared_interests: ['Vintage Fashion 👗', '35mm Film 📷', 'Art Cinema 📽️', 'Italian Cuisine 🍕'],
-    profile_progress: 91,
-    vibe_score: 92,
+    city: 'Bengaluru, Indiranagar',
+    avatar: DEMO_PROFILES[1].photo_urls[0],
+    type: 'spark',
+    direction: 'received',
+    message: 'Your sketches look fantastic ✏️',
+    timestamp: '1h ago',
+    interests: ['Design Systems 📐', 'Filter Coffee ☕'],
   },
   {
-    user_id: '55555555-5555-5555-5555-555555555555',
-    nickname: 'Kabir',
-    age: 26,
-    bio: 'Sound designer & vinyl collector 🎧 Always on the hunt for obscure jazz records and hidden midnight bakeries in Khar.',
-    city: 'Mumbai (Khar West)',
-    distance_km: 2.1,
-    photo_urls: ['/aditya.jpg'],
-    is_verified: true,
-    is_online: true,
-    shared_interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Night Cycling 🚴', 'Live Jazz 🎷'],
-    profile_progress: 89,
-    vibe_score: 91,
-  },
-];
-
-// ============================================================================
-// DEMO DATA — mutual matches.
-// `matches` (component state) holds ONLY real, backend-saved matches and starts
-// empty. When no backend is reachable we display this constant instead and show
-// a "Demo data" chip; nothing here is ever written into the real match state.
-// Production source: GET /v1/matches.
-// NOTE: no phone numbers, social handles or real user IDs are ever rendered.
-// ============================================================================
-const DEMO_MATCHES: MatchItem[] = [
-  {
-    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    source: 'swipe',
-    message_pair_count: 6,
-    counterpart: {
-      user_id: '22222222-2222-2222-2222-222222222222',
-      nickname: 'Ananya',
-      age: 24,
-      avatar: '/ananya.jpg',
-      city: 'Mumbai (Bandra)',
-      is_verified: true,
-      is_online: true,
-      shared_interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨'],
-      bio: 'UI designer & matcha lover 🍵 Seeking someone who laughs at witty dry humor. Let’s explore quaint cafes or art galleries!',
-      photo_urls: ['/ananya.jpg'],
-      vibe_score: 96,
-    },
-    last_message: {
-      body: 'Hey Arjun! Saw you love filter kaapi and vinyl records. Have you tried Subko in Bandra?',
-      type: 'text',
-      created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-    },
-  },
-  {
-    id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 27).toISOString(),
-    source: 'spark',
-    message_pair_count: 3,
-    counterpart: {
-      user_id: '44444444-4444-4444-4444-444444444444',
-      nickname: 'Riya',
-      age: 23,
-      avatar: '/riya.jpg',
-      city: 'Mumbai (Colaba)',
-      is_verified: true,
-      is_online: true,
-      shared_interests: ['Vintage Fashion 👗', '35mm Film 📷', 'Art Cinema 📽️'],
-      bio: 'Fashion curator & cinema buff 🎬 Weekend flea markets and film photography.',
-      photo_urls: ['/riya.jpg', '/ananya.jpg'],
-      vibe_score: 93,
-    },
-    last_message: { body: 'That film photography walk sounds fun!', type: 'text', created_at: new Date(Date.now() - 3600000 * 5).toISOString() },
-  },
-  {
-    id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 52).toISOString(),
-    source: 'swipe',
-    message_pair_count: 1,
-    counterpart: {
-      user_id: '88888888-8888-8888-8888-888888888888',
-      nickname: 'Meera',
-      age: 26,
-      avatar: '/ananya.jpg',
-      city: 'Mumbai (Andheri)',
-      is_verified: true,
-      is_online: false,
-      shared_interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨'],
-      bio: 'Architect by training, ceramicist at heart. Big on slow mornings ☕',
-      photo_urls: ['/ananya.jpg', '/riya.jpg'],
-      vibe_score: 90,
-    },
-  },
-  {
-    id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
-    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 76).toISOString(),
-    source: 'swipe',
-    message_pair_count: 4,
-    counterpart: {
-      user_id: '33333333-3333-3333-3333-333333333333',
-      nickname: 'Rohit',
-      age: 27,
-      avatar: '/rohit.jpg',
-      city: 'Mumbai (Juhu)',
-      is_verified: true,
-      is_online: true,
-      shared_interests: ['Architecture 🏛️', 'Bouldering 🧗', 'Sunset Runs 🌅'],
-      bio: 'Chasing sunsets by evening. Fitness, climbing, and late-night conversations 🌇',
-      photo_urls: ['/rohit.jpg'],
-      vibe_score: 88,
-    },
-    last_message: { body: 'Sunrise climb at Kanheri this weekend?', type: 'text', created_at: new Date(Date.now() - 3600000 * 30).toISOString() },
-  },
-  {
-    id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
-    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 101).toISOString(),
-    source: 'like',
-    message_pair_count: 0,
-    counterpart: {
-      user_id: '66666666-6666-6666-6666-666666666666',
-      nickname: 'Priya',
-      age: 25,
-      avatar: '/ananya.jpg',
-      city: 'Mumbai (Worli)',
-      is_verified: true,
-      is_online: false,
-      shared_interests: ['Specialty Coffee ☕', 'Modern Art 🎨', 'Live Jazz 🎷'],
-      bio: 'Product strategist & avid reader 📚 Chai over coffee any day!',
-      photo_urls: ['/ananya.jpg'],
-      vibe_score: 84,
-    },
-  },
-  {
-    id: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
-    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(),
-    source: 'swipe',
-    message_pair_count: 2,
-    counterpart: {
-      user_id: '55555555-5555-5555-5555-555555555555',
-      nickname: 'Kabir',
-      age: 26,
-      avatar: '/aditya.jpg',
-      city: 'Mumbai (Khar West)',
-      is_verified: true,
-      is_online: true,
-      shared_interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Night Cycling 🚴'],
-      bio: 'Sound designer & vinyl collector 🎧 Hunting obscure jazz records.',
-      photo_urls: ['/aditya.jpg'],
-      vibe_score: 82,
-    },
-    last_message: { body: 'Sending you a playlist of rare jazz finds.', type: 'text', created_at: new Date(Date.now() - 3600000 * 40).toISOString() },
-  },
-  // Older than 7 days → excluded from the weekly "Matched & Vibed" scoreboard.
-  {
-    id: '11111111-aaaa-aaaa-aaaa-111111111111',
-    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
-    source: 'swipe',
-    message_pair_count: 1,
-    counterpart: {
-      user_id: '77777777-7777-7777-7777-777777777777',
-      nickname: 'Tara',
-      age: 24,
-      avatar: '/aditya.jpg',
-      city: 'Mumbai (Juhu)',
-      is_verified: false,
-      is_online: false,
-      shared_interests: ['Sunset Runs 🌅', 'Acoustic Rock 🎸', 'Night Cycling 🚴'],
-      bio: 'Chasing golden hour sunsets along Juhu beach 🌅',
-      photo_urls: ['/aditya.jpg'],
-      vibe_score: 78,
-    },
-  },
-  {
-    id: '22222222-aaaa-aaaa-aaaa-222222222222',
-    matched_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
-    source: 'like',
-    message_pair_count: 0,
-    counterpart: {
-      user_id: '99999999-9999-9999-9999-999999999999',
-      nickname: 'Nisha',
-      age: 22,
-      avatar: '/riya.jpg',
-      city: 'Mumbai (Powai)',
-      is_verified: false,
-      is_online: false,
-      shared_interests: ['35mm Film 📷', 'Art Cinema 📽️', 'Italian Cuisine 🍕'],
-      bio: 'Film student documenting Mumbai one frame at a time.',
-      photo_urls: ['/riya.jpg'],
-      vibe_score: 74,
-    },
-  },
-];
-
-// ============================================================================
-// DEMO DATA — incoming "Likes You" entries.
-// A person who liked you is NOT a match: they only become a match after you
-// like them back. Production source: GET /v1/connect/likes-you.
-// TODO(backend): delete this array once the likes-you endpoint is served.
-// NOTE: no phone numbers, social handles or real user IDs are ever rendered.
-// ============================================================================
-const defaultLikesStack: IncomingLike[] = [
-  {
-    actor_id: '44444444-4444-4444-4444-444444444444',
-    nickname: 'Riya',
-    age: 23,
-    gender: 'Female',
-    avatar: '/riya.jpg',
-    bitmoji: '/riya.jpg',
-    photo_urls: ['/riya.jpg', '/ananya.jpg'],
-    city: 'Mumbai (Colaba)',
-    distance_km: 4.6,
-    action: 'spark',
-    is_verified: true,
-    is_online: true,
-    shared_interests: ['Vintage Fashion 👗', '35mm Film 📷', 'Art Cinema 📽️', 'Italian Cuisine 🍕'],
-    bio: 'Fashion curator & cinema buff 🎬 Weekend flea markets and film photography.',
-    match_percent: 91,
-  },
-  {
-    actor_id: '66666666-6666-6666-6666-666666666666',
-    nickname: 'Priya',
+    id: 'sc-3',
+    name: 'Meera',
     age: 25,
-    gender: 'Female',
-    avatar: '/ananya.jpg',
-    bitmoji: '/ananya.jpg',
-    photo_urls: ['/ananya.jpg'],
-    city: 'Mumbai (Worli)',
-    distance_km: 8.1,
-    action: 'like',
-    is_verified: true,
-    is_online: true,
-    shared_interests: ['Specialty Coffee ☕', 'Modern Art 🎨', 'Live Jazz 🎷'],
-    bio: 'Product strategist & avid reader 📚 Chai over coffee any day!',
-    match_percent: 84,
+    city: 'Hyderabad, Banjara Hills',
+    avatar: DEMO_PROFILES[2].photo_urls[0],
+    type: 'mega_crush',
+    direction: 'sent',
+    message: 'Would love to discuss magical realism books!',
+    timestamp: '3h ago',
+    interests: ['Books 📚', 'Classical Dance 💃', 'Vinyl 🎶'],
   },
   {
-    actor_id: '77777777-7777-7777-7777-777777777777',
-    nickname: 'Tara',
+    id: 'sc-4',
+    name: 'Riya',
     age: 24,
-    gender: 'Female',
-    avatar: '/aditya.jpg',
-    bitmoji: '/aditya.jpg',
-    photo_urls: ['/aditya.jpg'],
-    city: 'Mumbai (Juhu)',
-    distance_km: 12.3,
-    action: 'like',
-    is_verified: false,
-    is_online: false,
-    shared_interests: ['Sunset Runs 🌅', 'Acoustic Rock 🎸', 'Night Cycling 🚴'],
-    bio: 'Chasing golden hour sunsets along Juhu beach 🌅',
-    match_percent: 72,
+    city: 'Mumbai, Bandra West',
+    avatar: DEMO_PROFILES[3].photo_urls[0],
+    type: 'spark',
+    direction: 'received',
+    message: 'Bandra sunsets are unmatched 🌅',
+    timestamp: '5h ago',
+    interests: ['Pottery 🏺', 'Acoustic Rock 🎸'],
   },
   {
-    actor_id: '88888888-8888-8888-8888-888888888888',
-    nickname: 'Meera',
+    id: 'sc-5',
+    name: 'Ishita',
     age: 26,
-    gender: 'Female',
-    avatar: '/ananya.jpg',
-    bitmoji: '/ananya.jpg',
-    photo_urls: ['/ananya.jpg', '/riya.jpg'],
-    city: 'Mumbai (Andheri)',
-    distance_km: 6.4,
-    action: 'spark',
-    is_verified: true,
-    is_online: true,
-    shared_interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨'],
-    bio: 'Architect by training, ceramicist at heart. Big on slow mornings ☕',
-    match_percent: 88,
-  },
-  {
-    actor_id: '99999999-9999-9999-9999-999999999999',
-    nickname: 'Nisha',
-    age: 22,
-    gender: 'Female',
-    avatar: '/riya.jpg',
-    bitmoji: '/riya.jpg',
-    photo_urls: ['/riya.jpg'],
-    city: 'Mumbai (Powai)',
-    distance_km: 18.7,
-    action: 'like',
-    is_verified: false,
-    is_online: false,
-    shared_interests: ['35mm Film 📷', 'Art Cinema 📽️', 'Italian Cuisine 🍕'],
-    bio: 'Film student documenting Mumbai one frame at a time.',
-    match_percent: 69,
-  },
-  {
-    // Restricted profile: stays limited even within the daily view limit.
-    actor_id: 'abababab-abab-abab-abab-abababababab',
-    nickname: 'Sana',
-    age: 27,
-    gender: 'Female',
-    avatar: '/aditya.jpg',
-    bitmoji: '/aditya.jpg',
-    photo_urls: ['/aditya.jpg'],
-    city: 'Mumbai (Versova)',
-    distance_km: 9.9,
-    action: 'like',
-    is_verified: true,
-    is_online: true,
-    shared_interests: ['Live Jazz 🎷', 'Specialty Coffee ☕', 'Modern Art 🎨'],
-    bio: 'Music producer. Ask me about my vinyl collection.',
-    is_restricted: true,
-    match_percent: 80,
+    city: 'Hyderabad, Gachibowli',
+    avatar: DEMO_PROFILES[4].photo_urls[0],
+    type: 'spark',
+    direction: 'sent',
+    message: 'Let us hit the badminton court sometime 🏸',
+    timestamp: 'Yesterday',
+    interests: ['Badminton 🏸', 'Tech Startups 🚀'],
   },
 ];
 
-/**
- * Reusable horizontal row behaviour: mouse drag-to-scroll + one-card paging.
- * Touch uses the browser's native momentum scrolling (touch-action: pan-x).
- * The Likes row keeps its own copy; this hook drives the Matches rows.
- */
-function useHorizontalDragScroll() {
-  const ref = useRef<HTMLDivElement>(null);
-  const drag = useRef({ active: false, moved: false, startX: 0, startScrollLeft: 0, pointerId: -1 });
-  const suppressClick = useRef(false);
+// Icebreaker prompts list
+const ICEBREAKER_PROMPTS = [
+  "☕ If we met for coffee, what's your go-to order?",
+  "🎵 What's one song that never fails to lift your mood?",
+  "✈️ Spontaneous weekend getaway or cozy movie marathon?",
+  "🌮 Best street food hidden gem in your city?",
+  "🎨 If you could master any skill overnight, what would it be?",
+  "📖 What's the last book that genuinely moved you?",
+];
 
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== 'mouse') return; // touch scrolls natively
-    if ((e.target as HTMLElement).closest('button, a, input, select')) return;
-    const el = ref.current;
-    if (!el) return;
-    suppressClick.current = false;
-    drag.current = { active: true, moved: false, startX: e.clientX, startScrollLeft: el.scrollLeft, pointerId: e.pointerId };
-    el.setPointerCapture(e.pointerId);
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    if (!d.active) return;
-    const dx = e.clientX - d.startX;
-    if (Math.abs(dx) > 4) {
-      d.moved = true;
-      ref.current?.classList.add('is-dragging');
-    }
-    if (ref.current) ref.current.scrollLeft = d.startScrollLeft - dx;
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    if (!d.active) return;
-    const el = ref.current;
-    if (el && el.hasPointerCapture?.(d.pointerId)) el.releasePointerCapture(d.pointerId);
-    el?.classList.remove('is-dragging');
-    if (d.moved) suppressClick.current = true; // swallow the click that follows a drag
-    d.active = false;
-  };
-
-  const scrollByCard = (dir: number, selector: string, gap: number) => {
-    const el = ref.current;
-    if (!el) return;
-    const first = el.querySelector<HTMLElement>(selector);
-    const step = first ? first.offsetWidth + gap : Math.round(el.clientWidth * 0.7);
-    el.scrollBy({ left: dir * step, behavior: 'smooth' });
-  };
-
-  const consumeSuppressedClick = () => {
-    if (suppressClick.current) {
-      suppressClick.current = false;
-      return true;
-    }
-    return false;
-  };
-
-  return {
-    ref,
-    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp },
-    scrollByCard,
-    consumeSuppressedClick,
-  };
+// STRICT REQUIREMENT: Illustrated/3D Avatars with Language tags for Floating Story Bubbles
+export interface RandomCallAvatarProfile {
+  id: string;
+  name: string;
+  avatar: string;
+  countryName: string;
+  countryFlag: string;
+  language: string;
+  isOnline: boolean;
+  age: number;
 }
 
-/** Relative "time ago" label for a match / message timestamp. */
-function formatRelativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return 'recently';
-  const diffMs = Date.now() - then;
-  if (diffMs < 0) return 'just now';
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins} min ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return '1 day ago';
-  if (days < 30) return `${days} days ago`;
-  const months = Math.floor(days / 30);
-  return `${months} month${months > 1 ? 's' : ''} ago`;
-}
+export const RANDOM_CALL_AVATAR_PROFILES: RandomCallAvatarProfile[] = [
+  {
+    id: 'rc_1',
+    name: 'Kavya Reddy',
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Kavya&backgroundColor=ffd5dc,b6e3f4',
+    countryName: 'India',
+    countryFlag: '🇮🇳',
+    language: 'Telugu',
+    isOnline: true,
+    age: 23,
+  },
+  {
+    id: 'rc_2',
+    name: 'Aanya Sharma',
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Aanya&backgroundColor=b6e3f4,ffd5dc,d1d4f9',
+    countryName: 'India',
+    countryFlag: '🇮🇳',
+    language: 'Hindi',
+    isOnline: true,
+    age: 24,
+  },
+  {
+    id: 'rc_3',
+    name: 'Rohan Mehra',
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Rohan&backgroundColor=c0aede,ffd5dc',
+    countryName: 'India',
+    countryFlag: '🇮🇳',
+    language: 'English',
+    isOnline: true,
+    age: 25,
+  },
+  {
+    id: 'rc_4',
+    name: 'Sneha Iyer',
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Sneha&backgroundColor=d1d4f9,c0aede',
+    countryName: 'India',
+    countryFlag: '🇮🇳',
+    language: 'Tamil',
+    isOnline: true,
+    age: 23,
+  },
+  {
+    id: 'rc_5',
+    name: 'Meera Nair',
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Meera&backgroundColor=b6e3f4,d1d4f9',
+    countryName: 'India',
+    countryFlag: '🇮🇳',
+    language: 'Malayalam',
+    isOnline: true,
+    age: 24,
+  },
+  {
+    id: 'rc_6',
+    name: 'Priya Patel',
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Priya&backgroundColor=ffd5dc,d1d4f9',
+    countryName: 'India',
+    countryFlag: '🇮🇳',
+    language: 'Gujarati',
+    isOnline: true,
+    age: 24,
+  },
+  {
+    id: 'rc_7',
+    name: 'Kabir Verma',
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Kabir&backgroundColor=c0aede,b6e3f4',
+    countryName: 'India',
+    countryFlag: '🇮🇳',
+    language: 'Punjabi',
+    isOnline: true,
+    age: 26,
+  },
+  {
+    id: 'rc_8',
+    name: 'Maya Chen',
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Maya&backgroundColor=d1d4f9,ffd5dc',
+    countryName: 'Singapore',
+    countryFlag: '🇸🇬',
+    language: 'English',
+    isOnline: true,
+    age: 22,
+  },
+];
 
 export const ConnectTab: React.FC<ConnectTabProps> = ({
   onOpenChat,
-  onOpenStore,
+  onStartCall,
   onMutualMatch,
-  coinBalance = 0,
-  onCoinsDeducted,
-  viewerGender = 'male',
 }) => {
-  // Navigation tabs: 'discover' | 'matches' | 'likes'
-  const [activeTab, setActiveTab] = useState<'discover' | 'matches' | 'likes'>('discover');
+  
+  // 1. TOP SUB-TABS: STRICTLY Likes | Matches | Random Call
+  const [activeSubTab, setActiveSubTab] = useState<'random_call' | 'likes' | 'matches'>('random_call');
 
-  // Candidate card deck state
-  const [allCandidates, setAllCandidates] = useState<CandidateCard[]>(defaultCandidates);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
-  const [matches, setMatches] = useState<MatchItem[]>([]);
-  const [likesStack, setLikesStack] = useState<IncomingLike[]>(defaultLikesStack);
+  // 2. FILTER PILLS: Recommended | Nearby | Online | Interests | More
+  const [activeFilterPill, setActiveFilterPill] = useState<'recommended' | 'nearby' | 'online' | 'interests'>('recommended');
+  const [showMoreFiltersModal, setShowMoreFiltersModal] = useState(false);
+  const [ageRange, setAgeRange] = useState<number>(28);
+  const [maxDistanceKm, setMaxDistanceKm] = useState<number>(35);
+  const [selectedRelationshipPref, setSelectedRelationshipPref] = useState<string>('All');
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(['Coffee ☕', 'Indie Vinyl 🎵']);
 
-  // ── Matches tab state ──────────────────────────────────────────────────────
-  // `matches` holds REAL backend data only (never demo). When unreachable we
-  // render DEMO_MATCHES with a "Demo data" chip, leaving real state untouched.
-  const [matchesLoadState, setMatchesLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [usingDemoMatches, setUsingDemoMatches] = useState(false);
-  const [isConnectionsOpen, setIsConnectionsOpen] = useState(false);
-  const vibeRow = useHorizontalDragScroll();
-  const sparkRow = useHorizontalDragScroll();
+  // Data sets
 
-  // Drag and swipe mechanics — all hot-path values stored in refs to avoid stale closures
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [swipeStamp, setSwipeStamp] = useState<'like' | 'dislike' | 'spark' | null>(null);
-  const dragActiveRef = useRef(false);
-  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
-  const dragOffsetRef = useRef({ x: 0, y: 0 });
-  const rafRef = useRef<number | null>(null);
-  const isAnimatingRef = useRef(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  
+  const [matches, setMatches] = useState<MatchHistoryItem[]>(generate50Matches);
+  const [likesHistory, setLikesHistory] = useState<LikeHistoryItem[]>(generate50History);
+  const [sparkCrushList, setSparkCrushList] = useState<SparkCrushItem[]>(SPARK_CRUSH_LIST);
+  const [likesYouList, setLikesYouList] = useState<CandidateCard[]>(DEMO_PROFILES.slice(0, 10));
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // ── Likes tab ("X Likes You") state ────────────────────────────────────────
-  // `is_liked` is tracked locally per admirer. Pass sets it false for the
-  // session; a Passed/Blocked profile is removed from the list permanently.
-  const [likedAdmirerIds, setLikedAdmirerIds] = useState<Set<string>>(new Set());
-  const [passedAdmirerIds, setPassedAdmirerIds] = useState<Set<string>>(new Set());
-  const [matchedAdmirerIds, setMatchedAdmirerIds] = useState<Set<string>>(new Set());
-  const [sparkedAdmirerIds, setSparkedAdmirerIds] = useState<Set<string>>(new Set());
-  const [sparkConfirmAdmirer, setSparkConfirmAdmirer] = useState<IncomingLike | null>(null);
-  const [insufficientBalanceOpen, setInsufficientBalanceOpen] = useState(false);
-  // 'loading' skeleton → 'ready' → 'error' (with Retry).
-  const [likesLoadState, setLikesLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
-  // True when the list shown is the local demo fallback (no backend).
-  const [usingDemoLikes, setUsingDemoLikes] = useState(false);
-  // Demo counter of how many full profiles were revealed today.
-  const [likesViewedToday, setLikesViewedToday] = useState(0);
-  // Profile bottom sheet: swipeable photos, 3-dot menu, limited treatment.
-  const [profilePhotoIdx, setProfilePhotoIdx] = useState(0);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [inspectingProfileLimited, setInspectingProfileLimited] = useState(false);
-  const cardTapRef = useRef<{ id: string | null; time: number }>({ id: null, time: 0 });
-  const profileSwipeStartRef = useRef<number | null>(null);
-  // Likes row: element ref + mouse drag-to-scroll state.
-  const likesRowRef = useRef<HTMLDivElement>(null);
-  const likesDragRef = useRef({ active: false, moved: false, startX: 0, startScrollLeft: 0, pointerId: -1 });
-  const suppressLikesClickRef = useRef(false);
+  // Weekly metrics & Refreshing animation
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Filters state
-  const [presetFilter, setPresetFilter] = useState<'recommended' | 'nearby' | 'online' | 'verified'>('recommended');
-  const [maxDistance, setMaxDistance] = useState<number>(50);
-  const [minAge, setMinAge] = useState<number>(18);
-  const [maxAge, setMaxAge] = useState<number>(35);
-  const [selectedInterest, setSelectedInterest] = useState<string | null>(null);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  // MODAL STATES
+  // Workflow: Partially Restricted Modal (Like Side)
+  const [partiallyRestrictedProfile, setPartiallyRestrictedProfile] = useState<{
+    name: string;
+    avatar: string;
+    age: number;
+    is_verified: boolean;
+    interests: string[];
+    actor_id: string;
+  } | null>(null);
 
-  // Modals & Bottom sheets
-  const [inspectingProfile, setInspectingProfile] = useState<CandidateCard | null>(null);
-  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [showBlockDialog, setShowBlockDialog] = useState<CandidateCard | null>(null);
-  const [showReportDialog, setShowReportDialog] = useState<CandidateCard | null>(null);
+  // Workflow: Restricted Modal (Dislike / Passed Side)
+  const [restrictedProfile, setRestrictedProfile] = useState<{
+    name: string;
+    avatar: string;
+  } | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
+  // Workflow: Limited Visibility Modal (Potential Matches)
+  const [limitedProfile, setLimitedProfile] = useState<{
+    nickname: string;
+    age: number;
+    gender: string;
+    distance_km: number;
+    interests: string[];
+  } | null>(null);
 
-  // Loads the incoming "Likes You" stack.
-  // DEMO BEHAVIOUR: with no backend in this build the request fails and we
-  // fall back to labelled demo data. `asError` (used by the manual Refresh
-  // control) instead surfaces the error state so Retry can be exercised.
-  const loadLikes = useCallback(async (opts?: { asError?: boolean }) => {
-    setLikesLoadState('loading');
-    try {
-      const res = await fetch('/v1/connect/likes-you?user_id=11111111-1111-1111-1111-111111111111');
-      const data = await res.json();
-      if (data?.success && Array.isArray(data.likes_stack) && data.likes_stack.length > 0) {
-        setLikesStack(data.likes_stack);
-        setUsingDemoLikes(false);
-      } else {
-        setLikesStack(defaultLikesStack);
-        setUsingDemoLikes(true);
+  // Workflow: Full Visibility Modal (Matched Recently)
+  const [fullProfile, setFullProfile] = useState<MatchHistoryItem | null>(null);
+
+  // Workflow: "Make First Move" Chat Overlay
+  const [firstMoveChatMatch, setFirstMoveChatMatch] = useState<MatchHistoryItem | null>(null);
+  const [firstMoveMessage, setFirstMoveMessage] = useState('');
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [voiceRecordedToast, setVoiceRecordedToast] = useState(false);
+
+  // Workflow: "Make First Move" Icebreakers Drawer
+  const [firstMoveIcebreakerMatch, setFirstMoveIcebreakerMatch] = useState<MatchHistoryItem | null>(null);
+
+  // Random Call state
+  const [randomCallState, setRandomCallState] = useState<'idle' | 'searching' | 'connected'>('idle');
+  const [randomCallTimer, setRandomCallTimer] = useState<number>(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isSpeaker, setIsSpeaker] = useState(true);
+  const [hasLikedCallPartner, setHasLikedCallPartner] = useState(false);
+  const [randomProfileIndex, setRandomProfileIndex] = useState(0);
+  const [currentCallMode, setCurrentCallMode] = useState<'audio' | 'video'>('audio');
+  const [showRandomCallSelector, setShowRandomCallSelector] = useState<boolean>(true);
+  const currentAvatarProfile = RANDOM_CALL_AVATAR_PROFILES[randomProfileIndex] || RANDOM_CALL_AVATAR_PROFILES[0];
+
+  // Selected profile for Random Call popup modal
+  const [selectedRandomCallProfile, setSelectedRandomCallProfile] = useState<{
+    id: string;
+    name: string;
+    avatar: string;
+    sticker: string;
+    language: string;
+    age: number;
+    ringColor: string;
+  } | null>(null);
+
+  // Filtered profiles for Horizontal Slide View below Filter Pills
+  const filteredProfilesCarousel = useMemo(() => {
+    return DEMO_PROFILES.filter((p) => {
+      if (activeFilterPill === 'nearby') return p.distance_km <= (maxDistanceKm || 15);
+      if (activeFilterPill === 'online') return p.is_online === true;
+      if (activeFilterPill === 'interests') {
+        if (selectedTopics.length === 0) return true;
+        return p.shared_interests?.some((i) => selectedTopics.some((t) => i.includes(t.split(' ')[0])));
       }
-      setLikesLoadState('ready');
-    } catch (err) {
-      if (opts?.asError) {
-        setLikesLoadState('error');
-        return;
+      return true; // recommended
+    });
+  }, [activeFilterPill, maxDistanceKm, selectedTopics]);
+
+  // Filtered Random Call Floating Profiles
+  const filteredRandomCallProfiles = useMemo(() => {
+    const stickerEmojis = ['🦊', '🐰', '🐼', '🐱', '🦄', '🌸', '🐻', '🐯', '🍓', '🐨', '🦋', '🐥'];
+    const ringColors = [
+      'rgba(244, 63, 94, 0.75)',
+      'rgba(56, 189, 248, 0.75)',
+      'rgba(168, 85, 247, 0.75)',
+      'rgba(251, 146, 60, 0.75)',
+      'rgba(34, 197, 94, 0.75)',
+      'rgba(236, 72, 153, 0.75)',
+      'rgba(250, 204, 21, 0.75)',
+      'rgba(20, 184, 166, 0.75)',
+    ];
+
+    return RANDOM_CALL_AVATAR_PROFILES.map((p, idx) => ({
+      ...p,
+      sticker: stickerEmojis[idx % stickerEmojis.length],
+      ringColor: ringColors[idx % ringColors.length],
+    })).filter((prof) => {
+      if (activeFilterPill === 'online') return prof.isOnline;
+      if (activeFilterPill === 'nearby') return prof.countryName === 'India' || prof.language === 'Telugu' || prof.language === 'English';
+      if (activeFilterPill === 'interests') {
+        if (selectedTopics.length === 0) return true;
+        return true;
       }
-      setLikesStack(defaultLikesStack);
-      setUsingDemoLikes(true);
-      setLikesLoadState('ready');
-    }
-  }, []);
-
-  // Loads the real matches list. This NEVER writes demo data into `matches`;
-  // when the backend is unavailable we set usingDemoMatches and render the
-  // labelled DEMO_MATCHES constant instead. `asError` powers the manual Retry.
-  const loadMatches = useCallback(async (opts?: { asError?: boolean }) => {
-    setMatchesLoadState('loading');
-    try {
-      const res = await fetch('/v1/matches?user_id=11111111-1111-1111-1111-111111111111');
-      const data = await res.json();
-      if (data?.success && Array.isArray(data.matches)) {
-        setMatches(data.matches);
-        setUsingDemoMatches(false);
-      } else {
-        setMatches([]);
-        setUsingDemoMatches(true);
-      }
-      setMatchesLoadState('ready');
-    } catch (err) {
-      if (opts?.asError) {
-        setMatchesLoadState('error');
-        return;
-      }
-      // No backend in this build → labelled demo fallback.
-      setMatches([]);
-      setUsingDemoMatches(true);
-      setMatchesLoadState('ready');
-    }
-  }, []);
-
-  // Fetch deck + matches (best-effort, silent fallback to demo data).
-  useEffect(() => {
-    const fetchDeck = async () => {
-      try {
-        const resDeck = await fetch('/v1/discovery/deck?user_id=11111111-1111-1111-1111-111111111111&radius_km=50');
-        const dataDeck = await resDeck.json();
-        if (dataDeck?.success && dataDeck.deck?.length > 0) {
-          setAllCandidates(dataDeck.deck);
-        }
-      } catch (err) {
-        // Safe local demo data fallback
-      }
-    };
-    fetchDeck();
-    loadLikes();
-    loadMatches();
-  }, [loadLikes, loadMatches]);
-
-  // Filtered candidate deck
-  const filteredCandidates = allCandidates
-    .filter((c) => !blockedUserIds.has(c.user_id))
-    .filter((c) => {
-      if (presetFilter === 'nearby' && c.distance_km > 10) return false;
-      if (presetFilter === 'online' && !c.is_online) return false;
-      if (presetFilter === 'verified' && !c.is_verified) return false;
-
-      if (c.distance_km > maxDistance) return false;
-      const age = c.age || 24;
-      if (age < minAge || age > maxAge) return false;
-      if (selectedInterest && !c.shared_interests?.includes(selectedInterest)) return false;
-
       return true;
     });
+  }, [activeFilterPill, selectedTopics]);
 
-  const currentCandidate = filteredCandidates[currentIndex];
+  // Vibe Scoreboard (Top 3 vibed this week)
+  const topVibedWeekly = useMemo(() => {
+    return matches.slice(0, 3);
+  }, [matches]);
 
-  const resetFilters = () => {
-    setPresetFilter('recommended');
-    setMaxDistance(50);
-    setMinAge(18);
-    setMaxAge(35);
-    setSelectedInterest(null);
-    setCurrentIndex(0);
-    setActivePhotoIdx(0);
-    showToast('Filters reset to Recommended');
-  };
-
-  const isFilterActive =
-    presetFilter !== 'recommended' ||
-    maxDistance !== 50 ||
-    minAge !== 18 ||
-    maxAge !== 35 ||
-    selectedInterest !== null;
-
-  // ─── Swipe engine (ref-based, document-level pointer events) ────────────────
-
-  /**
-   * Commit the exit animation and advance the deck.
-   * `action` must already be set in swipeStamp before calling.
-   */
-  const commitExit = useCallback(
-    async (action: 'like' | 'dislike' | 'spark', candidate: CandidateCard) => {
-      // Apply exit transform directly on the DOM node for immediate feedback
-      if (cardRef.current) {
-        const exitX = action === 'dislike' ? '-130vw' : action === 'like' ? '130vw' : '0';
-        const exitY = action === 'spark' ? '-130vh' : '0';
-        const exitRot = action === 'dislike' ? '-20deg' : action === 'like' ? '20deg' : '0';
-        cardRef.current.style.transition = 'transform 0.32s ease-out, opacity 0.32s ease-out';
-        cardRef.current.style.transform = `translate(${exitX}, ${exitY}) rotate(${exitRot})`;
-        cardRef.current.style.opacity = '0';
-      }
-
-      // Fire backend (best-effort)
-      try {
-        const res = await fetch('/v1/swipes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            actor_id: '11111111-1111-1111-1111-111111111111',
-            target_id: candidate.user_id,
-            action,
-          }),
-        });
-        const data = await res.json();
-        if (data?.is_match && onMutualMatch) onMutualMatch(candidate);
-      } catch { /* local demo */ }
-
-      if (action === 'like') showToast(`Liked ${candidate.nickname}! ❤️`);
-      else if (action === 'spark') showToast(`Super-liked ${candidate.nickname}! ✨`);
-      else showToast(`Passed on ${candidate.nickname}`);
-
-      // Advance deck after animation
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev + 1);
-        setActivePhotoIdx(0);
-        setDragOffset({ x: 0, y: 0 });
-        dragOffsetRef.current = { x: 0, y: 0 };
-        setIsAnimating(false);
-        isAnimatingRef.current = false;
-        setSwipeStamp(null);
-      }, 350);
-    },
-    [onMutualMatch]
-  );
-
-  /**
-   * Public handler called by buttons AND by gesture completion.
-   */
-  const executeSwipe = useCallback(
-    (action: 'like' | 'dislike' | 'spark') => {
-      if (!currentCandidate || isAnimatingRef.current) return;
-      isAnimatingRef.current = true;
-      setIsAnimating(true);
-      setSwipeStamp(action);
-      commitExit(action, currentCandidate);
-    },
-    [currentCandidate, commitExit]
-  );
-
-  /**
-   * Pointer-down on the card — start dragging.
-   * Registers document-level move/up so fast gestures never drop.
-   */
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (isAnimatingRef.current || !currentCandidate) return;
-      // Ignore clicks on interactive children
-      if ((e.target as HTMLElement).closest('button, a, input, select')) return;
-
-      e.currentTarget.setPointerCapture(e.pointerId);
-      dragActiveRef.current = true;
-      dragStartRef.current = { x: e.clientX, y: e.clientY };
-      dragOffsetRef.current = { x: 0, y: 0 };
-
-      // Apply grab cursor immediately
-      if (cardRef.current) {
-        cardRef.current.style.cursor = 'grabbing';
-        cardRef.current.style.transition = 'none';
-      }
-    },
-    [currentCandidate]
-  );
-
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragActiveRef.current || !dragStartRef.current) return;
-    const dx = e.clientX - dragStartRef.current.x;
-    const dy = e.clientY - dragStartRef.current.y;
-    dragOffsetRef.current = { x: dx, y: dy };
-
-    // Update card transform directly on DOM for zero-lag visual feedback
-    if (cardRef.current) {
-      cardRef.current.style.transform = `translate(${dx}px, ${dy * 0.35}px) rotate(${dx * 0.06}deg)`;
-    }
-
-    // Throttle React state updates with rAF (stamps only need ~60fps)
-    if (rafRef.current === null) {
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        setDragOffset({ x: dragOffsetRef.current.x, y: dragOffsetRef.current.y });
-      });
-    }
+  // Potential Matches (Curated based on active preferences & daily prompts)
+  const potentialMatches = useMemo(() => {
+    return DEMO_PROFILES.slice(10, 20);
   }, []);
 
-  const handlePointerUp = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!dragActiveRef.current) return;
-      dragActiveRef.current = false;
+  // Matched Recently (Top matches relative to all swipes)
+  const matchedRecentlyList = useMemo(() => {
+    return matches.slice(0, 8);
+  }, [matches]);
 
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
+  // Filtered match history by search and active filter pill
+  const filteredMatchHistory = useMemo(() => {
+    let result = matches;
+    if (activeFilterPill === 'nearby') {
+      result = result.filter((m) => m.distance_km <= (maxDistanceKm || 25));
+    } else if (activeFilterPill === 'online') {
+      result = result.filter((m) => m.lastActive.toLowerCase().includes('online') || m.lastActive.toLowerCase().includes('m ago'));
+    } else if (activeFilterPill === 'interests') {
+      if (selectedTopics.length > 0) {
+        result = result.filter((m) => m.sharedInterests.some((i) => selectedTopics.some((t) => i.includes(t.split(' ')[0]))));
       }
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((m) => m.name.toLowerCase().includes(q) || m.city.toLowerCase().includes(q));
+    }
+    return result;
+  }, [matches, searchQuery, activeFilterPill, maxDistanceKm, selectedTopics]);
 
-      const dx = dragOffsetRef.current.x;
-      const THRESHOLD = 90;
+  // Filter strip component for Matches and Random Call tabs (hidden on Likes tab)
+  const renderFilterStrip = () => (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        paddingBottom: '2px',
+        marginBottom: '14px',
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setActiveFilterPill('recommended')}
+        style={{
+          padding: '6px 14px',
+          borderRadius: '999px',
+          fontSize: '12px',
+          fontWeight: 700,
+          whiteSpace: 'nowrap',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+          background: activeFilterPill === 'recommended' ? '#f43f5e' : '#191c24',
+          color: activeFilterPill === 'recommended' ? '#ffffff' : '#94a3b8',
+          border: activeFilterPill === 'recommended' ? '1px solid #f43f5e' : '1px solid rgba(255, 255, 255, 0.08)',
+        }}
+      >
+        Recommended
+      </button>
 
-      if (dx > THRESHOLD) {
-        executeSwipe('like');
-      } else if (dx < -THRESHOLD) {
-        executeSwipe('dislike');
-      } else {
-        // Snap back
-        if (cardRef.current) {
-          cardRef.current.style.transition = 'transform 0.28s cubic-bezier(0.34,1.56,0.64,1)';
-          cardRef.current.style.transform = 'none';
-          cardRef.current.style.cursor = 'grab';
-        }
-        dragOffsetRef.current = { x: 0, y: 0 };
-        setDragOffset({ x: 0, y: 0 });
-      }
-    },
-    [executeSwipe]
+      <button
+        type="button"
+        onClick={() => setActiveFilterPill('nearby')}
+        style={{
+          padding: '6px 14px',
+          borderRadius: '999px',
+          fontSize: '12px',
+          fontWeight: 700,
+          whiteSpace: 'nowrap',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          background: activeFilterPill === 'nearby' ? '#f43f5e' : '#191c24',
+          color: activeFilterPill === 'nearby' ? '#ffffff' : '#94a3b8',
+          border: activeFilterPill === 'nearby' ? '1px solid #f43f5e' : '1px solid rgba(255, 255, 255, 0.08)',
+        }}
+      >
+        <span>Nearby</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setActiveFilterPill('online')}
+        style={{
+          padding: '6px 14px',
+          borderRadius: '999px',
+          fontSize: '12px',
+          fontWeight: 700,
+          whiteSpace: 'nowrap',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: activeFilterPill === 'online' ? 'rgba(34, 197, 94, 0.2)' : '#191c24',
+          color: activeFilterPill === 'online' ? '#22c55e' : '#94a3b8',
+          border: activeFilterPill === 'online' ? '1px solid #22c55e' : '1px solid rgba(255, 255, 255, 0.08)',
+        }}
+      >
+        <span
+          style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            background: '#22c55e',
+          }}
+        />
+        <span>Online</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setActiveFilterPill('interests')}
+        style={{
+          padding: '6px 14px',
+          borderRadius: '999px',
+          fontSize: '12px',
+          fontWeight: 700,
+          whiteSpace: 'nowrap',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          background: activeFilterPill === 'interests' ? '#f43f5e' : '#191c24',
+          color: activeFilterPill === 'interests' ? '#ffffff' : '#94a3b8',
+          border: activeFilterPill === 'interests' ? '1px solid #f43f5e' : '1px solid rgba(255, 255, 255, 0.08)',
+        }}
+      >
+        <Sparkles size={12} />
+        <span>Interests</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setShowMoreFiltersModal(true)}
+        style={{
+          padding: '6px 14px',
+          borderRadius: '999px',
+          fontSize: '12px',
+          fontWeight: 700,
+          whiteSpace: 'nowrap',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          background: '#191c24',
+          color: '#94a3b8',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+        }}
+      >
+        <SlidersHorizontal size={12} />
+        <span>More</span>
+      </button>
+    </div>
   );
 
-  const handleRevert = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-      setActivePhotoIdx(0);
-      showToast('Previous card restored!');
+  // Random Call timer effect
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (randomCallState === 'connected') {
+      interval = setInterval(() => {
+        setRandomCallTimer((prev) => {
+          if (prev >= 180) { // 3-minute icebreaker limit
+            setRandomCallState('idle');
+            return 0;
+          }
+          return prev + 1;
+        });
+      }, 1000);
     } else {
-      showToast('No previous card to restore.');
+      setRandomCallTimer(0);
     }
-  };
-
-  // Block User Action
-  const confirmBlockUser = (profile: CandidateCard) => {
-    setBlockedUserIds((prev) => new Set(prev).add(profile.user_id));
-    setInspectingProfile(null);
-    setShowBlockDialog(null);
-    showToast(`${profile.nickname} has been blocked.`);
-  };
-
-  // Report User Action
-  const confirmReportUser = (profile: CandidateCard, reason: string) => {
-    setShowReportDialog(null);
-    setInspectingProfile(null);
-    showToast(`Report received: "${reason}". Profile flagged locally.`);
-  };
-
-  // ── Likes tab ("X Likes You") helpers ──────────────────────────────────────
-  const admirerToCandidate = (a: IncomingLike): CandidateCard => ({
-    user_id: a.actor_id,
-    nickname: a.nickname,
-    age: a.age,
-    bio: a.bio,
-    city: a.city,
-    distance_km: a.distance_km,
-    photo_urls: a.photo_urls?.length ? a.photo_urls : [a.avatar],
-    is_verified: a.is_verified,
-    is_online: a.is_online,
-    shared_interests: a.shared_interests,
-    profile_progress: 90,
-    vibe_score: a.match_percent || 85,
-  });
-
-  // Cards removed for this session: passed, blocked, or already liked.
-  const visibleLikes = likesStack.filter(
-    (a) =>
-      !passedAdmirerIds.has(a.actor_id) &&
-      !likedAdmirerIds.has(a.actor_id) &&
-      !blockedUserIds.has(a.actor_id)
-  );
-
-  // Limited visibility applies to restricted profiles and once the daily
-  // reveal limit is spent. Full visibility shows every interest + full photo.
-  const isLimitedVisibility = (a: IncomingLike) =>
-    a.is_restricted === true || likesViewedToday >= DAILY_LIKES_VIEW_LIMIT;
-
-  const dailyLimitReached = likesViewedToday >= DAILY_LIKES_VIEW_LIMIT;
-  const recordView = () => setLikesViewedToday((n) => n + 1);
-
-  // DEMO: everyone in this tab already liked you, so liking back is mutual.
-  // The "It's a match" modal is demo behaviour only — no backend match is
-  // created and no fake matches are inserted into the Matches list.
-  const handleLikeAdmirer = (a: IncomingLike) => {
-    recordView();
-    setLikedAdmirerIds((prev) => new Set(prev).add(a.actor_id));
-    const alreadyLikedYou = true; // all incoming "Likes You" entries
-    if (alreadyLikedYou && onMutualMatch) {
-      setMatchedAdmirerIds((prev) => new Set(prev).add(a.actor_id));
-      // DEMO ONLY — reuse the existing match modal.
-      onMutualMatch(admirerToCandidate(a));
-    } else {
-      // Local-only record; a real build would POST /v1/swipes here.
-      showToast(`Liked ${a.nickname} back!`);
-    }
-  };
-
-  // Pass / Dislike: locally sets is_liked = false and removes for the session.
-  const handlePassAdmirer = (a: IncomingLike) => {
-    recordView();
-    setPassedAdmirerIds((prev) => new Set(prev).add(a.actor_id));
-    showToast(`Passed on ${a.nickname}`);
-  };
-
-  // Spark guard: insufficient balance → modal; otherwise → confirm dialog.
-  const handleSparkRequest = (a: IncomingLike) => {
-    recordView();
-    if (coinBalance <= SPARK_COST) {
-      setInsufficientBalanceOpen(true);
-      return;
-    }
-    setSparkConfirmAdmirer(a);
-  };
-
-  // DEMO spend: deducts locally so the wallet reflects the cost. Replace with
-  // the server-authoritative spend call once the coin backend is wired.
-  const confirmSpark = (a: IncomingLike) => {
-    if (coinBalance <= SPARK_COST) {
-      setSparkConfirmAdmirer(null);
-      setInsufficientBalanceOpen(true);
-      return;
-    }
-    // DEMO ONLY — local balance change; never sends a real payment.
-    onCoinsDeducted?.(coinBalance - SPARK_COST);
-    setSparkedAdmirerIds((prev) => new Set(prev).add(a.actor_id));
-    setSparkConfirmAdmirer(null);
-    showToast(`Spark sent to ${a.nickname}! ✨ (demo)`);
-  };
-
-  // Double-tap a card to fire a Spark (interactive children are ignored).
-  const handleCardTap = (a: IncomingLike, e: React.MouseEvent) => {
-    if (suppressLikesClickRef.current) {
-      // A drag just ended — swallow the click so the card isn't liked/opened.
-      suppressLikesClickRef.current = false;
-      return;
-    }
-    if ((e.target as HTMLElement).closest('button, a, input, select')) return;
-    const now = Date.now();
-    const last = cardTapRef.current;
-    if (last.id === a.actor_id && now - last.time < 300) {
-      cardTapRef.current = { id: null, time: 0 };
-      handleSparkRequest(a);
-      return;
-    }
-    cardTapRef.current = { id: a.actor_id, time: now };
-  };
-
-  // Scroll the row by one card (used by the desktop arrow buttons).
-  const scrollLikesBy = (dir: number) => {
-    const row = likesRowRef.current;
-    if (!row) return;
-    const first = row.querySelector<HTMLElement>('.likes-card');
-    const step = first ? first.offsetWidth + 14 : Math.round(row.clientWidth * 0.8);
-    row.scrollBy({ left: dir * step, behavior: 'smooth' });
-  };
-
-  // Mouse-only drag-to-scroll (touch uses native momentum scrolling).
-  const handleLikesPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== 'mouse') return;
-    if ((e.target as HTMLElement).closest('button, a, input, select')) return;
-    const row = likesRowRef.current;
-    if (!row) return;
-    suppressLikesClickRef.current = false;
-    likesDragRef.current = {
-      active: true,
-      moved: false,
-      startX: e.clientX,
-      startScrollLeft: row.scrollLeft,
-      pointerId: e.pointerId,
+    return () => {
+      if (interval) clearInterval(interval);
     };
-    row.setPointerCapture(e.pointerId);
+  }, [randomCallState]);
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleLikesPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = likesDragRef.current;
-    if (!d.active) return;
-    const dx = e.clientX - d.startX;
-    if (Math.abs(dx) > 4) {
-      d.moved = true;
-      likesRowRef.current?.classList.add('is-dragging');
+  const handleStartRandomCall = (mode: 'audio' | 'video' = 'audio', partner?: RandomCallAvatarProfile) => {
+    if (partner) {
+      const pIdx = RANDOM_CALL_AVATAR_PROFILES.findIndex((p) => p.id === partner.id);
+      if (pIdx !== -1) {
+        setRandomProfileIndex(pIdx);
+      }
     }
-    const row = likesRowRef.current;
-    if (row) row.scrollLeft = d.startScrollLeft - dx;
+    setCurrentCallMode(mode);
+    setRandomCallState('searching');
+    setTimeout(() => {
+      setRandomCallState('connected');
+      setHasLikedCallPartner(false);
+      try {
+        confetti({
+          particleCount: 30,
+          spread: 50,
+          origin: { y: 0.6 },
+          colors: ['#38bdf8', '#0284c7', '#ffffff'],
+        });
+      } catch { }
+    }, 1200);
   };
 
-  const handleLikesPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = likesDragRef.current;
-    if (!d.active) return;
-    const row = likesRowRef.current;
-    if (row && row.hasPointerCapture?.(d.pointerId)) row.releasePointerCapture(d.pointerId);
-    row?.classList.remove('is-dragging');
-    if (d.moved) {
-      // Suppress the trailing click and reset any pending double-tap.
-      suppressLikesClickRef.current = true;
-      cardTapRef.current = { id: null, time: 0 };
+  const handleEndCall = () => {
+    setRandomCallState('idle');
+    setRandomCallTimer(0);
+  };
+
+  // Like Back Handler in Partially Restricted Modal
+  const handleLikePartiallyRestricted = () => {
+    if (!partiallyRestrictedProfile) return;
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.6 },
+        colors: ['#22c55e', '#f43f5e', '#ffd700'],
+      });
+    } catch { }
+
+    const target = DEMO_PROFILES.find((p) => p.user_id === partiallyRestrictedProfile.actor_id);
+    if (target && onMutualMatch) {
+      onMutualMatch(target);
     }
-    d.active = false;
+    setPartiallyRestrictedProfile(null);
   };
 
-  const openAdmirerProfile = (a: IncomingLike, limited: boolean) => {
-    setInspectingProfile(admirerToCandidate(a));
-    setInspectingProfileLimited(limited);
-    setProfilePhotoIdx(0);
-    setIsProfileMenuOpen(false);
+  const handleDislikePartiallyRestricted = () => {
+    setPartiallyRestrictedProfile(null);
   };
 
-  // ── Matches tab ("Matched & Vibed", Connections, Sparks, History) ──────────
-  // Blocked profiles disappear from every list below.
-  const realOrDemoMatches = usingDemoMatches ? DEMO_MATCHES : matches;
-  const displayedMatches = realOrDemoMatches.filter((m) => !blockedUserIds.has(m.counterpart.user_id));
-
-  const matchToCandidate = (m: MatchItem): CandidateCard => ({
-    user_id: m.counterpart.user_id,
-    nickname: m.counterpart.nickname,
-    age: m.counterpart.age || 24,
-    bio: m.counterpart.bio || 'Matched connection on YoUnMe.',
-    city: m.counterpart.city,
-    distance_km: 1.2,
-    photo_urls: m.counterpart.photo_urls?.length ? m.counterpart.photo_urls : [m.counterpart.avatar],
-    is_verified: m.counterpart.is_verified,
-    is_online: m.counterpart.is_online,
-    shared_interests: m.counterpart.shared_interests || ['Specialty Coffee ☕', 'Indie Vinyl 🎵'],
-    profile_progress: 95,
-    vibe_score: m.counterpart.vibe_score || 90,
-  });
-
-  const openMatchProfile = (m: MatchItem) => {
-    setInspectingProfile(matchToCandidate(m));
-    setInspectingProfileLimited(false);
-    setProfilePhotoIdx(0);
-    setIsProfileMenuOpen(false);
+  // Send first move text message
+  const handleSendFirstMoveText = () => {
+    if (!firstMoveChatMatch || !firstMoveMessage.trim()) return;
+    onOpenChat('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', firstMoveMessage);
+    setFirstMoveMessage('');
+    setFirstMoveChatMatch(null);
   };
 
-  // (a) Weekly scoreboard: matches from the last 7 days, ranked by vibe score.
-  const weeklyVibed = [...displayedMatches]
-    .filter((m) => Date.now() - new Date(m.matched_at).getTime() <= 7 * 24 * 3600 * 1000)
-    .sort((a, b) => (b.counterpart.vibe_score || 0) - (a.counterpart.vibe_score || 0));
+  // Send first move icebreaker
+  const handleSendIcebreaker = (prompt: string) => {
+    if (!firstMoveIcebreakerMatch) return;
+    onOpenChat('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', prompt);
+    setFirstMoveIcebreakerMatch(null);
+  };
 
-  // Small stat: best local signal for "all swipes" is the Discovery deck index.
-  // Only shown as a real ratio when we have real matches + a local swipe count;
-  // otherwise a clearly-labelled demo value is shown instead.
-  const localSwipeCount = currentIndex;
-  const localMatchRate =
-    !usingDemoMatches && localSwipeCount > 0 ? Math.round((matches.length / localSwipeCount) * 100) : null;
-
-  // (c) Spark / Mega-Crush profiles: inbound sparks (local likes state) and
-  // sparks we sent. DEMO source is the labelled likes stack. Restricted
-  // profiles are excluded so only fully-visible people are shown.
-  const sparkProfiles: IncomingLike[] = (() => {
-    const byId = new Map<string, IncomingLike>();
-    likesStack.forEach((a) => {
-      if (a.action === 'spark' || sparkedAdmirerIds.has(a.actor_id)) byId.set(a.actor_id, a);
-    });
-    return Array.from(byId.values()).filter(
-      (a) =>
-        !a.is_restricted &&
-        !blockedUserIds.has(a.actor_id) &&
-        !passedAdmirerIds.has(a.actor_id) &&
-        !likedAdmirerIds.has(a.actor_id)
-    );
-  })();
-
-  // (d) History: newest first, capped at 50.
-  const matchesHistory = [...displayedMatches]
-    .sort((a, b) => new Date(b.matched_at).getTime() - new Date(a.matched_at).getTime())
-    .slice(0, 50);
-
-  // Card base style — transitions controlled by commitExit / snap-back logic on the DOM node
-  const cardStyle: React.CSSProperties = {
-    position: 'relative',
-    height: '520px',
-    borderRadius: 'var(--radius-lg)',
-    overflow: 'hidden',
-    boxShadow: 'var(--shadow-lg)',
-    border: '1px solid var(--border-glass)',
-    cursor: 'grab',
-    userSelect: 'none',
-    touchAction: 'pan-y', // allow vertical page scroll; horizontal captured by pointer events
-    willChange: 'transform',
+  // Toggle voice recording
+  const handleToggleVoiceRecord = () => {
+    if (!isRecordingVoice) {
+      setIsRecordingVoice(true);
+    } else {
+      setIsRecordingVoice(false);
+      setVoiceRecordedToast(true);
+      setTimeout(() => setVoiceRecordedToast(false), 1800);
+    }
   };
 
   return (
     <div
-      className="home-container"
       style={{
-        maxWidth: '520px',
-        margin: '0 auto',
-        padding: '14px 16px 95px',
-        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        gap: '14px',
+        padding: '12px 16px 84px',
+        minHeight: '100%',
+        color: '#f8fafc',
+        backgroundColor: '#111318',
+        boxSizing: 'border-box',
       }}
     >
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '76px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'rgba(20, 24, 38, 0.95)',
-            border: '1px solid rgba(255, 45, 85, 0.4)',
-            borderRadius: 'var(--radius-full)',
-            padding: '10px 20px',
-            fontSize: '13px',
-            fontWeight: 700,
-            color: '#ffffff',
-            zIndex: 90,
-            boxShadow: 'var(--shadow-glow)',
-            whiteSpace: 'nowrap',
-            backdropFilter: 'blur(16px)',
-          }}
-        >
-          {toastMessage}
-        </div>
-      )}
-
-      {/* Screen Title & Subtitle */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, letterSpacing: '-0.4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Heart size={22} color="#ff2d55" fill="#ff2d55" />
-            Connect & Matches
-          </h1>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            Swipe discovery deck, mutual matches & secret admirers
-          </p>
-        </div>
-      </div>
-
-      {/* Primary Navigation Tabs */}
-      <div
-        style={{
-          display: 'flex',
-          background: 'rgba(255, 255, 255, 0.04)',
-          borderRadius: 'var(--radius-full)',
-          padding: '4px',
-          border: '1px solid var(--border-glass)',
-        }}
-      >
+      {/* =================================================================== */}
+      {/* 1. TOP 3-BUTTON SEGMENTED TAB BAR IN EXACT ORDER: Likes | Matches | Random Call */}
+      {/* =================================================================== */}
+      <div className="seg-tabs" style={{ marginBottom: '12px' }}>
         <button
-          onClick={() => setActiveTab('discover')}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            borderRadius: 'var(--radius-full)',
-            border: 'none',
-            fontSize: '13px',
-            fontWeight: activeTab === 'discover' ? 700 : 500,
-            cursor: 'pointer',
-            background: activeTab === 'discover' ? 'var(--gradient-flame)' : 'transparent',
-            color: activeTab === 'discover' ? '#ffffff' : 'var(--text-secondary)',
-            boxShadow: activeTab === 'discover' ? 'var(--shadow-glow)' : 'none',
-            transition: 'all var(--transition-fast)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-          }}
+          type="button"
+          onClick={() => setActiveSubTab('random_call')}
+          className={`seg-tab ${activeSubTab === 'random_call' ? 'active' : ''}`}
         >
-          <Zap size={15} />
-          <span>Discover</span>
+          Random call
         </button>
-
         <button
-          onClick={() => setActiveTab('matches')}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            borderRadius: 'var(--radius-full)',
-            border: 'none',
-            fontSize: '13px',
-            fontWeight: activeTab === 'matches' ? 700 : 500,
-            cursor: 'pointer',
-            background: activeTab === 'matches' ? 'var(--gradient-flame)' : 'transparent',
-            color: activeTab === 'matches' ? '#ffffff' : 'var(--text-secondary)',
-            boxShadow: activeTab === 'matches' ? 'var(--shadow-glow)' : 'none',
-            transition: 'all var(--transition-fast)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-          }}
+          type="button"
+          onClick={() => setActiveSubTab('likes')}
+          className={`seg-tab ${activeSubTab === 'likes' ? 'active' : ''}`}
         >
-          <Heart size={15} />
-          <span>Matches ({displayedMatches.length})</span>
+          Likes
         </button>
-
         <button
-          onClick={() => setActiveTab('likes')}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            borderRadius: 'var(--radius-full)',
-            border: 'none',
-            fontSize: '13px',
-            fontWeight: activeTab === 'likes' ? 700 : 500,
-            cursor: 'pointer',
-            background: activeTab === 'likes' ? 'var(--gradient-gold)' : 'transparent',
-            color: activeTab === 'likes' ? '#1a1002' : 'var(--text-secondary)',
-            boxShadow: activeTab === 'likes' ? 'var(--shadow-gold)' : 'none',
-            transition: 'all var(--transition-fast)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-          }}
+          type="button"
+          onClick={() => setActiveSubTab('matches')}
+          className={`seg-tab ${activeSubTab === 'matches' ? 'active' : ''}`}
         >
-          <Sparkles size={15} />
-          <span>Likes ({likesStack.length})</span>
+          Matches
         </button>
       </div>
 
-      {/* =========================================================================
-          TAB 1: DISCOVER (SWIPEABLE PROFILE CARDS DECK & FILTERS)
-          ========================================================================= */}
-      {activeTab === 'discover' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          
-          {/* Quick Filter Chips Row */}
+      {/* =================================================================== */}
+      {/* SUB-TAB 1: LIKES TAB (WORKFLOW: SPARKS, WEEKLY METRICS, LIKES HISTORY) */}
+      {/* =================================================================== */}
+      {activeSubTab === 'likes' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* SECTION 1: SPARK / CRUSH TAB (HORIZONTAL SLIDING GRID) */}
           <div
             style={{
-              display: 'flex',
-              gap: '8px',
-              overflowX: 'auto',
-              paddingBottom: '4px',
-              scrollbarWidth: 'none',
-              WebkitOverflowScrolling: 'touch',
+              background: '#191c24',
+              borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '14px 16px',
             }}
           >
-            <button
-              onClick={() => setPresetFilter('recommended')}
-              className={`filter-pill ${presetFilter === 'recommended' && !selectedInterest ? 'active' : ''}`}
-            >
-              ⭐ Recommended
-            </button>
-            <button
-              onClick={() => setPresetFilter('nearby')}
-              className={`filter-pill ${presetFilter === 'nearby' ? 'active' : ''}`}
-            >
-              📍 Nearby (&lt;10km)
-            </button>
-            <button
-              onClick={() => setPresetFilter('online')}
-              className={`filter-pill ${presetFilter === 'online' ? 'active' : ''}`}
-            >
-              🟢 Online Now
-            </button>
-            <button
-              onClick={() => setPresetFilter('verified')}
-              className={`filter-pill ${presetFilter === 'verified' ? 'active' : ''}`}
-            >
-              ✓ Verified
-            </button>
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className={`filter-pill ${isFilterActive ? 'active' : ''}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-            >
-              <SlidersHorizontal size={13} />
-              <span>Filters</span>
-            </button>
-            {isFilterActive && (
-              <button
-                onClick={resetFilters}
-                className="filter-pill"
-                style={{ color: '#ffa502', borderColor: 'rgba(255, 165, 2, 0.4)' }}
-              >
-                ↺ Reset
-              </button>
-            )}
-          </div>
-
-          {/* Swipeable Card or Empty State */}
-          {currentCandidate ? (
-            <>
-              <div
-                ref={cardRef}
-                style={cardStyle}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-              >
-                {/* Photo */}
-                <img
-                  src={currentCandidate.photo_urls[activePhotoIdx] || '/ananya.jpg'}
-                  alt={currentCandidate.nickname}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    pointerEvents: 'none',
-                    display: 'block',
-                  }}
-                />
-
-                {/* Photo Story Progress Bars */}
-                {currentCandidate.photo_urls.length > 1 && (
-                  <div style={{ position: 'absolute', top: '10px', left: '14px', right: '14px', display: 'flex', gap: '4px', zIndex: 20 }}>
-                    {currentCandidate.photo_urls.map((_, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          flex: 1,
-                          height: '3px',
-                          borderRadius: '2px',
-                          background: idx === activePhotoIdx ? '#ffffff' : 'rgba(255, 255, 255, 0.3)',
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Top Badges */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: currentCandidate.photo_urls.length > 1 ? '22px' : '14px',
-                    left: '14px',
-                    right: '14px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    zIndex: 20,
-                  }}
-                >
-                  <div className="badge-vibe" style={{ fontSize: '11px', padding: '3px 8px' }}>
-                    <Zap size={13} />
-                    {currentCandidate.vibe_score || 94}% Vibe
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {currentCandidate.is_online && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          background: 'rgba(0, 0, 0, 0.55)',
-                          padding: '3px 8px',
-                          borderRadius: 'var(--radius-full)',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          backdropFilter: 'blur(8px)',
-                        }}
-                      >
-                        <span className="status-dot-online" />
-                        <span>Online</span>
-                      </div>
-                    )}
-                    {currentCandidate.is_verified && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                          background: 'rgba(29, 161, 242, 0.25)',
-                          padding: '3px 8px',
-                          borderRadius: 'var(--radius-full)',
-                          border: '1px solid rgba(29, 161, 242, 0.5)',
-                          color: '#1da1f2',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                        }}
-                      >
-                        <ShieldCheck size={13} />
-                        Verified
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Stamp overlays — shown while dragging or animating */}
-                {(dragOffset.x > 30 || swipeStamp === 'like') && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '40px',
-                      left: '20px',
-                      transform: 'rotate(-15deg)',
-                      border: '4px solid #2ed573',
-                      color: '#2ed573',
-                      fontSize: '30px',
-                      fontWeight: 900,
-                      padding: '4px 16px',
-                      borderRadius: '8px',
-                      zIndex: 30,
-                      background: 'rgba(0,0,0,0.6)',
-                      opacity: swipeStamp === 'like' ? 1 : Math.min(1, dragOffset.x / 70),
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    LIKE ❤️
-                  </div>
-                )}
-
-                {(dragOffset.x < -30 || swipeStamp === 'dislike') && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '40px',
-                      right: '20px',
-                      transform: 'rotate(15deg)',
-                      border: '4px solid #ff4757',
-                      color: '#ff4757',
-                      fontSize: '30px',
-                      fontWeight: 900,
-                      padding: '4px 16px',
-                      borderRadius: '8px',
-                      zIndex: 30,
-                      background: 'rgba(0,0,0,0.6)',
-                      opacity: swipeStamp === 'dislike' ? 1 : Math.min(1, -dragOffset.x / 70),
-                      pointerEvents: 'none',
-                    }}
-                  >
-                    PASS ✗
-                  </div>
-                )}
-
-                {/* Gradient Card Overlay */}
-                <div style={{ position: 'absolute', inset: 0, background: 'var(--gradient-card-overlay)', pointerEvents: 'none' }} />
-
-                {/* Bottom Card Information */}
-                <div style={{ position: 'absolute', bottom: '16px', left: '16px', right: '16px', zIndex: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <h2 style={{ fontSize: '24px', fontWeight: 800 }}>{currentCandidate.nickname}</h2>
-                      <span style={{ fontSize: '20px', color: 'var(--text-secondary)' }}>
-                        {currentCandidate.age || 24}
-                      </span>
-                    </div>
-
-                    {/* View Profile Action */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setInspectingProfile(currentCandidate);
-                      }}
-                      className="glass-pill"
-                      style={{
-                        padding: '5px 12px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        color: 'var(--cyan-vibe)',
-                        border: '1px solid rgba(0, 229, 255, 0.35)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                      }}
-                    >
-                      <Info size={13} />
-                      View Profile
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--cyan-vibe)', fontSize: '12px', marginBottom: '6px' }}>
-                    <MapPin size={13} />
-                    <span>{currentCandidate.distance_km} km away • {currentCandidate.city}</span>
-                  </div>
-
-                  {/* Shared Interests */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '8px' }}>
-                    {(currentCandidate.shared_interests || ['Specialty Coffee ☕', 'Indie Vinyl 🎵']).map((tag, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          borderRadius: 'var(--radius-full)',
-                          padding: '2px 8px',
-                          fontSize: '11px',
-                          color: '#ffffff',
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.35, margin: 0 }}>
-                    {currentCandidate.bio}
-                  </p>
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Flame size={16} color="#ef4444" fill="#ef4444" />
+                <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                  Sparks & Mega Crushes ({sparkCrushList.length})
+                </span>
               </div>
+              <span style={{ fontSize: '10.5px', color: '#ef4444', fontWeight: 700 }}>Priority Matches</span>
+            </div>
 
-              {/* Action Buttons Bar */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  marginTop: '4px',
-                }}
-              >
-                <button
-                  onClick={handleRevert}
-                  disabled={currentIndex === 0 || isAnimating}
-                  title="Undo last swipe"
-                  className="action-btn-circle btn-revert"
-                  style={{ width: '52px', height: '52px', opacity: currentIndex === 0 ? 0.4 : 1 }}
-                >
-                  <RotateCcw size={19} />
-                </button>
-
-                <button
-                  onClick={() => executeSwipe('dislike')}
-                  disabled={isAnimating}
-                  title="Pass (swipe left)"
-                  className="action-btn-circle btn-dislike"
-                  style={{ width: '58px', height: '58px' }}
-                >
-                  <X size={26} />
-                </button>
-
-                <button
-                  onClick={() => executeSwipe('like')}
-                  disabled={isAnimating}
-                  title="Like (swipe right)"
-                  className="action-btn-circle btn-like"
-                  style={{ width: '68px', height: '68px' }}
-                >
-                  <Heart size={34} fill="#ffffff" />
-                </button>
-
-                <button
-                  onClick={() => executeSwipe('spark')}
-                  disabled={isAnimating}
-                  title="Super Like"
-                  className="action-btn-circle btn-spark"
-                  style={{ width: '58px', height: '58px' }}
-                >
-                  <Sparkles size={24} />
-                </button>
-              </div>
-            </>
-          ) : (
-            /* Empty State */
             <div
-              className="glass-panel"
               style={{
-                height: '460px',
-                borderRadius: 'var(--radius-lg)',
                 display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
-                padding: '28px',
+                gap: '10px',
+                overflowX: 'auto',
+                paddingBottom: '4px',
+                scrollbarWidth: 'none',
               }}
             >
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>✨</div>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px' }}>
-                {isFilterActive ? 'No profiles match your filters' : "You've seen everyone for now"}
-              </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '18px', maxWidth: '300px' }}>
-                {isFilterActive
-                  ? 'Try expanding your distance limit or resetting filters to discover more people.'
-                  : 'New verified profiles join daily. Come back later or adjust your filters.'}
-              </p>
-              {isFilterActive ? (
-                <button onClick={resetFilters} className="btn-primary" style={{ padding: '10px 22px', fontSize: '13px' }}>
-                  Reset Filters
-                </button>
-              ) : (
-                <button onClick={() => setCurrentIndex(0)} className="btn-primary" style={{ padding: '10px 22px', fontSize: '13px' }}>
-                  Try Again
-                </button>
-              )}
-            </div>
-          )}
-
-        </div>
-      )}
-
-      {/* =========================================================================
-          TAB 2: MATCHES (MUTUAL CONNECTIONS LIST & CHAT NAVIGATION)
-          Sections: (a) Matched & Vibed weekly scoreboard, (b) N Connections,
-          (c) Spark / Crush grid, (d) Matches History (recent 50).
-          NOTE(workflow): unlock contact sharing is intentionally NOT part of
-          this tab. TODO(gender): the Matches UI is identical for all viewers;
-          any male/female differences would be introduced server-side only.
-          Only matched_at / opt-in profile fields are rendered (never phone
-          numbers, social handles or real user IDs).
-          ========================================================================= */}
-      {activeTab === 'matches' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', minWidth: 0 }}>
-
-          {/* Header: title + demo chip + refresh */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-            <div style={{ minWidth: 0 }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Heart size={18} color="#ff2d55" fill="#ff2d55" />
-                Matches
-              </h2>
-              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                Weekly vibe, connections, sparks & history
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-              {(usingDemoMatches || usingDemoLikes) && (
-                <span
-                  title="Demo data — no backend connected"
-                  style={{ background: 'rgba(255, 215, 0, 0.08)', border: '1px solid rgba(255, 215, 0, 0.25)', borderRadius: 'var(--radius-full)', padding: '4px 10px', fontSize: '10px', fontWeight: 700, color: '#ffd700' }}
-                >
-                  Demo data
-                </span>
-              )}
-              <button
-                className="tap-target-44 glass-pill"
-                title="Refresh matches from server"
-                aria-label="Refresh matches from server"
-                onClick={() => loadMatches({ asError: true })}
-                style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-glass)', cursor: 'pointer' }}
-              >
-                <RefreshCw size={15} />
-              </button>
-            </div>
-          </div>
-
-          {/* ── Loading skeleton ── */}
-          {matchesLoadState === 'loading' && (
-            <div className="match-scroll-row" aria-hidden="true">
-              {[0, 1].map((n) => (
-                <div key={n} className="vibe-card glass-panel" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-                  <div className="skeleton" style={{ height: '180px' }} />
-                  <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div className="skeleton" style={{ height: '13px', width: '65%', borderRadius: '6px' }} />
-                    <div className="skeleton" style={{ height: '10px', width: '40%', borderRadius: '6px' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ── Error state with Retry ── */}
-          {matchesLoadState === 'error' && (
-            <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '44px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <div style={{ fontSize: '40px' }}>⚠️</div>
-              <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Couldn't load matches</h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '260px' }}>Something went wrong while fetching your matches. Please try again.</p>
-              <button onClick={() => loadMatches()} className="btn-primary" style={{ padding: '10px 22px', fontSize: '13px' }}>
-                <RefreshCw size={14} /> Retry
-              </button>
-            </div>
-          )}
-
-          {matchesLoadState === 'ready' && (
-            <>
-              {/* (a) Matched & Vibed — weekly ranked scoreboard */}
-              <section style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <Star size={15} color="#ffd700" fill="#ffd700" /> Matched & Vibed
-                  </h3>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700 }}>This week</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                  <TrendingUp size={12} color="#00e676" />
-                  {localMatchRate !== null
-                    ? `${localMatchRate}% of your swipes became matches`
-                    : '12% of swipes became matches · Demo'}
-                </div>
-
-                {weeklyVibed.length > 0 ? (
-                  <div className="likes-row-wrap match-row-wrap">
-                    <button type="button" className="likes-nav-btn likes-nav-prev" aria-label="Scroll to previous vibed matches" onClick={() => vibeRow.scrollByCard(-1, '.vibe-card', 12)}>
-                      <ChevronLeft size={18} />
-                    </button>
-                    <div className="match-scroll-row" ref={vibeRow.ref} {...vibeRow.handlers}>
-                      {weeklyVibed.map((m, i) => {
-                        const rank = i + 1;
-                        const vibe = m.counterpart.vibe_score || 80;
-                        const photo = m.counterpart.photo_urls?.[0] || m.counterpart.avatar;
-                        return (
-                          <div
-                            key={m.id}
-                            className="vibe-card glass-panel"
-                            onClick={() => { if (!vibeRow.consumeSuppressedClick()) openMatchProfile(m); }}
-                            style={{ position: 'relative', borderRadius: 'var(--radius-lg)', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,45,85,0.3)' }}
-                          >
-                            <div style={{ position: 'relative', height: '180px' }}>
-                              <img src={photo} alt={m.counterpart.nickname} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 30%, rgba(8,10,16,0.92) 100%)' }} />
-                              <span className={`rank-badge${rank === 2 ? ' rank-2' : rank === 3 ? ' rank-3' : ''}`}>{rank}</span>
-                              {m.counterpart.is_verified && (
-                                <div title="Verified" style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(29,161,242,0.85)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <ShieldCheck size={13} color="#ffffff" />
-                                </div>
-                              )}
-                              <div style={{ position: 'absolute', bottom: '10px', left: '12px', right: '12px' }}>
-                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>{m.counterpart.nickname}, {m.counterpart.age || 24}</div>
-                                {m.counterpart.is_online && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: '#00e676', marginTop: '2px' }}>
-                                    <span className="status-dot-online" /> Online
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700 }}>
-                                <span style={{ color: '#ffd700' }}>{vibe}% Vibe</span>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '10px' }}>#{rank} this week</span>
-                              </div>
-                              <div className="vibe-meter"><span style={{ width: `${vibe}%` }} /></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <button type="button" className="likes-nav-btn likes-nav-next" aria-label="Scroll to next vibed matches" onClick={() => vibeRow.scrollByCard(1, '.vibe-card', 12)}>
-                      <ChevronRight size={18} />
-                    </button>
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No vibed matches this week yet.</p>
-                )}
-              </section>
-
-              {/* (b) N Connections — expandable vertical list */}
-              <section className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', minWidth: 0 }}>
-                <button type="button" className="conn-row clickable" onClick={() => setIsConnectionsOpen((v) => !v)} style={{ border: 'none', borderRadius: 0, background: 'transparent' }}>
-                  <span style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,45,85,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Users size={18} color="#ff2d55" />
-                  </span>
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: '15px', fontWeight: 800 }}>{displayedMatches.length} Connection{displayedMatches.length === 1 ? '' : 's'}</span>
-                    <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)' }}>{isConnectionsOpen ? 'Hide connections' : 'View connections'}</span>
-                  </span>
-                  <ChevronDown size={18} style={{ transform: isConnectionsOpen ? 'rotate(180deg)' : 'none', transition: 'transform var(--transition-fast)' }} />
-                </button>
-
-                {isConnectionsOpen && (
-                  <div style={{ padding: '4px 10px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {displayedMatches.length === 0 ? (
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '8px 2px' }}>No connections to show.</p>
-                    ) : (
-                      displayedMatches.map((m) => (
-                        <div key={m.id} className="conn-row">
-                          <div style={{ position: 'relative', width: '42px', height: '42px', flexShrink: 0 }}>
-                            <img src={m.counterpart.avatar} alt={m.counterpart.nickname} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                            {m.counterpart.is_verified && (
-                              <div className="badge-blue-tick" style={{ position: 'absolute', bottom: 0, right: 0, width: '15px', height: '15px', fontSize: '9px' }}>✓</div>
-                            )}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.counterpart.nickname}, {m.counterpart.age || 24}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--cyan-vibe)' }}>{m.counterpart.city}</div>
-                          </div>
-                          <button type="button" aria-label={`Chat with ${m.counterpart.nickname}`} onClick={() => onOpenChat(m.id)} className="tap-target-44" style={{ background: 'var(--gradient-flame)', border: 'none', borderRadius: '50%', color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
-                            <MessageSquare size={16} />
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </section>
-
-              {/* (c) Spark / Crush grid — horizontal sliding, fully visible */}
-              <section style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <LayoutGrid size={15} color="#ffa502" /> Sparks & Mega-Crushes
-                  </h3>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700 }}>{sparkProfiles.length} profiles</span>
-                </div>
-
-                {sparkProfiles.length > 0 ? (
-                  <div className="likes-row-wrap match-row-wrap">
-                    <button type="button" className="likes-nav-btn likes-nav-prev" aria-label="Scroll to previous sparks" onClick={() => sparkRow.scrollByCard(-1, '.spark-tile', 12)}>
-                      <ChevronLeft size={18} />
-                    </button>
-                    <div className="match-scroll-row" ref={sparkRow.ref} {...sparkRow.handlers}>
-                      {sparkProfiles.map((a) => (
-                        <div key={a.actor_id} className="spark-tile glass-panel" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1.5px solid rgba(255,165,2,0.5)' }}>
-                          <div style={{ position: 'relative', height: '150px' }}>
-                            <img src={a.photo_urls?.[0] || a.avatar} alt={a.nickname} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 30%, rgba(8,10,16,0.92) 100%)' }} />
-                            <span style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(255,153,0,0.9)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '9px', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              <Sparkles size={10} /> Spark
-                            </span>
-                            {a.is_verified && (
-                              <div title="Verified" style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(29,161,242,0.85)', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <ShieldCheck size={12} color="#ffffff" />
-                              </div>
-                            )}
-                            <div style={{ position: 'absolute', bottom: '8px', left: '10px', right: '10px', fontSize: '13px', fontWeight: 800, color: '#fff' }}>
-                              {a.nickname}, {a.age || 24}
-                            </div>
-                          </div>
-                          <div style={{ padding: '10px' }}>
-                            <button type="button" onClick={() => openAdmirerProfile(a, false)} className="btn-ghost" style={{ width: '100%', minHeight: '44px', padding: '8px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                              <Info size={13} /> View Profile
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <button type="button" className="likes-nav-btn likes-nav-next" aria-label="Scroll to next sparks" onClick={() => sparkRow.scrollByCard(1, '.spark-tile', 12)}>
-                      <ChevronRight size={18} />
-                    </button>
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No sparks yet. Send a Spark to stand out.</p>
-                )}
-              </section>
-
-              {/* (d) Matches History — newest first, max 50 */}
-              <section style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <Clock size={15} color="var(--cyan-vibe)" /> Matches History
-                  </h3>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700 }}>{matchesHistory.length} recent</span>
-                </div>
-
-                {matchesHistory.length === 0 ? (
-                  <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '44px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ fontSize: '40px' }}>💞</div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 800, maxWidth: '280px' }}>No matches yet. Keep swiping, your matches will appear here.</h3>
-                    <button onClick={() => setActiveTab('discover')} className="btn-primary" style={{ padding: '9px 20px', fontSize: '12px', marginTop: '4px' }}>
-                      Go to Discover
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {matchesHistory.map((m) => {
-                      const interests = (m.counterpart.shared_interests || []).slice(0, 3);
-                      return (
-                        <div key={m.id} className="glass-panel" style={{ borderRadius: 'var(--radius-md)', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid rgba(255,45,85,0.25)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ position: 'relative', width: '54px', height: '54px', flexShrink: 0 }}>
-                              <img src={m.counterpart.avatar} alt={m.counterpart.nickname} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '2px solid #ff2d55' }} />
-                              {m.counterpart.is_verified && (
-                                <div className="badge-blue-tick" style={{ position: 'absolute', bottom: 0, right: 0, width: '16px', height: '16px', fontSize: '10px' }}>✓</div>
-                              )}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>{m.counterpart.nickname}, {m.counterpart.age || 24}</h3>
-                                {m.counterpart.is_online && <span className="status-dot-online" />}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                                <Clock size={11} /> Matched {formatRelativeTime(m.matched_at)}
-                              </div>
-                              {interests.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
-                                  {interests.map((tag, ti) => (
-                                    <span key={ti} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-full)', padding: '2px 8px', fontSize: '10px', color: '#fff' }}>{tag}</span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button onClick={() => openMatchProfile(m)} className="btn-ghost" style={{ flex: 1, minHeight: '44px', padding: '7px 10px', fontSize: '12px' }}>View Profile</button>
-                            <button onClick={() => onOpenChat(m.id)} className="btn-primary" style={{ flex: 1, minHeight: '44px', padding: '7px 10px', fontSize: '12px' }}>
-                              <MessageSquare size={13} /> Chat
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* =========================================================================
-          TAB 3: LIKES YOU — INCOMING ADMIRERS WITH ACTIONS
-          ========================================================================= */}
-      {activeTab === 'likes' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
-
-          {/* ── Header: "X Likes You" ── */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-            <div style={{ minWidth: 0 }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={18} color="#ffd700" />
-                {visibleLikes.length} Likes You
-              </h2>
-              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                A like is not a match — liking back makes it mutual.
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-              {usingDemoLikes && (
-                <span
-                  title="Demo data — no backend connected"
+              {sparkCrushList.map((sc) => (
+                <div
+                  key={sc.id}
+                  onClick={() => {
+                    setPartiallyRestrictedProfile({
+                      name: sc.name,
+                      avatar: sc.avatar,
+                      age: sc.age,
+                      is_verified: true,
+                      interests: sc.interests,
+                      actor_id: sc.id,
+                    });
+                  }}
                   style={{
-                    background: 'rgba(255, 215, 0, 0.08)',
-                    border: '1px solid rgba(255, 215, 0, 0.25)',
-                    borderRadius: 'var(--radius-full)',
-                    padding: '4px 10px',
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    color: '#ffd700',
+                    flexShrink: 0,
+                    width: '130px',
+                    borderRadius: '14px',
+                    background: sc.type === 'mega_crush' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(251, 191, 36, 0.12)',
+                    border: sc.type === 'mega_crush' ? '1.5px solid rgba(239, 68, 68, 0.4)' : '1.5px solid rgba(251, 191, 36, 0.4)',
+                    padding: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    boxShadow: sc.type === 'mega_crush' ? '0 4px 14px rgba(239, 68, 68, 0.18)' : '0 4px 14px rgba(251, 191, 36, 0.18)',
                   }}
                 >
-                  Demo data
-                </span>
-              )}
-              <button
-                className="tap-target-44 glass-pill"
-                title="Refresh likes from server"
-                aria-label="Refresh likes from server"
-                onClick={() => loadLikes({ asError: true })}
-                style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-glass)', cursor: 'pointer' }}
-              >
-                <RefreshCw size={15} />
-              </button>
-            </div>
-          </div>
+                  <div style={{ position: 'relative', width: '56px', height: '56px', marginBottom: '6px' }}>
+                    <img
+                      src={sc.avatar}
+                      alt={sc.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: sc.type === 'mega_crush' ? '2px solid #ef4444' : '2px solid #fbbf24',
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '-3px',
+                        right: '-2px',
+                        borderRadius: '50%',
+                        padding: '3px',
+                        background: sc.type === 'mega_crush' ? '#ef4444' : '#fbbf24',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {sc.type === 'mega_crush' ? <Flame size={10} color="#fff" fill="#fff" /> : <Zap size={10} color="#000" fill="#000" />}
+                    </div>
+                  </div>
 
-          {/* Daily view counter (demo) */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: 'rgba(255, 215, 0, 0.06)',
-              border: '1px solid rgba(255, 215, 0, 0.2)',
-              borderRadius: 'var(--radius-md)',
-              padding: '8px 12px',
-              fontSize: '11px',
-              fontWeight: 700,
-              color: '#ffd700',
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <Zap size={12} />
-              {likesViewedToday}/{DAILY_LIKES_VIEW_LIMIT} profiles viewed today
-            </span>
-            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-              {dailyLimitReached ? 'Full photos locked' : 'Full visibility'}
-            </span>
-          </div>
-
-          {/* Daily limit reached — explanation + Buy/Earn Coins */}
-          {dailyLimitReached && (
-            <div
-              className="glass-panel"
-              style={{ borderRadius: 'var(--radius-md)', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700 }}>
-                <Lock size={15} color="#ffd700" />
-                Daily free views used up
-              </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0 }}>
-                You can still Like, Pass or send a Spark. Full photos unlock again tomorrow.
-              </p>
-              {/* Gender-aware CTA: female viewers are routed to the earn flow. */}
-              {viewerGender?.toLowerCase() === 'female' ? (
-                <button onClick={onOpenStore} className="btn-gold" style={{ padding: '10px', fontSize: '13px' }}>
-                  <Coins size={14} />
-                  Earn Coins
-                </button>
-              ) : (
-                <button onClick={onOpenStore} className="btn-gold" style={{ padding: '10px', fontSize: '13px' }}>
-                  <Coins size={14} />
-                  Buy Coins
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* ── Loading skeleton ── */}
-          {likesLoadState === 'loading' && (
-            <div className="likes-scroll-row" aria-hidden="true">
-              {[0, 1, 2].map((n) => (
-                <div key={n} className="likes-card glass-panel" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-                  <div className="skeleton" style={{ height: '260px' }} />
-                  <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div className="skeleton" style={{ height: '14px', width: '70%', borderRadius: '6px' }} />
-                    <div className="skeleton" style={{ height: '10px', width: '45%', borderRadius: '6px' }} />
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#f8fafc', textAlign: 'center' }}>
+                    {sc.name}, {sc.age}
+                  </div>
+                  <div style={{ fontSize: '9.5px', color: sc.type === 'mega_crush' ? '#ef4444' : '#fbbf24', fontWeight: 700, marginTop: '1px' }}>
+                    {sc.type === 'mega_crush' ? '🔥 Mega Crush' : '⚡ Spark Sent'}
                   </div>
                 </div>
               ))}
             </div>
-          )}
+          </div>
 
-          {/* ── Error state with Retry ── */}
-          {likesLoadState === 'error' && (
-            <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '44px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <div style={{ fontSize: '40px' }}>⚠️</div>
-              <h3 style={{ fontSize: '16px', fontWeight: 800 }}>Couldn't load likes</h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '260px' }}>
-                Something went wrong while fetching who likes you. Please try again.
-              </p>
-              <button onClick={() => loadLikes()} className="btn-primary" style={{ padding: '10px 22px', fontSize: '13px' }}>
-                <RefreshCw size={14} />
-                Retry
-              </button>
+          {/* SECTION 2: WEEKLY METRICS & ACTIVITY INSIGHTS */}
+          <div
+            style={{
+              background: '#191c24',
+              borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '14px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                Weekly Activity & Insights
+              </span>
+              <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 700 }}>
+                Live Analytics
+              </span>
             </div>
-          )}
 
-          {/* ── Empty state ── */}
-          {likesLoadState === 'ready' && visibleLikes.length === 0 && (
-            <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '48px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-              <div style={{ fontSize: '44px' }}>💫</div>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, maxWidth: '280px' }}>
-                No likes yet. Keep swiping to get noticed
-              </h3>
-              <button onClick={() => setActiveTab('discover')} className="btn-primary" style={{ padding: '9px 20px', fontSize: '12px', marginTop: '4px' }}>
-                Go to Discover
-              </button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', textAlign: 'center' }}>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#f8fafc' }}>24</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px', fontWeight: 600 }}>Likes Sent</div>
+                <div style={{ fontSize: '9px', color: '#22c55e', fontWeight: 700 }}>+18% ↗</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#fbbf24' }}>6</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px', fontWeight: 600 }}>Sparks</div>
+                <div style={{ fontSize: '9px', color: '#fbbf24', fontWeight: 700 }}>+25% ↗</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#ef4444' }}>3</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px', fontWeight: 600 }}>Mega Crushes</div>
+                <div style={{ fontSize: '9px', color: '#ef4444', fontWeight: 700 }}>100% ✨</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#22c55e' }}>8</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px', fontWeight: 600 }}>Matches/Wk</div>
+                <div style={{ fontSize: '9px', color: '#22c55e', fontWeight: 700 }}>92% rate</div>
+              </div>
             </div>
-          )}
 
-          {/* ── Horizontal sliding card row (scroll-snap + peek) ── */}
-          {likesLoadState === 'ready' && visibleLikes.length > 0 && (
-            <div className="likes-row-wrap">
-              <button
-                type="button"
-                className="likes-nav-btn likes-nav-prev"
-                aria-label="Scroll to previous profiles"
-                onClick={() => scrollLikesBy(-1)}
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <div
-                className="likes-scroll-row"
-                ref={likesRowRef}
-                onPointerDown={handleLikesPointerDown}
-                onPointerMove={handleLikesPointerMove}
-                onPointerUp={handleLikesPointerUp}
-                onPointerCancel={handleLikesPointerUp}
-              >
-                {visibleLikes.map((admirer, i) => {
-                const limited = isLimitedVisibility(admirer);
-                const isMatched = matchedAdmirerIds.has(admirer.actor_id);
-                const isIncomingSpark = admirer.action === 'spark';
-                const interests = limited
-                  ? (admirer.shared_interests || []).slice(0, 3)
-                  : (admirer.shared_interests || []);
-                const photo = limited
-                  ? admirer.avatar
-                  : (admirer.photo_urls?.[0] || admirer.avatar);
+            {/* Weekly Reset Line strictly from workflow */}
+            <div
+              style={{
+                fontSize: '11px',
+                color: '#64748b',
+                textAlign: 'center',
+                marginTop: '12px',
+                paddingTop: '10px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+                lineHeight: 1.35,
+              }}
+            >
+              This data is for 1 week only and refreshes automatically every week.
+            </div>
+          </div>
 
-                return (
+          {/* SECTION 3: "X LIKES YOU" TAB (HORIZONTAL SLIDING VIEW WITH FREE TIER ACTIVE BADGE) */}
+          <div
+            style={{
+              background: '#191c24',
+              borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '14px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div>
+                <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                  {likesYouList.length} People Liked You
+                </span>
+                <div style={{ fontSize: '10px', color: '#22c55e', fontWeight: 600, marginTop: '2px' }}>
+                  ✓ Free Tier v1: Full View Active
+                </div>
+              </div>
+              <span
+                style={{
+                  fontSize: '9.5px',
+                  fontWeight: 700,
+                  background: 'rgba(34, 197, 94, 0.15)',
+                  border: '1px solid rgba(34, 197, 94, 0.35)',
+                  color: '#22c55e',
+                  padding: '3px 8px',
+                  borderRadius: '999px',
+                }}
+              >
+                10 Views Daily
+              </span>
+            </div>
+
+            {/* Horizontal 5-visible circular story profiles */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {likesYouList.slice(0, 5).map((admirer) => (
+                <div
+                  key={admirer.user_id}
+                  onClick={() => {
+                    setPartiallyRestrictedProfile({
+                      name: admirer.nickname,
+                      avatar: admirer.photo_urls[0],
+                      age: admirer.age || 24,
+                      is_verified: admirer.is_verified,
+                      interests: admirer.shared_interests || ['Coffee', 'Music'],
+                      actor_id: admirer.user_id,
+                    });
+                  }}
+                  title={`Tap to view ${admirer.nickname}'s profile`}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '5px',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
                   <div
-                    key={admirer.actor_id || i}
-                    className="likes-card glass-panel"
-                    onClick={(e) => handleCardTap(admirer, e)}
-                    title="Double-tap to send a Spark"
                     style={{
-                      borderRadius: 'var(--radius-lg)',
-                      overflow: 'hidden',
-                      border: isIncomingSpark
-                        ? '1.5px solid rgba(255, 165, 2, 0.55)'
-                        : '1px solid rgba(255, 45, 85, 0.3)',
-                      boxShadow: isIncomingSpark
-                        ? '0 0 20px rgba(255,165,2,0.2)'
-                        : '0 8px 24px rgba(0,0,0,0.35)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      cursor: 'pointer',
-                      userSelect: 'none',
+                      width: '56px',
+                      height: '56px',
+                      borderRadius: '50%',
+                      padding: '2px',
+                      background: 'linear-gradient(135deg, #f43f5e 0%, #fb7185 100%)',
+                      boxShadow: '0 2px 10px rgba(244, 63, 94, 0.22)',
                     }}
                   >
-                    {/* ── Photo area ── */}
-                    <div style={{ position: 'relative', height: '260px' }}>
-                      <img
-                        src={photo}
-                        alt={admirer.nickname}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          filter: limited ? 'blur(16px) brightness(0.55)' : 'none',
-                          transition: 'filter 0.4s ease-out',
-                          display: 'block',
-                        }}
-                      />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(8,10,16,0.92) 100%)' }} />
+                    <img
+                      src={admirer.photo_urls[0]}
+                      alt={admirer.nickname}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '2px solid #111318',
+                      }}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#f8fafc',
+                      maxWidth: '54px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {admirer.nickname.split(' ')[0]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-                      {/* Incoming Spark → "Super Like" tag */}
-                      {isIncomingSpark && (
-                        <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(255,153,0,0.9)', padding: '3px 10px', borderRadius: 'var(--radius-full)', fontSize: '10px', fontWeight: 800, color: '#fff', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Sparkles size={11} />
-                          Super Like
-                        </div>
-                      )}
+          {/* SECTION 3: LIKES HISTORY TAB (VERTICAL LIST, MAX-HEIGHT: 240PX, MAX 50 ITEMS) */}
+          <div
+            style={{
+              background: '#191c24',
+              borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                Likes History ({likesHistory.length})
+              </span>
+              <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>Max 50 recent</span>
+            </div>
 
-                      {/* Verified badge */}
-                      {admirer.is_verified && (
-                        <div
-                          title="Verified"
-                          style={{ position: 'absolute', top: isIncomingSpark ? '42px' : '10px', right: '10px', background: 'rgba(29, 161, 242, 0.85)', borderRadius: '50%', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          <ShieldCheck size={14} color="#ffffff" />
-                        </div>
-                      )}
-
-                      {/* Online status */}
-                      {admirer.is_online && (
-                        <div style={{ position: 'absolute', bottom: '52px', right: '12px', background: 'rgba(0,0,0,0.6)', borderRadius: 'var(--radius-full)', padding: '3px 8px', fontSize: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <span className="status-dot-online" />
-                          Online
-                        </div>
-                      )}
-
-                      {/* Limited visibility overlay: blurred photo + match % */}
-                      {limited && (
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', pointerEvents: 'none' }}>
-                          <div style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,215,0,0.4)', borderRadius: 'var(--radius-full)', padding: '4px 12px', fontSize: '13px', fontWeight: 800, color: '#ffd700' }}>
-                            {admirer.match_percent || 80}% Match
-                          </div>
-                          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>Photo locked</span>
-                        </div>
-                      )}
-
-                      {/* Limited visibility keeps an unblurred avatar/bitmoji */}
-                      {limited && (
+            {/* Contained Vertical Scrollable Box (max-height: 240px) */}
+            <div
+              style={{
+                maxHeight: '240px',
+                overflowY: 'auto',
+                borderRadius: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: '10px',
+                background: '#14161f',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              {likesHistory.map((item) => {
+                const isPassed = item.type === 'passed';
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      if (isPassed) {
+                        // Workflow: Dislike / Passed side shows Restricted lock card
+                        setRestrictedProfile({ name: item.name, avatar: item.avatar });
+                      } else {
+                        // Workflow: Like side opens Partially Restricted Modal
+                        setPartiallyRestrictedProfile({
+                          name: item.name,
+                          avatar: item.avatar,
+                          age: item.age,
+                          is_verified: true,
+                          interests: item.interests,
+                          actor_id: item.userId,
+                        });
+                      }
+                    }}
+                    style={{
+                      background: '#1e222d',
+                      borderRadius: '12px',
+                      padding: '8px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      border: '1px solid rgba(255, 255, 255, 0.04)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <div style={{ position: 'relative' }}>
                         <img
-                          src={admirer.bitmoji || admirer.avatar}
-                          alt=""
-                          style={{ position: 'absolute', bottom: '10px', left: '10px', width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.7)' }}
-                        />
-                      )}
-
-                      {/* Name / age / gender / general distance */}
-                      <div style={{ position: 'absolute', bottom: '10px', left: limited ? '60px' : '12px', right: '12px' }}>
-                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff' }}>
-                          {admirer.nickname}, {admirer.age}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--cyan-vibe)', marginTop: '2px' }}>
-                          <MapPin size={11} />
-                          <span>~{admirer.distance_km} km • {admirer.gender}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ── Card body ── */}
-                    <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {interests.map((tag: string, ti: number) => (
-                          <span key={ti} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-full)', padding: '2px 8px', fontSize: '10px', color: '#ffffff' }}>
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-
-                      {isMatched ? (
-                        <button
-                          onClick={() => {
-                            const matchId = matches.find((m) => m.counterpart.user_id === admirer.actor_id)?.id;
-                            if (matchId) onOpenChat(matchId);
+                          src={item.avatar}
+                          alt={item.name}
+                          style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '1px solid rgba(255, 255, 255, 0.12)',
+                            filter: isPassed ? 'grayscale(0.6)' : 'none',
                           }}
-                          className="btn-primary"
-                          style={{ width: '100%', minHeight: '44px', padding: '8px', fontSize: '12px' }}
-                        >
-                          <MessageSquare size={13} />
-                          Open Chat
-                        </button>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {/* Dislike (left) / Like (right) — always available */}
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button
-                              onClick={() => handlePassAdmirer(admirer)}
-                              className="btn-ghost"
-                              aria-label={`Pass on ${admirer.nickname}`}
-                              style={{ flex: 1, minHeight: '44px', padding: '7px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#ff4757', borderColor: 'rgba(255,71,87,0.3)' }}
-                            >
-                              <X size={15} />
-                              Pass
-                            </button>
-                            <button
-                              onClick={() => handleLikeAdmirer(admirer)}
-                              className="btn-primary"
-                              aria-label={`Like ${admirer.nickname} back`}
-                              style={{ flex: 1, minHeight: '44px', padding: '7px', fontSize: '12px' }}
-                            >
-                              <Heart size={15} fill="#ffffff" />
-                              Like
-                            </button>
+                        />
+                        {isPassed && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: '-2px',
+                              right: '-2px',
+                              background: '#ef4444',
+                              borderRadius: '50%',
+                              padding: '2px',
+                            }}
+                          >
+                            <Lock size={9} color="#fff" />
                           </div>
-
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button
-                              onClick={() => openAdmirerProfile(admirer, limited)}
-                              className="btn-ghost"
-                              aria-label={`View ${admirer.nickname}'s profile`}
-                              style={{ flex: 1, minHeight: '44px', padding: '7px 6px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                            >
-                              <Info size={13} />
-                              Profile
-                            </button>
-                            <button
-                              onClick={() => handleSparkRequest(admirer)}
-                              className="btn-ghost"
-                              aria-label={`Send a Spark to ${admirer.nickname}`}
-                              style={{ flex: 1, minHeight: '44px', padding: '7px 6px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#ffa502', borderColor: 'rgba(255,165,2,0.35)' }}
-                            >
-                              <Sparkles size={13} />
-                              {sparkedAdmirerIds.has(admirer.actor_id) ? 'Sparked' : 'Spark'}
-                            </button>
-                          </div>
-
-                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center' }}>
-                            Double-tap the card to send a Mega-Crush
-                          </span>
+                        )}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#f8fafc' }}>
+                          {item.name}, {item.age}
                         </div>
-                      )}
+                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>
+                          {item.city.split(',')[0]} • {item.timestamp}
+                        </div>
+                      </div>
                     </div>
+
+                    <span
+                      style={{
+                        fontSize: '9.5px',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        borderRadius: '999px',
+                        background:
+                          item.type === 'mega_crush'
+                            ? 'rgba(239, 68, 68, 0.2)'
+                            : item.type === 'spark'
+                              ? 'rgba(251, 191, 36, 0.2)'
+                              : item.type === 'passed'
+                                ? 'rgba(100, 116, 139, 0.2)'
+                                : 'rgba(34, 197, 94, 0.2)',
+                        color:
+                          item.type === 'mega_crush'
+                            ? '#ef4444'
+                            : item.type === 'spark'
+                              ? '#fbbf24'
+                              : item.type === 'passed'
+                                ? '#94a3b8'
+                                : '#22c55e',
+                      }}
+                    >
+                      {item.type === 'mega_crush'
+                        ? '🔥 Mega Crush'
+                        : item.type === 'spark'
+                          ? '⚡ Spark'
+                          : item.type === 'passed'
+                            ? '🔒 Passed'
+                            : '❤️ Liked'}
+                    </span>
                   </div>
                 );
               })}
-              </div>
-              <button
-                type="button"
-                className="likes-nav-btn likes-nav-next"
-                aria-label="Scroll to next profiles"
-                onClick={() => scrollLikesBy(1)}
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          )}
-
-          {/* ── Coins shortcut (gender-aware) ── */}
-          {viewerGender?.toLowerCase() === 'female' ? (
-            // TODO(workflow): female viewers use the earn/convert flow, not Buy Coins.
-            <button
-              onClick={onOpenStore}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'radial-gradient(circle at 10% 50%, rgba(0,230,118,0.12) 0%, rgba(15,18,29,0.9) 100%)', border: '1px solid rgba(0,230,118,0.3)', borderRadius: 'var(--radius-md)', padding: '14px 16px', cursor: 'pointer', width: '100%', textAlign: 'left' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Coins size={18} color="#00e676" />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>Earn Coins</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Convert your creator balance to coins</div>
-                </div>
-              </div>
-              <ChevronRight size={16} color="var(--text-muted)" />
-            </button>
-          ) : (
-            <button
-              onClick={onOpenStore}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'radial-gradient(circle at 10% 50%, rgba(255,170,0,0.12) 0%, rgba(15,18,29,0.9) 100%)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: 'var(--radius-md)', padding: '14px 16px', cursor: 'pointer', width: '100%', textAlign: 'left' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Coins size={18} color="#ffd700" />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>Get More Coins</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Send Sparks and unlock faster</div>
-                </div>
-              </div>
-              <ChevronRight size={16} color="var(--text-muted)" />
-            </button>
-          )}
-
-        </div>
-      )}
-
-      {/* =========================================================================
-          SPARK CONFIRMATION MODAL
-          ========================================================================= */}
-      {sparkConfirmAdmirer && (
-        <div className="bottom-sheet-overlay" onClick={() => setSparkConfirmAdmirer(null)}>
-          <div className="bottom-sheet-content" onClick={(e) => e.stopPropagation()} style={{ padding: '24px', textAlign: 'center' }}>
-            <div style={{ fontSize: '40px', marginBottom: '8px' }}>✨</div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px' }}>
-              Send a Spark to {sparkConfirmAdmirer.nickname}?
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-              A Spark is a Mega-Crush — it puts you at the top of their list and tags you as a Super Like.
-            </p>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(255,170,0,0.12)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: 'var(--radius-full)', padding: '4px 12px', fontSize: '12px', color: '#ffd700', fontWeight: 700, marginBottom: '20px' }}>
-              <Coins size={13} />
-              {SPARK_COST} coins · Demo spend
-            </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setSparkConfirmAdmirer(null)} className="btn-ghost" style={{ flex: 1, padding: '12px' }}>
-                Cancel
-              </button>
-              <button
-                onClick={() => confirmSpark(sparkConfirmAdmirer)}
-                className="btn-gold"
-                style={{ flex: 1, padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-              >
-                <Sparkles size={14} />
-                Send Spark
-              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* =========================================================================
-          INSUFFICIENT BALANCE MODAL
-          ========================================================================= */}
-      {insufficientBalanceOpen && (
-        <div className="bottom-sheet-overlay" onClick={() => setInsufficientBalanceOpen(false)}>
-          <div className="bottom-sheet-content" onClick={(e) => e.stopPropagation()} style={{ padding: '24px', textAlign: 'center' }}>
-            <Coins size={40} color="#ffa502" style={{ margin: '0 auto 12px', display: 'block' }} />
-            <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px' }}>Insufficient Balance</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-              A Spark costs {SPARK_COST} coins. You have {coinBalance} coins. Add more to send a Mega-Crush.
-            </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setInsufficientBalanceOpen(false)} className="btn-ghost" style={{ flex: 1, padding: '12px' }}>
-                Close
-              </button>
-              <button
-                onClick={() => { setInsufficientBalanceOpen(false); onOpenStore(); }}
-                className="btn-gold"
-                style={{ flex: 1, padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-              >
-                <Coins size={14} />
-                Buy Coins
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* =================================================================== */}
+      {/* SUB-TAB 2: MATCHES TAB (WORKFLOW: SCOREBOARD, HISTORY, FIRST MOVE, POTENTIAL, RECENT) */}
+      {/* =================================================================== */}
+      {activeSubTab === 'matches' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Horizontal category filter strip for matches & connections */}
+          {renderFilterStrip()}
 
-      {/* =========================================================================
-          PROFILE DETAILS BOTTOM SHEET (swipeable photos + 3-dot menu)
-          ========================================================================= */}
-      {inspectingProfile && (
-        <div className="bottom-sheet-overlay" onClick={() => { setInspectingProfile(null); setIsProfileMenuOpen(false); }}>
-          <div className="bottom-sheet-content" onClick={(e) => e.stopPropagation()} style={{ padding: '20px' }}>
-            {/* Header + 3-dot menu */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                <h3 style={{ fontSize: '20px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {inspectingProfile.nickname}, {inspectingProfile.age || 24}
-                </h3>
-                {inspectingProfile.is_verified && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(29, 161, 242, 0.2)', padding: '2px 8px', borderRadius: 'var(--radius-full)', color: '#1da1f2', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>
-                    <ShieldCheck size={12} />
-                    Verified
-                  </span>
-                )}
+          {/* SECTION 1: "MATCHED & VIBED" SCOREBOARD */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(25, 28, 36, 0.95) 75%)',
+              borderRadius: '20px',
+              border: '1.5px solid rgba(244, 63, 94, 0.35)',
+              padding: '14px 16px',
+              boxShadow: '0 6px 20px rgba(244, 63, 94, 0.15)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Trophy size={16} color="#fbbf24" />
+                <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                  Weekly Vibe Scoreboard
+                </span>
               </div>
+              <span style={{ fontSize: '10px', color: '#fbbf24', fontWeight: 700 }}>Top 3 Vibed</span>
+            </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative', flexShrink: 0 }}>
-                <button
-                  className="tap-target-44"
-                  aria-label="Profile options"
-                  onClick={() => setIsProfileMenuOpen((v) => !v)}
-                  style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', color: '#fff', cursor: 'pointer' }}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              {topVibedWeekly.map((item, idx) => (
+                <div
+                  key={item.id}
+                  onClick={() => setFullProfile(item)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '14px',
+                    padding: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    border: idx === 0 ? '1.5px solid #fbbf24' : '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
                 >
-                  <MoreVertical size={18} />
-                </button>
-                <button
-                  className="tap-target-44"
-                  aria-label="Close profile"
-                  onClick={() => { setInspectingProfile(null); setIsProfileMenuOpen(false); }}
-                  style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', color: '#fff', cursor: 'pointer' }}
-                >
-                  <X size={16} />
-                </button>
-
-                {isProfileMenuOpen && (
-                  <div className="glass-panel" style={{ position: 'absolute', top: '46px', right: 0, borderRadius: 'var(--radius-md)', overflow: 'hidden', minWidth: '160px', zIndex: 5 }}>
-                    <button
-                      onClick={() => { setIsProfileMenuOpen(false); setShowReportDialog(inspectingProfile); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '12px 14px', background: 'transparent', border: 'none', color: '#ffa502', fontSize: '13px', cursor: 'pointer', textAlign: 'left' }}
-                    >
-                      <Flag size={14} />
-                      Report
-                    </button>
-                    <button
-                      onClick={() => { setIsProfileMenuOpen(false); setShowBlockDialog(inspectingProfile); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '12px 14px', background: 'transparent', border: 'none', color: '#ff4757', fontSize: '13px', cursor: 'pointer', textAlign: 'left', borderTop: '1px solid var(--border-glass)' }}
-                    >
-                      <Ban size={14} />
-                      Block
-                    </button>
+                  {/* Rank badge */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      left: '6px',
+                      background: idx === 0 ? '#fbbf24' : idx === 1 ? '#94a3b8' : '#b45309',
+                      color: idx === 0 ? '#000' : '#fff',
+                      fontSize: '9px',
+                      fontWeight: 900,
+                      padding: '1px 5px',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    #{idx + 1}
                   </div>
-                )}
-              </div>
+
+                  <img
+                    src={item.avatar}
+                    alt={item.name}
+                    style={{ width: '46px', height: '46px', borderRadius: '50%', objectFit: 'cover', marginTop: '4px' }}
+                  />
+
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#f8fafc', marginTop: '4px' }}>
+                    {item.name}
+                  </div>
+
+                  {/* Vibe meter bar */}
+                  <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '999px', marginTop: '4px', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${item.vibeScore}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #f43f5e 0%, #22c55e 100%)',
+                      }}
+                    />
+                  </div>
+                  <div style={{ fontSize: '9px', color: '#22c55e', fontWeight: 700, marginTop: '2px' }}>
+                    {item.vibeScore}% Vibe
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SECTION 2: MATCHES HISTORY (RECENT MUTUAL MATCHES — MAX 50) */}
+          <div
+            style={{
+              background: '#191c24',
+              borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '14px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                Matches History ({filteredMatchHistory.length})
+              </span>
+              <span style={{ fontSize: '10px', color: '#94a3b8' }}>Max 50 recent</span>
             </div>
 
-            {/* Swipeable photos */}
+            {/* Compact scrollable container */}
             <div
-              style={{ position: 'relative', height: '320px', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: '16px', touchAction: 'pan-y' }}
-              onPointerDown={(e) => { profileSwipeStartRef.current = e.clientX; }}
-              onPointerUp={(e) => {
-                const start = profileSwipeStartRef.current;
-                profileSwipeStartRef.current = null;
-                if (start === null) return;
-                const dx = e.clientX - start;
-                const total = inspectingProfile.photo_urls.length || 1;
-                if (dx < -40) setProfilePhotoIdx((p) => Math.min(p + 1, total - 1));
-                else if (dx > 40) setProfilePhotoIdx((p) => Math.max(p - 1, 0));
+              style={{
+                maxHeight: '260px',
+                overflowY: 'auto',
+                borderRadius: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: '10px',
+                background: '#14161f',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
               }}
             >
-              <img
-                src={inspectingProfile.photo_urls[profilePhotoIdx] || inspectingProfile.photo_urls[0] || '/ananya.jpg'}
-                alt={inspectingProfile.nickname}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', filter: inspectingProfileLimited ? 'blur(18px) brightness(0.55)' : 'none' }}
-              />
-
-              {/* Story progress bars */}
-              {inspectingProfile.photo_urls.length > 1 && (
-                <div style={{ position: 'absolute', top: '10px', left: '14px', right: '14px', display: 'flex', gap: '4px' }}>
-                  {inspectingProfile.photo_urls.map((_, idx) => (
-                    <div key={idx} style={{ flex: 1, height: '3px', borderRadius: '2px', background: idx === profilePhotoIdx ? '#fff' : 'rgba(255,255,255,0.35)' }} />
-                  ))}
-                </div>
-              )}
-
-              {/* Limited-visibility overlay */}
-              {inspectingProfileLimited && (
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                  <div style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,215,0,0.4)', borderRadius: 'var(--radius-full)', padding: '5px 14px', fontSize: '14px', fontWeight: 800, color: '#ffd700' }}>
-                    {inspectingProfile.vibe_score || 80}% Match
+              {filteredMatchHistory.map((match) => (
+                <div
+                  key={match.id}
+                  style={{
+                    background: '#1e222d',
+                    borderRadius: '12px',
+                    padding: '8px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    border: '1px solid rgba(255, 255, 255, 0.04)',
+                  }}
+                >
+                  <div
+                    onClick={() => setFullProfile(match)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, cursor: 'pointer', flex: 1 }}
+                  >
+                    <img
+                      src={match.avatar}
+                      alt={match.name}
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1.5px solid rgba(34, 197, 94, 0.4)',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {match.name}, {match.age}
+                        </span>
+                        <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 700 }}>
+                          • {match.matchPercentage}%
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {match.city.split(',')[0]} • {match.lastActive}
+                      </div>
+                    </div>
                   </div>
-                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.75)' }}>Full photo locked today</span>
-                </div>
-              )}
 
-              {/* General distance pill */}
-              <div style={{ position: 'absolute', bottom: '12px', left: '12px', background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: 'var(--radius-full)', fontSize: '12px', color: 'var(--cyan-vibe)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <MapPin size={13} />
-                <span>~{inspectingProfile.distance_km} km • {inspectingProfile.city}</span>
+                  {/* Right: Direct 1-on-1 Call and Chat icons */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => onStartCall?.(match.userId, match.name, match.avatar)}
+                      title={`Call ${match.name}`}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#38bdf8',
+                        padding: '6px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Phone size={17} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onOpenChat('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')}
+                      title={`Chat with ${match.name}`}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#f43f5e',
+                        padding: '6px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <MessageCircle size={17} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SECTION 3: "MAKE FIRST MOVE" (CHAT & ICEBREAKER OPTIONS) */}
+          <div
+            style={{
+              background: '#191c24',
+              borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '14px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={15} color="#38bdf8" />
+                <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                  Make First Move
+                </span>
+              </div>
+              <span style={{ fontSize: '10.5px', color: '#38bdf8' }}>Break the ice</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {matches.slice(0, 4).map((m) => (
+                <div
+                  key={m.id}
+                  style={{
+                    flexShrink: 0,
+                    width: '140px',
+                    borderRadius: '14px',
+                    background: '#222631',
+                    padding: '10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                  }}
+                >
+                  <img
+                    src={m.avatar}
+                    alt={m.name}
+                    style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#f8fafc', marginTop: '4px' }}>
+                    {m.name}
+                  </div>
+                  <div style={{ fontSize: '9.5px', color: '#22c55e', fontWeight: 700 }}>
+                    {m.matchPercentage}% Match
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px', width: '100%' }}>
+                    {/* Trigger 1: Chat Button (opens Text Box Overlay with Voice Note button) */}
+                    <button
+                      type="button"
+                      onClick={() => setFirstMoveChatMatch(m)}
+                      title="Open Text Box Overlay"
+                      style={{
+                        flex: 1,
+                        background: 'rgba(56, 189, 248, 0.15)',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        color: '#38bdf8',
+                        padding: '4px 0',
+                        borderRadius: '8px',
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '3px',
+                      }}
+                    >
+                      <MessageCircle size={11} />
+                      <span>Chat</span>
+                    </button>
+
+                    {/* Trigger 2: Icebreaker Icon (opens horizontal sliding list of prompts) */}
+                    <button
+                      type="button"
+                      onClick={() => setFirstMoveIcebreakerMatch(m)}
+                      title="Select Icebreaker Prompt"
+                      style={{
+                        flex: 1,
+                        background: 'rgba(244, 63, 94, 0.15)',
+                        border: '1px solid rgba(244, 63, 94, 0.4)',
+                        color: '#f43f5e',
+                        padding: '4px 0',
+                        borderRadius: '8px',
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '3px',
+                      }}
+                    >
+                      <Sparkles size={11} />
+                      <span>Prompt</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SECTION 4: "POTENTIAL MATCHES" -> LIMITED VISIBILITY ONCLICK */}
+          <div
+            style={{
+              background: '#191c24',
+              borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '14px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                Potential Matches ({potentialMatches.length})
+              </span>
+              <span style={{ fontSize: '10px', color: '#94a3b8' }}>Tap for preview</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {potentialMatches.map((pm) => (
+                <div
+                  key={pm.user_id}
+                  onClick={() => {
+                    // Limited Visibility OnClick: ONLY Nickname, Age & Gender, General Distance, Top 3 Interests
+                    setLimitedProfile({
+                      nickname: pm.nickname,
+                      age: pm.age || 24,
+                      gender: pm.gender || 'female',
+                      distance_km: pm.distance_km || 3.5,
+                      interests: pm.shared_interests ? pm.shared_interests.slice(0, 3) : ['Coffee', 'Music', 'Art'],
+                    });
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    width: '60px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <img
+                    src={pm.photo_urls[0]}
+                    alt={pm.nickname}
+                    style={{
+                      width: '52px',
+                      height: '52px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '1.5px solid rgba(255, 255, 255, 0.2)',
+                    }}
+                  />
+                  <span style={{ fontSize: '10.5px', fontWeight: 600, color: '#f8fafc', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                    {pm.nickname}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SECTION 5: "MATCHED RECENTLY METRICS" -> FULL VISIBILITY ONCLICK */}
+          <div
+            style={{
+              background: '#191c24',
+              borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '14px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div>
+                <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc' }}>
+                  Matched Recently Metrics
+                </span>
+                <div style={{ fontSize: '10.5px', color: '#22c55e', fontWeight: 600, marginTop: '2px' }}>
+                  18.4% swipe-to-match • 94% avg compatibility
+                </div>
+              </div>
+              <span style={{ fontSize: '10px', color: '#38bdf8' }}>Full Profile</span>
+            </div>
+
+            {/* Constellation floating avatars row */}
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {matchedRecentlyList.map((m) => (
+                <div
+                  key={m.id}
+                  onClick={() => {
+                    // Full Visibility Modal: Nickname, Age, Gender, Verified, Distance, Last Active, All Preferences, Full Interests, Bio, Chat / Call
+                    setFullProfile(m);
+                  }}
+                  className="constellation-avatar-float"
+                  style={{
+                    flexShrink: 0,
+                    width: '60px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ position: 'relative' }}>
+                    <img
+                      src={m.avatar}
+                      alt={m.name}
+                      style={{
+                        width: '54px',
+                        height: '54px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '2px solid #22c55e',
+                      }}
+                    />
+                    <span
+                      style={{
+                        position: 'absolute',
+                        bottom: '-2px',
+                        right: '-2px',
+                        background: '#22c55e',
+                        color: '#000',
+                        fontSize: '8.5px',
+                        fontWeight: 900,
+                        padding: '1px 3px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {m.matchPercentage}%
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '10.5px', fontWeight: 600, color: '#f8fafc' }}>
+                    {m.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* SUB-TAB 3: RANDOM CALL TAB (FLOATING BUBBLE CANVAS + TAP-TO-CALL MODAL) */}
+      {/* =================================================================== */}
+      {activeSubTab === 'random_call' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Horizontal filter strip for Random Call category refining */}
+          {renderFilterStrip()}
+
+          {randomCallState === 'idle' && (
+            <div
+              style={{
+                background: '#191c24',
+                borderRadius: '20px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: '16px 14px 20px',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.35)',
+                overflow: 'hidden',
+                userSelect: 'none',
+              }}
+            >
+              {/* Header with live indicator */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', padding: '0 2px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.2px' }}>
+                    Floating Connections
+                  </span>
+                  <span style={{ fontSize: '9px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '1px 6px', borderRadius: '999px' }}>
+                    Live
+                  </span>
+                </div>
+                <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>Tap bubble to connect</span>
+              </div>
+
+              {/* Buoyant Floating Balloon Canvas: Multiple emoji/sticker avatars drifting smoothly */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '16px',
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  padding: '10px 4px 14px',
+                  scrollbarWidth: 'none',
+                  WebkitOverflowScrolling: 'touch',
+                  alignItems: 'center',
+                }}
+              >
+                {filteredRandomCallProfiles.map((prof, pIdx) => (
+                  <div
+                    key={prof.id}
+                    onClick={() => setSelectedRandomCallProfile(prof)}
+                    className="subtle-bubble-float"
+                    style={{
+                      flexShrink: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      animationDelay: `${(pIdx % 6) * 0.3}s`,
+                      transition: 'transform 0.18s ease',
+                    }}
+                  >
+                    {/* Floating Bubble Avatar Circle with playful emoji character */}
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '58px',
+                        height: '58px',
+                        borderRadius: '50%',
+                        background: `radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.22), rgba(20, 23, 32, 0.95))`,
+                        border: `2px solid ${prof.ringColor}`,
+                        boxShadow: `0 4px 16px ${prof.ringColor.replace('0.75', '0.35')}, inset 0 2px 6px rgba(255, 255, 255, 0.15)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '26px',
+                      }}
+                    >
+                      <span style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.45))' }}>{prof.sticker}</span>
+                      {/* Online Green Indicator Dot */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '1px',
+                          right: '1px',
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: '#10b981',
+                          border: '2px solid #111318',
+                          boxShadow: '0 0 6px #10b981',
+                        }}
+                      />
+                    </div>
+
+                    {/* Profile Name */}
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: '#f8fafc',
+                        maxWidth: '68px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        letterSpacing: '-0.2px',
+                      }}
+                    >
+                      {prof.name.split(' ')[0]}
+                    </span>
+
+                    {/* Language Badge */}
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        padding: '2px 7px',
+                        borderRadius: '999px',
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        color: '#38bdf8',
+                        border: '1px solid rgba(56, 189, 248, 0.25)',
+                        lineHeight: 1,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {prof.language}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Searching Radar State */}
+          {randomCallState === 'searching' && (
+            <div
+              style={{
+                background: '#191c24',
+                borderRadius: '20px',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                padding: '30px 20px',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <div
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '2px dashed #38bdf8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '16px',
+                }}
+              >
+                <Compass size={34} color="#38bdf8" />
+              </div>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#f8fafc', margin: '0 0 4px' }}>
+                Connecting to {currentAvatarProfile.name}...
+              </h3>
+              <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 16px' }}>
+                Starting {currentCallMode === 'video' ? 'encrypted HD Video' : 'clear Voice'} connection with {currentAvatarProfile.countryFlag} {currentAvatarProfile.countryName}...
+              </p>
+
+              <button
+                type="button"
+                onClick={handleEndCall}
+                style={{
+                  padding: '7px 18px',
+                  borderRadius: '999px',
+                  background: '#222631',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#94a3b8',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel Call
+              </button>
+            </div>
+          )}
+
+          {/* Connected State with 3D Avatar & Controls */}
+          {randomCallState === 'connected' && (
+            <div
+              style={{
+                background: '#191c24',
+                borderRadius: '20px',
+                border: '1.5px solid #22c55e',
+                padding: '24px 20px',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                boxShadow: '0 8px 30px rgba(34, 197, 94, 0.25)',
+              }}
+            >
+              <div style={{ position: 'relative', marginBottom: '10px' }}>
+                <img
+                  src={currentAvatarProfile.avatar}
+                  alt={currentAvatarProfile.name}
+                  style={{
+                    width: '74px',
+                    height: '74px',
+                    borderRadius: '20px',
+                    objectFit: 'contain',
+                    background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(244, 63, 94, 0.2))',
+                    border: '2.5px solid #22c55e',
+                    boxShadow: '0 0 16px rgba(34, 197, 94, 0.45)',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '-4px',
+                    right: '-4px',
+                    background: currentCallMode === 'video' ? '#f43f5e' : '#38bdf8',
+                    borderRadius: '50%',
+                    width: '22px',
+                    height: '22px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    border: '2px solid #191c24',
+                  }}
+                >
+                  {currentCallMode === 'video' ? <Video size={11} /> : <PhoneCall size={11} />}
+                </div>
+              </div>
+
+              <div style={{ fontSize: '17px', fontWeight: 800, color: '#f8fafc' }}>
+                {currentAvatarProfile.name}
+              </div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                {currentAvatarProfile.countryFlag} {currentAvatarProfile.countryName} • {currentCallMode === 'video' ? 'HD Video Call' : 'Encrypted Voice Call'}
+              </div>
+
+              {/* 3-Minute Icebreaker Timer */}
+              <div
+                style={{
+                  fontSize: '17px',
+                  fontWeight: 900,
+                  color: '#22c55e',
+                  marginTop: '8px',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              >
+                {formatTimer(randomCallTimer)}
+              </div>
+
+              {/* Controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsMuted(!isMuted)}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: isMuted ? 'rgba(239, 68, 68, 0.2)' : '#222631',
+                    border: isMuted ? '1px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: isMuted ? '#ef4444' : '#f8fafc',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isMuted ? <MicOff size={17} /> : <Mic size={17} />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsSpeaker(!isSpeaker)}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: isSpeaker ? 'rgba(56, 189, 248, 0.2)' : '#222631',
+                    border: isSpeaker ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: isSpeaker ? '#38bdf8' : '#f8fafc',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isSpeaker ? <Volume2 size={17} /> : <VolumeX size={17} />}
+                </button>
+
+                {/* Green Heart Like button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHasLikedCallPartner(true);
+                    try {
+                      confetti({
+                        particleCount: 35,
+                        spread: 50,
+                        origin: { y: 0.5 },
+                        colors: ['#22c55e', '#f43f5e', '#ffd700'],
+                      });
+                    } catch { }
+                  }}
+                  disabled={hasLikedCallPartner}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '999px',
+                    background: hasLikedCallPartner ? 'rgba(34, 197, 94, 0.2)' : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                    border: 'none',
+                    color: '#ffffff',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: hasLikedCallPartner ? 'default' : 'pointer',
+                  }}
+                >
+                  <Heart size={13} fill={hasLikedCallPartner ? '#22c55e' : '#ffffff'} />
+                  <span>{hasLikedCallPartner ? 'Liked!' : 'Send Like'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleEndCall}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: '#ef4444',
+                    border: 'none',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <PhoneOff size={17} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODAL 1: PARTIALLY RESTRICTED VIEW MODAL (LIKE SIDE ONCLICK) */}
+      {/* =================================================================== */}
+      {partiallyRestrictedProfile && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 120,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '320px',
+              background: '#191c24',
+              borderRadius: '22px',
+              border: '1.5px solid rgba(244, 63, 94, 0.4)',
+              padding: '22px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6)',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setPartiallyRestrictedProfile(null)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '28px',
+                height: '28px',
+                color: '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={15} />
+            </button>
+
+            {/* Avatar / Bitmoji with gradient frame */}
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', padding: '2.5px', background: 'linear-gradient(135deg, #f43f5e 0%, #fb7185 100%)', marginBottom: '10px' }}>
+              <img
+                src={partiallyRestrictedProfile.avatar}
+                alt={partiallyRestrictedProfile.name}
+                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ fontSize: '17px', fontWeight: 800, color: '#f8fafc' }}>
+                {partiallyRestrictedProfile.name}, {partiallyRestrictedProfile.age}
+              </span>
+              {partiallyRestrictedProfile.is_verified && <CheckCircle2 size={16} color="#38bdf8" />}
+            </div>
+
+            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', textAlign: 'center' }}>
+              Liked your profile • Expressed interest
+            </div>
+
+            {/* Top 3 Matched Interests */}
+            <div style={{ width: '100%', marginTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '10px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px', textAlign: 'center' }}>
+                Top Matched Interests
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'center' }}>
+                {partiallyRestrictedProfile.interests.slice(0, 3).map((item, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: 600,
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      padding: '3px 8px',
+                      borderRadius: '999px',
+                      color: '#cbd5e1',
+                    }}
+                  >
+                    {item}
+                  </span>
+                ))}
               </div>
             </div>
 
-            {/* Bio */}
-            <div style={{ marginBottom: '16px' }}>
-              <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px', letterSpacing: '0.8px' }}>About</h4>
-              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>{inspectingProfile.bio}</p>
+            {/* Like / Dislike CTA Buttons */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '18px', width: '100%' }}>
+              <button
+                type="button"
+                onClick={handleDislikePartiallyRestricted}
+                style={{
+                  flex: 1,
+                  padding: '9px 0',
+                  borderRadius: '12px',
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#ef4444',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                }}
+              >
+                <X size={15} />
+                <span>Pass</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLikePartiallyRestricted}
+                style={{
+                  flex: 1,
+                  padding: '9px 0',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)',
+                }}
+              >
+                <Heart size={15} fill="#ffffff" />
+                <span>Like Back</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODAL 2: RESTRICTED MODAL (DISLIKE / PASSED SIDE ONCLICK) */}
+      {/* =================================================================== */}
+      {restrictedProfile && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 120,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '300px',
+              background: '#191c24',
+              borderRadius: '22px',
+              border: '1.5px solid rgba(100, 116, 139, 0.4)',
+              padding: '22px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6)',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setRestrictedProfile(null)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '28px',
+                height: '28px',
+                color: '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={15} />
+            </button>
+
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1.5px solid #ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '12px',
+              }}
+            >
+              <Lock size={24} color="#ef4444" />
             </div>
 
-            {/* Interests (limited shows only top 3) */}
-            <div style={{ marginBottom: '20px' }}>
-              <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px', letterSpacing: '0.8px' }}>
-                {inspectingProfileLimited ? 'Top Interests' : 'Shared Passions & Interests'}
-              </h4>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {(inspectingProfileLimited
-                  ? (inspectingProfile.shared_interests || []).slice(0, 3)
-                  : (inspectingProfile.shared_interests || ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨'])
-                ).map((tag, idx) => (
-                  <span key={idx} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-full)', padding: '4px 10px', fontSize: '12px', color: '#fff' }}>
+            <h4 style={{ fontSize: '15.5px', fontWeight: 800, color: '#f8fafc', margin: '0 0 6px' }}>
+              Profile Restricted
+            </h4>
+
+            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 16px', lineHeight: 1.45 }}>
+              You previously passed on <strong>{restrictedProfile.name}</strong>'s profile. In accordance with mutual privacy rules, full details are restricted.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setRestrictedProfile(null)}
+              style={{
+                width: '100%',
+                padding: '9px 0',
+                borderRadius: '12px',
+                background: '#222631',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#f8fafc',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Understood
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODAL 3: LIMITED VISIBILITY MODAL (POTENTIAL MATCHES ONCLICK) */}
+      {/* =================================================================== */}
+      {limitedProfile && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 120,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '300px',
+              background: '#191c24',
+              borderRadius: '22px',
+              border: '1.5px solid rgba(56, 189, 248, 0.35)',
+              padding: '22px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6)',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setLimitedProfile(null)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '28px',
+                height: '28px',
+                color: '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <X size={15} />
+            </button>
+
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                color: '#38bdf8',
+                background: 'rgba(56, 189, 248, 0.15)',
+                padding: '2px 8px',
+                borderRadius: '999px',
+                marginBottom: '10px',
+              }}
+            >
+              Limited Visibility Card
+            </span>
+
+            {/* ONLY: Nickname, Age & Gender, General Distance Away, Top 3 Interests */}
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#f8fafc' }}>
+              {limitedProfile.nickname}
+            </div>
+
+            <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '2px' }}>
+              {limitedProfile.age} yrs • {limitedProfile.gender}
+            </div>
+
+            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+              ~{limitedProfile.distance_km} km away
+            </div>
+
+            <div style={{ width: '100%', marginTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '10px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#f8fafc', marginBottom: '6px', textAlign: 'center' }}>
+                Top 3 Interests
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'center' }}>
+                {limitedProfile.interests.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      fontSize: '10.5px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      padding: '3px 8px',
+                      borderRadius: '999px',
+                      color: '#cbd5e1',
+                    }}
+                  >
                     {tag}
                   </span>
                 ))}
               </div>
             </div>
 
-            {/* Trust & safety actions */}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '16px', display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => setShowReportDialog(inspectingProfile)}
-                className="btn-ghost"
-                style={{ flex: 1, minHeight: '44px', padding: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#ffa502' }}
-              >
-                <AlertTriangle size={14} />
-                Report
-              </button>
-              <button
-                onClick={() => setShowBlockDialog(inspectingProfile)}
-                className="btn-ghost"
-                style={{ flex: 1, minHeight: '44px', padding: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#ff4757' }}
-              >
-                <Ban size={14} />
-                Block
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          FILTER MODAL / BOTTOM DRAWER
-          ========================================================================= */}
-      {isFilterModalOpen && (
-        <div className="bottom-sheet-overlay" onClick={() => setIsFilterModalOpen(false)}>
-          <div className="bottom-sheet-content" onClick={(e) => e.stopPropagation()} style={{ padding: '22px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 800 }}>Discovery Filters</h3>
-              <button
-                onClick={() => setIsFilterModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Distance Filter Slider */}
-            <div style={{ marginBottom: '18px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Maximum Distance</span>
-                <strong style={{ color: 'var(--cyan-vibe)' }}>{maxDistance} km</strong>
-              </div>
-              <input
-                type="range"
-                min="5"
-                max="100"
-                step="5"
-                value={maxDistance}
-                onChange={(e) => setMaxDistance(Number(e.target.value))}
-                style={{ width: '100%', accentColor: '#00e5ff' }}
-              />
-            </div>
-
-            {/* Age Range Sliders */}
-            <div style={{ marginBottom: '18px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Age Range</span>
-                <strong style={{ color: '#ff2d55' }}>{minAge} - {maxAge} years</strong>
-              </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <input
-                  type="range"
-                  min="18"
-                  max="40"
-                  value={minAge}
-                  onChange={(e) => setMinAge(Math.min(Number(e.target.value), maxAge))}
-                  style={{ width: '50%', accentColor: '#ff2d55' }}
-                />
-                <input
-                  type="range"
-                  min="18"
-                  max="50"
-                  value={maxAge}
-                  onChange={(e) => setMaxAge(Math.max(Number(e.target.value), minAge))}
-                  style={{ width: '50%', accentColor: '#ff2d55' }}
-                />
-              </div>
-            </div>
-
-            {/* Interest Filter */}
-            <div style={{ marginBottom: '22px' }}>
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Interest Vibe</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨', 'Architecture 🏛️', 'Vintage Fashion 👗'].map((interest) => (
-                  <button
-                    key={interest}
-                    onClick={() => setSelectedInterest(selectedInterest === interest ? null : interest)}
-                    className={`filter-pill ${selectedInterest === interest ? 'active' : ''}`}
-                    style={{ fontSize: '11px', padding: '4px 10px' }}
-                  >
-                    {interest}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={resetFilters}
-                className="btn-ghost"
-                style={{ flex: 1, padding: '12px', fontSize: '13px' }}
-              >
-                Reset
-              </button>
-              <button
-                onClick={() => {
-                  setIsFilterModalOpen(false);
-                  setCurrentIndex(0);
-                  showToast('Filters applied!');
-                }}
-                className="btn-primary"
-                style={{ flex: 2, padding: '12px', fontSize: '13px' }}
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* BLOCK CONFIRMATION DIALOG */}
-      {showBlockDialog && (
-        <div className="bottom-sheet-overlay" onClick={() => setShowBlockDialog(null)}>
-          <div
-            className="bottom-sheet-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{ padding: '24px', textAlign: 'center' }}
-          >
-            <Ban size={40} color="#ff4757" style={{ margin: '0 auto 12px' }} />
-            <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px' }}>
-              Block {showBlockDialog.nickname}?
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-              They will be removed from your Likes, discovery deck and matches. This action is enforced immediately for this session.
-            </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => setShowBlockDialog(null)}
-                className="btn-ghost"
-                style={{ flex: 1, padding: '12px' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => confirmBlockUser(showBlockDialog)}
-                className="btn-primary"
-                style={{ flex: 1, padding: '12px', background: '#ff4757' }}
-              >
-                Confirm Block
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* REPORT CONFIRMATION DIALOG */}
-      {showReportDialog && (
-        <div className="bottom-sheet-overlay" onClick={() => setShowReportDialog(null)}>
-          <div
-            className="bottom-sheet-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{ padding: '24px' }}
-          >
-            <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>
-              Report {showReportDialog.nickname}
-            </h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              Select a reason to flag this profile to the YoUnMe Trust & Safety moderation team:
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-              {['Inappropriate or explicit photos', 'Suspected fake profile / bot', 'Commercial spam or solicitations', 'Harassment or abusive behavior'].map((reason) => (
-                <button
-                  key={reason}
-                  onClick={() => confirmReportUser(showReportDialog, reason)}
-                  className="btn-ghost"
-                  style={{ textAlign: 'left', padding: '12px 14px', fontSize: '13px' }}
-                >
-                  {reason}
-                </button>
-              ))}
-            </div>
             <button
-              onClick={() => setShowReportDialog(null)}
-              className="btn-ghost"
-              style={{ width: '100%', padding: '10px' }}
+              type="button"
+              onClick={() => setLimitedProfile(null)}
+              style={{
+                width: '100%',
+                padding: '9px 0',
+                borderRadius: '12px',
+                background: '#222631',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#f8fafc',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                marginTop: '16px',
+              }}
             >
-              Cancel
+              Close
             </button>
           </div>
         </div>
       )}
 
+      {/* =================================================================== */}
+      {/* MODAL 4: FULL VISIBILITY MODAL (MATCHED RECENTLY ONCLICK) */}
+      {/* =================================================================== */}
+      {fullProfile && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 120,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '330px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              background: '#191c24',
+              borderRadius: '22px',
+              border: '1.5px solid rgba(34, 197, 94, 0.4)',
+              padding: '20px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7)',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setFullProfile(null)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '28px',
+                height: '28px',
+                color: '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+              }}
+            >
+              <X size={15} />
+            </button>
+
+            {/* Profile Image with Verified Badge */}
+            <div style={{ width: '100%', height: '170px', borderRadius: '16px', overflow: 'hidden', position: 'relative', marginBottom: '12px' }}>
+              <img
+                src={fullProfile.avatar}
+                alt={fullProfile.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '8px',
+                  left: '8px',
+                  background: '#22c55e',
+                  color: '#000',
+                  fontSize: '10px',
+                  fontWeight: 900,
+                  padding: '2px 6px',
+                  borderRadius: '6px',
+                }}
+              >
+                {fullProfile.matchPercentage}% Compatibility
+              </div>
+            </div>
+
+            {/* Nickname, Age, Gender, Verified Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '18px', fontWeight: 900, color: '#f8fafc' }}>
+                {fullProfile.name}, {fullProfile.age}
+              </span>
+              <CheckCircle2 size={16} color="#38bdf8" />
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>({fullProfile.gender})</span>
+            </div>
+
+            {/* General Distance Away & Last Active status */}
+            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+              ~{fullProfile.distance_km} km away ({fullProfile.city}) • {fullProfile.lastActive}
+            </div>
+
+            {/* Preferences */}
+            <div style={{ marginTop: '8px' }}>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  background: 'rgba(244, 63, 94, 0.2)',
+                  border: '1px solid rgba(244, 63, 94, 0.4)',
+                  color: '#ff8da1',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                }}
+              >
+                Preference: {fullProfile.preferences}
+              </span>
+            </div>
+
+            {/* Bio */}
+            <p style={{ fontSize: '11.5px', color: '#cbd5e1', margin: '10px 0 8px', lineHeight: 1.45 }}>
+              "{fullProfile.bio}"
+            </p>
+
+            {/* Full Interests list */}
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#f8fafc', marginBottom: '5px' }}>
+                Full Interests
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {fullProfile.sharedInterests.map((interest, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      fontSize: '10px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      padding: '2px 7px',
+                      borderRadius: '999px',
+                      color: '#e2e8f0',
+                    }}
+                  >
+                    {interest}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Direct Chat / Voice Call options */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setFullProfile(null);
+                  onOpenChat('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+                }}
+                style={{
+                  flex: 1,
+                  padding: '9px 0',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                }}
+              >
+                <MessageCircle size={14} />
+                <span>Chat</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const target = fullProfile;
+                  setFullProfile(null);
+                  onStartCall?.(target.userId, target.name, target.avatar);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '9px 0',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                }}
+              >
+                <Phone size={14} />
+                <span>Voice Call</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* OVERLAY: "MAKE FIRST MOVE" TEXT BOX OVERLAY (Chat OnClick) */}
+      {/* =================================================================== */}
+      {firstMoveChatMatch && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 125,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '320px',
+              background: '#191c24',
+              borderRadius: '22px',
+              border: '1.5px solid rgba(56, 189, 248, 0.4)',
+              padding: '18px',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7)',
+              position: 'relative',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img
+                  src={firstMoveChatMatch.avatar}
+                  alt={firstMoveChatMatch.name}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+                />
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc' }}>
+                    Message {firstMoveChatMatch.name}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#22c55e' }}>Make First Move</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFirstMoveChatMatch(null)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Text Input Box */}
+            <textarea
+              rows={3}
+              value={firstMoveMessage}
+              onChange={(e) => setFirstMoveMessage(e.target.value)}
+              placeholder={`Say something thoughtful to ${firstMoveChatMatch.name}...`}
+              style={{
+                width: '100%',
+                background: '#14161f',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '10px',
+                color: '#f8fafc',
+                fontSize: '12px',
+                resize: 'none',
+                outline: 'none',
+                boxSizing: 'border-box',
+                marginBottom: '10px',
+              }}
+            />
+
+            {voiceRecordedToast && (
+              <div style={{ fontSize: '10.5px', color: '#22c55e', marginBottom: '8px', textAlign: 'center' }}>
+                ✓ Voice note recorded (0:08s attached)
+              </div>
+            )}
+
+            {/* Action Buttons: Voice Note Recording & Send */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={handleToggleVoiceRecord}
+                title={isRecordingVoice ? 'Stop recording voice note' : 'Record voice note'}
+                style={{
+                  height: '38px',
+                  padding: '0 12px',
+                  borderRadius: '10px',
+                  background: isRecordingVoice ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                  border: isRecordingVoice ? '1px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.1)',
+                  color: isRecordingVoice ? '#ef4444' : '#f8fafc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                }}
+              >
+                {isRecordingVoice ? <Square size={13} fill="#ef4444" /> : <Mic size={13} />}
+                <span>{isRecordingVoice ? 'Stop' : 'Voice'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSendFirstMoveText}
+                style={{
+                  flex: 1,
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  cursor: 'pointer',
+                }}
+              >
+                <Send size={13} />
+                <span>Send Message</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* DRAWER: "MAKE FIRST MOVE" ICEBREAKER PROMPTS (Prompt OnClick) */}
+      {/* =================================================================== */}
+      {firstMoveIcebreakerMatch && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 125,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '320px',
+              background: '#191c24',
+              borderRadius: '22px',
+              border: '1.5px solid rgba(244, 63, 94, 0.4)',
+              padding: '18px',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={16} color="#f43f5e" />
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc' }}>
+                  Pick Prompt for {firstMoveIcebreakerMatch.name}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFirstMoveIcebreakerMatch(null)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Horizontal sliding list of curated prompts */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {ICEBREAKER_PROMPTS.map((prompt, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: '#222631',
+                    borderRadius: '10px',
+                    padding: '8px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                  }}
+                >
+                  <span style={{ fontSize: '11px', color: '#f8fafc', lineHeight: 1.35, flex: 1 }}>
+                    {prompt}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleSendIcebreaker(prompt)}
+                    style={{
+                      background: 'rgba(244, 63, 94, 0.2)',
+                      border: '1px solid rgba(244, 63, 94, 0.4)',
+                      color: '#f43f5e',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                    }}
+                  >
+                    Send 💬
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* FILTER BOTTOM SHEET ("MORE" FILTERS MODAL) */}
+      {/* =================================================================== */}
+      {showMoreFiltersModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 130,
+            background: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '330px',
+              background: '#191c24',
+              borderRadius: '22px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              padding: '20px',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: '#f8fafc' }}>
+                Discovery & Connect Filters
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMoreFiltersModal(false)}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Filter 1: Age Range Single-Bar Slider */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                <span>Max Age</span>
+                <span style={{ color: '#38bdf8' }}>Up to {ageRange} yrs</span>
+              </div>
+              <input
+                type="range"
+                min="18"
+                max="45"
+                value={ageRange}
+                onChange={(e) => setAgeRange(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#38bdf8' }}
+              />
+            </div>
+
+            {/* Filter 2: Maximum Distance Single-Bar Slider */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                <span>Maximum Distance</span>
+                <span style={{ color: '#38bdf8' }}>Within {maxDistanceKm} km</span>
+              </div>
+              <input
+                type="range"
+                min="5"
+                max="100"
+                value={maxDistanceKm}
+                onChange={(e) => setMaxDistanceKm(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#38bdf8' }}
+              />
+            </div>
+
+            {/* Preference Filters */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                Relationship Goal
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                {['All', 'Long-term', 'Casual', 'Friendship'].map((p) => {
+                  const isSel = selectedRelationshipPref === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setSelectedRelationshipPref(p)}
+                      className={`filter-pill ${isSel ? 'active' : ''}`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Language & Interests */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#f8fafc', marginBottom: '6px' }}>
+                Top Interests & Tags
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                {['Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨', 'Late Night Vibes 🌙', 'Tech Startups 🚀'].map((tag) => {
+                  const isSel = selectedTopics.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTopics((prev) =>
+                          isSel ? prev.filter((t) => t !== tag) : [...prev, tag]
+                        );
+                      }}
+                      className={`filter-pill ${isSel ? 'active' : ''}`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowMoreFiltersModal(false)}
+              style={{
+                width: '100%',
+                padding: '10px 0',
+                borderRadius: '12px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)',
+                color: '#ffffff',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Apply All Filters
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* DIRECT CALL POPUP MODAL (TAP-TO-CONNECT DUAL-CALL) */}
+      {/* =================================================================== */}
+      {selectedRandomCallProfile && (
+        <div
+          onClick={() => setSelectedRandomCallProfile(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 140,
+            background: 'rgba(6, 8, 14, 0.78)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '320px',
+              background: '#151821',
+              border: '1.5px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '24px',
+              padding: '24px 20px',
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.65)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              position: 'relative',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setSelectedRandomCallProfile(null)}
+              aria-label="Close modal"
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                color: '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+
+            {/* Circular Avatar with Glowing Online Ring & playful sticker */}
+            <div
+              style={{
+                position: 'relative',
+                width: '76px',
+                height: '76px',
+                borderRadius: '50%',
+                background: `radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.2), rgba(20, 24, 34, 0.95))`,
+                border: `2.5px solid ${selectedRandomCallProfile.ringColor}`,
+                boxShadow: `0 8px 24px ${selectedRandomCallProfile.ringColor.replace('0.75', '0.4')}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '38px',
+                marginBottom: '14px',
+              }}
+            >
+              <span>{selectedRandomCallProfile.sticker}</span>
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '2px',
+                  right: '2px',
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  background: '#10b981',
+                  border: '2px solid #151821',
+                  boxShadow: '0 0 8px #10b981',
+                }}
+              />
+            </div>
+
+            {/* User details */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.3px' }}>
+                {selectedRandomCallProfile.name}, {selectedRandomCallProfile.age || 24}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                <span style={{ fontSize: '11.5px', color: '#38bdf8', fontWeight: 700, background: 'rgba(56, 189, 248, 0.12)', padding: '2px 8px', borderRadius: '999px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                  {selectedRandomCallProfile.language}
+                </span>
+                <span style={{ fontSize: '11.5px', color: '#10b981', fontWeight: 600 }}>
+                  ● Online now
+                </span>
+              </div>
+            </div>
+
+            {/* Direct Call Options: Audio and Video */}
+            <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '20px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = selectedRandomCallProfile;
+                  setSelectedRandomCallProfile(null);
+                  if (onStartCall) {
+                    onStartCall(target.id, target.name, target.avatar, 'audio');
+                  } else {
+                    handleStartRandomCall('audio', target as any);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '12px 10px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  color: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+                }}
+              >
+                <Phone size={15} />
+                <span>Audio Call</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const target = selectedRandomCallProfile;
+                  setSelectedRandomCallProfile(null);
+                  if (onStartCall) {
+                    onStartCall(target.id, target.name, target.avatar, 'video');
+                  } else {
+                    handleStartRandomCall('video', target as any);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '12px 10px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
+                  border: '1px solid rgba(244, 63, 94, 0.4)',
+                  color: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(225, 29, 72, 0.35)',
+                }}
+              >
+                <Video size={15} />
+                <span>Video Call</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
