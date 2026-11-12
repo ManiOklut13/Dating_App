@@ -1,0 +1,2508 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+assets/
+  images/
+    aditya.jpg
+    ananya.jpg
+    arjun.jpg
+    favicon.png
+    kabir.jpg
+    kavya.jpg
+    meera.jpg
+    nikhil.jpg
+    riya.jpg
+    rohit.jpg
+    tanya.jpg
+    younme-logo.jpg
+    younme-logo.png
+    zoya.jpg
+lib/
+  main.dart
+test/
+  widget_test.dart
+web/
+  icons/
+    Icon-192.png
+    Icon-512.png
+    Icon-maskable-192.png
+    Icon-maskable-512.png
+  favicon.png
+  index.html
+  manifest.json
+.gitignore
+.metadata
+analysis_options.yaml
+pubspec.lock
+pubspec.yaml
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="lib/main.dart">
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const YoUnMeApp());
+}
+
+class YoUnMeApp extends StatelessWidget {
+  const YoUnMeApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'YoUnMe Dating App',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF080A10),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFFF2D55),
+          secondary: Color(0xFF00E5FF),
+          surface: Color(0xFF0F121D),
+          tertiary: Color(0xFFFFD700),
+        ),
+      ),
+      home: const MainShellScreen(),
+    );
+  }
+}
+
+class CandidateProfile {
+  final String id;
+  final String name;
+  final int age;
+  final String city;
+  final double distanceKm;
+  final String bio;
+  final String imagePath;
+  final bool isVerified;
+  final int vibeScore;
+  final List<String> interests;
+
+  const CandidateProfile({
+    required this.id,
+    required this.name,
+    required this.age,
+    required this.city,
+    required this.distanceKm,
+    required this.bio,
+    required this.imagePath,
+    required this.isVerified,
+    required this.vibeScore,
+    required this.interests,
+  });
+}
+
+final List<CandidateProfile> demoProfiles = [
+  const CandidateProfile(
+    id: 'ananya',
+    name: 'Ananya',
+    age: 24,
+    city: 'Mumbai (Bandra West)',
+    distanceKm: 1.2,
+    bio:
+        'UI/UX designer & matcha enthusiast 🍵 Sucker for dry wit, vintage typography, and quiet corners in Bandra cafes.',
+    imagePath: 'assets/images/ananya.jpg',
+    isVerified: true,
+    vibeScore: 96,
+    interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨'],
+  ),
+  const CandidateProfile(
+    id: 'kavya',
+    name: 'Kavya',
+    age: 23,
+    city: 'Bengaluru (Indiranagar)',
+    distanceKm: 2.4,
+    bio:
+        'Architect sketching streetscapes and hoarding fountain pens ✏️ Passionate about brutalist buildings and filter coffee.',
+    imagePath: 'assets/images/kavya.jpg',
+    isVerified: true,
+    vibeScore: 94,
+    interests: ['Architecture 🏛️', 'Filter Coffee ☕', 'Sketching ✏️'],
+  ),
+  const CandidateProfile(
+    id: 'zoya',
+    name: 'Zoya',
+    age: 25,
+    city: 'Hyderabad (Jubilee Hills)',
+    distanceKm: 4.8,
+    bio:
+        'Analog photographer & biryani philosopher 📸 Take me to your favorite hidden terrace or vintage flea market.',
+    imagePath: 'assets/images/zoya.jpg',
+    isVerified: true,
+    vibeScore: 91,
+    interests: ['Photography 📷', 'Biryani 🍛', 'Film Noir 🎬'],
+  ),
+  const CandidateProfile(
+    id: 'arjun',
+    name: 'Arjun',
+    age: 30,
+    city: 'Bengaluru (Koramangala)',
+    distanceKm: 3.7,
+    bio:
+        'Trail runner & machine learning researcher 🏃 Weekends are reserved for misty ridge hikes and sunrise summits.',
+    imagePath: 'assets/images/arjun.jpg',
+    isVerified: true,
+    vibeScore: 87,
+    interests: ['Trail Running 🏃', 'Machine Learning 🤖', 'Hiking 🥾'],
+  ),
+  const CandidateProfile(
+    id: 'riya',
+    name: 'Riya',
+    age: 26,
+    city: 'Mumbai (Colaba)',
+    distanceKm: 5.1,
+    bio:
+        'Fashion curator & cinema buff 🎬 Strolling Colaba art deco lanes, tasting artisanal gelato, and debating Wes Anderson.',
+    imagePath: 'assets/images/riya.jpg',
+    isVerified: true,
+    vibeScore: 90,
+    interests: ['Salsa 💃', 'Film Aesthetics 🎥', 'Gelato 🍨'],
+  ),
+  const CandidateProfile(
+    id: 'kabir',
+    name: 'Kabir',
+    age: 26,
+    city: 'Mumbai (Khar West)',
+    distanceKm: 2.1,
+    bio:
+        'Sound designer & vinyl collector 🎧 Always hunting for obscure Japanese jazz, late-night bakeries, and breezy coastal drives.',
+    imagePath: 'assets/images/kabir.jpg',
+    isVerified: true,
+    vibeScore: 95,
+    interests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Live Jazz 🎷'],
+  ),
+  const CandidateProfile(
+    id: 'meera',
+    name: 'Meera',
+    age: 27,
+    city: 'Delhi (Hauz Khas)',
+    distanceKm: 6.8,
+    bio:
+        'Indie bookstore lover & chai purist 📚 Terrible at speed chess but I’ll happily challenge you to a round.',
+    imagePath: 'assets/images/meera.jpg',
+    isVerified: true,
+    vibeScore: 93,
+    interests: ['Books 📚', 'Masala Chai ☕', 'Chess ♟️'],
+  ),
+  const CandidateProfile(
+    id: 'tanya',
+    name: 'Tanya',
+    age: 22,
+    city: 'Goa (Panaji)',
+    distanceKm: 3.5,
+    bio:
+        'Marine biology student & scuba addict 🤿 Ocean breezes, bioluminescence swims, and reggae rhythms under coconut groves.',
+    imagePath: 'assets/images/tanya.jpg',
+    isVerified: true,
+    vibeScore: 89,
+    interests: ['Beaches 🏖️', 'Scuba Diving 🤿', 'Reggae 🎶'],
+  ),
+  const CandidateProfile(
+    id: 'nikhil',
+    name: 'Nikhil',
+    age: 31,
+    city: 'Pune (Koregaon Park)',
+    distanceKm: 7.2,
+    bio:
+        'Craft brewer & sourdough experimenter 🍞 Let’s talk fermentation science, indie post-rock bands, and 90s sci-fi.',
+    imagePath: 'assets/images/nikhil.jpg',
+    isVerified: true,
+    vibeScore: 85,
+    interests: ['Sourdough 🥖', 'Craft Beer 🍺', 'Post-Rock 🎸'],
+  ),
+  const CandidateProfile(
+    id: 'sneha',
+    name: 'Sneha',
+    age: 24,
+    city: 'Chennai (Besant Nagar)',
+    distanceKm: 4.1,
+    bio:
+        'Carnatic-fusion violinist 🎻 Live concert lover, rooftop sunset watcher, and passionate defender of spicy ramen.',
+    imagePath: 'assets/images/sneha.jpg',
+    isVerified: true,
+    vibeScore: 97,
+    interests: ['Violin 🎻', 'Ramen 🍜', 'Indie Fusion 🎶'],
+  ),
+  const CandidateProfile(
+    id: 'tara',
+    name: 'Tara',
+    age: 25,
+    city: 'Jaipur (C-Scheme)',
+    distanceKm: 8.3,
+    bio:
+        'Creative director & clay ceramicist 🏺 Plant guardian to 24 succulents. Come make ceramic mugs and talk aesthetic cinema.',
+    imagePath: 'assets/images/tara.jpg',
+    isVerified: true,
+    vibeScore: 89,
+    interests: ['Pottery 🏺', 'Succulents 🪴', 'Art Direction 📐'],
+  ),
+  const CandidateProfile(
+    id: 'ishaan',
+    name: 'Ishaan',
+    age: 28,
+    city: 'Gurugram (Cyber City)',
+    distanceKm: 9.6,
+    bio:
+        'Venture builder & astronomy enthusiast 🔭 Down for 2 AM deep philosophical debates over single-origin pourovers.',
+    imagePath: 'assets/images/ishaan.jpg',
+    isVerified: true,
+    vibeScore: 93,
+    interests: ['Astrophysics 🌌', 'Pourover ☕', 'Startups 🚀'],
+  ),
+  const CandidateProfile(
+    id: 'aisha',
+    name: 'Aisha',
+    age: 23,
+    city: 'Bhopal (Arera Colony)',
+    distanceKm: 11,
+    bio:
+        'Wildlife photojournalist 🐆 Either tracking big cats across forest reserves or sitting in a hammock editing raw shots.',
+    imagePath: 'assets/images/aisha.jpg',
+    isVerified: true,
+    vibeScore: 88,
+    interests: ['Wildlife 🐾', 'Expeditions 🚙', 'Forest Treks 🌲'],
+  ),
+  const CandidateProfile(
+    id: 'dev',
+    name: 'Dev',
+    age: 29,
+    city: 'Ahmedabad (Navrangpura)',
+    distanceKm: 6.2,
+    bio:
+        'Sustainable architect & boulderer 🧗 Designing solar passive buildings by daylight and tackling V6 overhangs.',
+    imagePath: 'assets/images/dev.jpg',
+    isVerified: true,
+    vibeScore: 92,
+    interests: ['Bouldering 🧗', 'Eco Architecture 🌿', 'Espresso ☕'],
+  ),
+  const CandidateProfile(
+    id: 'priya',
+    name: 'Priya',
+    age: 25,
+    city: 'Kolkata (Park Street)',
+    distanceKm: 8.7,
+    bio:
+        'Culinary food historian & pastry experimenter 🍰 Creating saffron-infused treats and collecting heirloom family recipes.',
+    imagePath: 'assets/images/priya.jpg',
+    isVerified: true,
+    vibeScore: 94,
+    interests: ['Baking 🥐', 'Culinary History 🍲', 'Jazz 🎷'],
+  ),
+  const CandidateProfile(
+    id: 'rohit',
+    name: 'Rohit',
+    age: 27,
+    city: 'Mumbai (Juhu)',
+    distanceKm: 4.5,
+    bio:
+        'Landscape architect by day, acoustic rock guitarist by evening 🎸 Chasing coastal sea spray and talking late-night design.',
+    imagePath: 'assets/images/rohit.jpg',
+    isVerified: true,
+    vibeScore: 91,
+    interests: ['Guitar 🎸', 'Architecture 🏛️', 'Sunset Runs 🌅'],
+  ),
+  const CandidateProfile(
+    id: 'aditya',
+    name: 'Aditya',
+    age: 28,
+    city: 'Kochi (Fort Kochi)',
+    distanceKm: 5.9,
+    bio:
+        'Indie game developer & retro synthesizer geek 🕹️ Making cozy pixel games, brewing aeropress, and cycling sea walls.',
+    imagePath: 'assets/images/aditya.jpg',
+    isVerified: true,
+    vibeScore: 95,
+    interests: ['Game Dev 🎮', 'Retro Synths 🎹', 'Cycling 🚴'],
+  ),
+  const CandidateProfile(
+    id: 'diya',
+    name: 'Diya',
+    age: 24,
+    city: 'Mumbai (Pali Hill)',
+    distanceKm: 1.8,
+    bio:
+        'Editorial fashion stylist & vintage bazaar hunter 👗 Finding hidden textile gems, sipping cold brew, and golden hours.',
+    imagePath: 'assets/images/diya.jpg',
+    isVerified: true,
+    vibeScore: 97,
+    interests: ['Vintage Styling 👗', 'Cold Brew 🧊', 'Fashion Editorial 📸'],
+  ),
+  const CandidateProfile(
+    id: 'vivaan',
+    name: 'Vivaan',
+    age: 26,
+    city: 'Bengaluru (HSR Layout)',
+    distanceKm: 3.1,
+    bio:
+        'Fintech co-founder & road cyclist 🚴 Early 100k breakfast rides, podcast debates, and hand-pulled espresso shots.',
+    imagePath: 'assets/images/vivaan.jpg',
+    isVerified: true,
+    vibeScore: 93,
+    interests: ['Road Cycling 🚴', 'Espresso ☕', 'Fintech 💡'],
+  ),
+  const CandidateProfile(
+    id: 'natasha',
+    name: 'Natasha',
+    age: 25,
+    city: 'Delhi (Shahpur Jat)',
+    distanceKm: 6.4,
+    bio:
+        'Mural artist & digital illustrator 🎨 Splashing colors on urban walls, illustrating indie graphic novels, and sipping chai.',
+    imagePath: 'assets/images/natasha.jpg',
+    isVerified: true,
+    vibeScore: 90,
+    interests: ['Mural Art 🎨', 'Graphic Novels 📚', 'Tea Stalls ☕'],
+  ),
+  const CandidateProfile(
+    id: 'sameer',
+    name: 'Sameer',
+    age: 27,
+    city: 'Pune (Viman Nagar)',
+    distanceKm: 5.6,
+    bio:
+        'Fingerstyle acoustic guitarist & songwriter 🎸 Composing chill melodies, sipping green tea, and jamming under starry skies.',
+    imagePath: 'assets/images/sameer.jpg',
+    isVerified: true,
+    vibeScore: 92,
+    interests: ['Acoustic Guitar 🎸', 'Songwriting 🎼', 'Camping ⛺'],
+  ),
+  const CandidateProfile(
+    id: 'rhea',
+    name: 'Rhea',
+    age: 23,
+    city: 'Goa (Anjuna)',
+    distanceKm: 4.2,
+    bio:
+        'Coral reef conservationist & free diver 🤿 Protecting marine life, sunset bonfires on secluded coves, and honest talks.',
+    imagePath: 'assets/images/rhea.jpg',
+    isVerified: true,
+    vibeScore: 94,
+    interests: ['Free Diving 🤿', 'Ocean Conservation 🌊', 'Bonfires 🔥'],
+  ),
+  const CandidateProfile(
+    id: 'kunal',
+    name: 'Kunal',
+    age: 28,
+    city: 'Hyderabad (Gachibowli)',
+    distanceKm: 7,
+    bio:
+        'Hardware robotics engineer & drone pilot 🛸 Building autonomous tech by day, star trail astrophotography by night.',
+    imagePath: 'assets/images/kunal.jpg',
+    isVerified: true,
+    vibeScore: 86,
+    interests: ['Drones 🛸', 'Robotics 🤖', 'Astrophotography 🌌'],
+  ),
+  const CandidateProfile(
+    id: 'alisha',
+    name: 'Alisha',
+    age: 26,
+    city: 'Mumbai (Santacruz West)',
+    distanceKm: 2.9,
+    bio:
+        'French-trained pastry chef & chocolatier 🍫 Come taste warm almond croissants, flaky tartlets, and single-origin bonbons.',
+    imagePath: 'assets/images/alisha.jpg',
+    isVerified: true,
+    vibeScore: 96,
+    interests: ['Pastry 🥐', 'Chocolaterie 🍫', 'Fine Dining 🍷'],
+  ),
+  const CandidateProfile(
+    id: 'karan',
+    name: 'Karan',
+    age: 27,
+    city: 'Chandigarh (Sector 18)',
+    distanceKm: 9.3,
+    bio:
+        'Triathlon competitor & sports nutritionist 🏊‍♂️ Running half marathons, blending green superfood smoothies, and high energy.',
+    imagePath: 'assets/images/karan.jpg',
+    isVerified: true,
+    vibeScore: 88,
+    interests: ['Triathlon 🏊‍♂️', 'Nutrition 🥗', 'Trail Biking 🚵‍♂️'],
+  ),
+  const CandidateProfile(
+    id: 'pooja',
+    name: 'Pooja',
+    age: 24,
+    city: 'Kolkata (Salt Lake)',
+    distanceKm: 6.9,
+    bio:
+        'Slow-living advocate & terracotta ceramicist 🪴 Hand-crafting earthy tableware, collecting first-edition books, and fine tea.',
+    imagePath: 'assets/images/pooja.jpg',
+    isVerified: true,
+    vibeScore: 92,
+    interests: ['Ceramics 🏺', 'Darjeeling Tea ☕', 'Slow Living 🌿'],
+  ),
+  const CandidateProfile(
+    id: 'siddharth',
+    name: 'Siddharth',
+    age: 29,
+    city: 'Ahmedabad (Ellisbridge)',
+    distanceKm: 5.7,
+    bio:
+        'Heritage conservation architect 🏛️ Documenting 500-year-old stepwells and havelis. Loves black ink pens and classical sitar.',
+    imagePath: 'assets/images/siddharth.jpg',
+    isVerified: true,
+    vibeScore: 94,
+    interests: ['Heritage 🏛️', 'Ink Drawing 🖋️', 'Classical Music 🎶'],
+  ),
+  const CandidateProfile(
+    id: 'neha',
+    name: 'Neha',
+    age: 25,
+    city: 'Chennai (Adyar)',
+    distanceKm: 4.9,
+    bio:
+        'Contemporary dancer & yoga teacher 🧘 Exploring expressive human movement, sound bath therapy, and dawn over the bay.',
+    imagePath: 'assets/images/neha.jpg',
+    isVerified: true,
+    vibeScore: 95,
+    interests: ['Contemporary Dance 💃', 'Yoga 🧘', 'Sound Healing 🔔'],
+  ),
+  const CandidateProfile(
+    id: 'rahul',
+    name: 'Rahul',
+    age: 26,
+    city: 'Kochi (Mattancherry)',
+    distanceKm: 6.3,
+    bio:
+        'Estate micro-lot coffee roaster ☕ Obsessed with light roasts, fruity pour-over notes, analog photography, and monsoons.',
+    imagePath: 'assets/images/rahul.jpg',
+    isVerified: true,
+    vibeScore: 89,
+    interests: ['Specialty Coffee ☕', 'Roasting ♨️', 'Monsoon Walks 🌧️'],
+  ),
+  const CandidateProfile(
+    id: 'simran',
+    name: 'Simran',
+    age: 27,
+    city: 'Shimla (Mall Road)',
+    distanceKm: 12.5,
+    bio:
+        'Mountain essayist & fiction author ✍️ Pine forest wanderer with a mechanical typewriter. Coffee, wool sweaters, and woodsmoke.',
+    imagePath: 'assets/images/simran.jpg',
+    isVerified: true,
+    vibeScore: 94,
+    interests: ['Writing ✍️', 'Pine Forest Hikes 🌲', 'Typewriters ⌨️'],
+  ),
+  const CandidateProfile(
+    id: 'varun',
+    name: 'Varun',
+    age: 28,
+    city: 'Manali (Old Manali)',
+    distanceKm: 13.2,
+    bio:
+        'High-altitude alpine trek leader 🏔️ Navigating high passes, glacier safety, and warming up with campfire stories and guitar.',
+    imagePath: 'assets/images/varun.jpg',
+    isVerified: true,
+    vibeScore: 91,
+    interests: ['Mountaineering 🧗‍♂️', 'Alpine Hikes 🏔️', 'Campfires 🔥'],
+  ),
+  const CandidateProfile(
+    id: 'maya',
+    name: 'Maya',
+    age: 24,
+    city: 'Mumbai (Versova)',
+    distanceKm: 3.8,
+    bio:
+        'Independent documentary filmmaker 🎥 Unearthing real stories of indie street musicians, quiet artisans, and forgotten streets.',
+    imagePath: 'assets/images/maya.jpg',
+    isVerified: true,
+    vibeScore: 96,
+    interests: ['Documentary 🎥', 'Soundscapes 🎙️', 'Indie Cinema 🍿'],
+  ),
+  const CandidateProfile(
+    id: 'aman',
+    name: 'Aman',
+    age: 26,
+    city: 'Bengaluru (Indiranagar)',
+    distanceKm: 2.8,
+    bio:
+        'Quantitative trader & blitz chess player ♟️ Mathematical models during the week, underground lo-fi vinyl gigs on weekends.',
+    imagePath: 'assets/images/aman.jpg',
+    isVerified: true,
+    vibeScore: 92,
+    interests: ['Chess ♟️', 'Quantitative Math 📊', 'Lo-Fi Beats 🎧'],
+  ),
+  const CandidateProfile(
+    id: 'shruti',
+    name: 'Shruti',
+    age: 25,
+    city: 'Jaipur (Malviya Nagar)',
+    distanceKm: 7.6,
+    bio:
+        'Botanist & wild perfumer 🌸 Distilling rare forest blossoms, foraging botanicals, and handcrafting niche scents.',
+    imagePath: 'assets/images/shruti.jpg',
+    isVerified: true,
+    vibeScore: 93,
+    interests: ['Botany 🌿', 'Natural Perfumery 🌸', 'Herb Gardens 🪴'],
+  ),
+  const CandidateProfile(
+    id: 'aryan',
+    name: 'Aryan',
+    age: 27,
+    city: 'Pune (Baner)',
+    distanceKm: 6,
+    bio:
+        'Clean-tech innovator & landscape photographer 🌅 Building solar grids, chasing golden hour timelapses, and open highway trips.',
+    imagePath: 'assets/images/aryan.jpg',
+    isVerified: true,
+    vibeScore: 95,
+    interests: ['Solar Energy ☀️', 'Landscape Photography 📷', 'Road Trips 🚗'],
+  ),
+];
+
+class MainShellScreen extends StatefulWidget {
+  const MainShellScreen({super.key});
+
+  @override
+  State<MainShellScreen> createState() => _MainShellScreenState();
+}
+
+class _MainShellScreenState extends State<MainShellScreen> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final screens = [
+      const DiscoveryDeckScreen(),
+      const ConnectStackScreen(),
+      const Center(
+          child: Text("💬 Chat & Contact Guard Filter",
+              style: TextStyle(fontSize: 18))),
+      const Center(
+          child: Text("📞 LiveKit Cloud SFU WebRTC Calls",
+              style: TextStyle(fontSize: 18))),
+      const Center(
+          child: Text("🪙 Profile, Blue Tick & Double-Entry Ledger",
+              style: TextStyle(fontSize: 18))),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF080A10).withValues(alpha: 0.95),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                    colors: [Color(0xFFFF2D55), Color(0xFF9B51E0)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.local_fire_department,
+                  color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              "YoUnMe",
+              style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  letterSpacing: -0.5),
+            ),
+          ],
+        ),
+        actions: [
+          // Ruby / Coin balance
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.monetization_on, color: Colors.amber, size: 15),
+                SizedBox(width: 4),
+                Text("250",
+                    style: TextStyle(
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Daily Streak Badge (beside notification icon)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF7A39).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: const Color(0xFFFF7A39).withValues(alpha: 0.45)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.local_fire_department,
+                    color: Color(0xFFFF7A39), size: 16),
+                SizedBox(width: 3),
+                Text("4",
+                    style: TextStyle(
+                        color: Color(0xFFFF7A39),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Notifications Icon
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.08),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                ),
+                child: const Icon(Icons.notifications_none_rounded,
+                    color: Colors.white, size: 18),
+              ),
+              Positioned(
+                top: 7,
+                right: 7,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF2D55),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+        ],
+      ),
+      body: screens[_currentIndex],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+        backgroundColor: const Color(0xFF0F121D),
+        indicatorColor: const Color(0xFFFF2D55).withValues(alpha: 0.25),
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.explore_outlined),
+              selectedIcon: Icon(Icons.explore),
+              label: 'Discovery'),
+          NavigationDestination(
+              icon: Icon(Icons.favorite_border),
+              selectedIcon: Icon(Icons.favorite),
+              label: 'Connect'),
+          NavigationDestination(
+              icon: Icon(Icons.chat_bubble_outline),
+              selectedIcon: Icon(Icons.chat_bubble),
+              label: 'Chat'),
+          NavigationDestination(
+              icon: Icon(Icons.phone_outlined),
+              selectedIcon: Icon(Icons.phone),
+              label: 'Calls'),
+          NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Profile'),
+        ],
+      ),
+    );
+  }
+}
+
+class DiscoveryDeckScreen extends StatefulWidget {
+  const DiscoveryDeckScreen({super.key});
+
+  @override
+  State<DiscoveryDeckScreen> createState() => _DiscoveryDeckScreenState();
+}
+
+class _DiscoveryDeckScreenState extends State<DiscoveryDeckScreen> {
+  late List<CandidateProfile> _activeProfiles;
+  final List<CandidateProfile> _outgoingLikes = [];
+  int _likeCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeProfiles = List.from(demoProfiles);
+  }
+
+  void _resetDeck() {
+    setState(() {
+      _activeProfiles = List.from(demoProfiles);
+      _likeCount = 0;
+    });
+  }
+
+  void _nextProfile(String action) {
+    if (_activeProfiles.isEmpty) return;
+    final profile = _activeProfiles.first;
+
+    // Strict 1-2 matches per 10 likes (positions 4 and 9)
+    bool isMatch = false;
+    if (action == 'Liked' || action == 'Sparked') {
+      _likeCount++;
+      final pos = ((_likeCount - 1) % 10) + 1;
+      isMatch = (pos == 4 || pos == 9);
+      _outgoingLikes.add(profile);
+    }
+
+    // Immediately remove from active stack so passed or liked profiles never reappear
+    setState(() {
+      _activeProfiles.removeAt(0);
+    });
+
+    if (isMatch) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1F0A14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: Color(0xFFFF2D55), width: 1.5),
+          ),
+          title: const Text("It's a Vibe Match! 🎉",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: Color(0xFFFF2D55), fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                  radius: 44, backgroundImage: AssetImage(profile.imagePath)),
+              const SizedBox(height: 12),
+              Text("You and ${profile.name} liked each other!",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Keep Swiping",
+                  style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF2D55)),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Say Hi 👋",
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    } else if (action == 'Liked' || action == 'Sparked') {
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Liked ${profile.name}! Added to outgoing likes.'),
+          duration: const Duration(milliseconds: 700),
+          backgroundColor: const Color(0xFFD81B60),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_activeProfiles.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('💖', style: TextStyle(fontSize: 48)),
+              const SizedBox(height: 14),
+              const Text(
+                'All Caught Up!',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'You have explored all 35 unique profiles. Liked profiles are waiting in connections.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.white70),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD81B60),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: _resetDeck,
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text('Reset Discovery Stack',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final profile = _activeProfiles.first;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Profile Photo
+                  Image.asset(
+                    profile.imagePath,
+                    fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, stack) => Container(
+                      color: const Color(0xFF1E2230),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.person,
+                                size: 64, color: Colors.white38),
+                            const SizedBox(height: 8),
+                            Text(profile.name,
+                                style: const TextStyle(
+                                    fontSize: 20, color: Colors.white70)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Gradient overlay
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.2),
+                          Colors.black.withValues(alpha: 0.9),
+                        ],
+                        stops: const [0.4, 0.65, 1.0],
+                      ),
+                    ),
+                  ),
+
+                  // Top badges
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.location_on,
+                                  color: Color(0xFF00E5FF), size: 14),
+                              const SizedBox(width: 4),
+                              Text('${profile.distanceKm} km away',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                                colors: [Color(0xFFFF2D55), Color(0xFF9B51E0)]),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.bolt,
+                                  color: Colors.amber, size: 14),
+                              const SizedBox(width: 4),
+                              Text('${profile.vibeScore}% Vibe',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Bottom info
+                  Positioned(
+                    bottom: 20,
+                    left: 16,
+                    right: 16,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              '${profile.name}, ${profile.age}',
+                              style: const TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                            ),
+                            if (profile.isVerified) ...[
+                              const SizedBox(width: 6),
+                              const Icon(Icons.verified,
+                                  color: Color(0xFF00E5FF), size: 20),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          profile.city,
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.8)),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          profile.bio,
+                          style: const TextStyle(
+                              fontSize: 14, color: Colors.white, height: 1.3),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: profile.interests.map((tag) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.white12),
+                              ),
+                              child: Text(tag,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Colors.white)),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Action buttons row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _ActionButton(
+                icon: Icons.close,
+                color: Colors.redAccent,
+                size: 26,
+                onTap: () => _nextProfile('Passed'),
+              ),
+              _ActionButton(
+                icon: Icons.star,
+                color: Colors.amber,
+                size: 24,
+                onTap: () => _nextProfile('Superliked'),
+              ),
+              _ActionButton(
+                icon: Icons.favorite,
+                color: const Color(0xFFFF2D55),
+                size: 30,
+                isPrimary: true,
+                onTap: () => _nextProfile('Liked'),
+              ),
+              _ActionButton(
+                icon: Icons.electric_bolt,
+                color: const Color(0xFF00E5FF),
+                size: 24,
+                onTap: () => _nextProfile('Sparked'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class ConnectStackScreen extends StatelessWidget {
+  const ConnectStackScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Likes You",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF2D55).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "${demoProfiles.length} Available",
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFFF2D55),
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Horizontal scroll of profiles who liked you
+          SizedBox(
+            height: 180,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: demoProfiles.length,
+              itemBuilder: (ctx, idx) {
+                final p = demoProfiles[idx];
+                return Container(
+                  width: 130,
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: const Color(0xFF0F121D),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(p.imagePath, fit: BoxFit.cover),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.85)
+                            ],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        left: 8,
+                        right: 8,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "${p.name}, ${p.age}",
+                              style: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              p.city.split('(').first.trim(),
+                              style: const TextStyle(
+                                  fontSize: 10, color: Colors.white70),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+          const Text(
+            "Mutual Matches",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+
+          // Mutual matches list
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 8,
+            separatorBuilder: (ctx, idx) =>
+                const Divider(color: Colors.white12, height: 16),
+            itemBuilder: (ctx, idx) {
+              final p = demoProfiles[idx];
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  radius: 26,
+                  backgroundImage: AssetImage(p.imagePath),
+                ),
+                title: Row(
+                  children: [
+                    Text(p.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    if (p.isVerified) ...[
+                      const SizedBox(width: 4),
+                      const Icon(Icons.verified,
+                          color: Color(0xFF00E5FF), size: 16),
+                    ],
+                    const Spacer(),
+                    Text('${p.vibeScore}% Vibe',
+                        style: const TextStyle(
+                            color: Color(0xFFFF2D55),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.phone,
+                          color: Color(0xFF00E5FF), size: 20),
+                      tooltip: 'Call ${p.name}',
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content:
+                                Text('Starting WebRTC call with ${p.name}...'),
+                            backgroundColor: const Color(0xFF00E5FF),
+                            duration: const Duration(milliseconds: 900),
+                          ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chat_bubble_outline,
+                          color: Color(0xFFFF2D55), size: 20),
+                      tooltip: 'Chat with ${p.name}',
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Opening chat with ${p.name}...'),
+                            backgroundColor: const Color(0xFFFF2D55),
+                            duration: const Duration(milliseconds: 900),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final double size;
+  final bool isPrimary;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.size,
+    this.isPrimary = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: isPrimary ? 64 : 50,
+        height: isPrimary ? 64 : 50,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF0F121D),
+          border: Border.all(
+            color: isPrimary ? color : color.withValues(alpha: 0.5),
+            width: isPrimary ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: isPrimary ? 0.35 : 0.15),
+              blurRadius: isPrimary ? 12 : 6,
+            ),
+          ],
+        ),
+        child: Icon(icon, color: color, size: size),
+      ),
+    );
+  }
+}
+</file>
+
+<file path="test/widget_test.dart">
+import 'package:flutter_test/flutter_test.dart';
+import 'package:younme_mobile/main.dart';
+
+void main() {
+  testWidgets('YoUnMe app smoke test builds without crashing', (WidgetTester tester) async {
+    await tester.pumpWidget(const YoUnMeApp());
+    expect(find.byType(YoUnMeApp), findsOneWidget);
+  });
+}
+</file>
+
+<file path="web/index.html">
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="younme_mobile">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>younme_mobile</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
+</file>
+
+<file path="web/manifest.json">
+{
+    "name": "younme_mobile",
+    "short_name": "younme_mobile",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "A new Flutter project.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
+</file>
+
+<file path=".gitignore">
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Widget Preview related
+.widget_preview/
+</file>
+
+<file path=".metadata">
+# This file tracks properties of this Flutter project.
+# Used by Flutter tool to assess capabilities and perform upgrades etc.
+#
+# This file should be version controlled and should not be manually edited.
+
+version:
+  revision: "abaf9c523780a608bd46686fd5e53740a07077f8"
+  channel: "stable"
+
+project_type: app
+
+# Tracks metadata for the flutter migrate command
+migration:
+  platforms:
+    - platform: root
+      create_revision: abaf9c523780a608bd46686fd5e53740a07077f8
+      base_revision: abaf9c523780a608bd46686fd5e53740a07077f8
+    - platform: web
+      create_revision: abaf9c523780a608bd46686fd5e53740a07077f8
+      base_revision: abaf9c523780a608bd46686fd5e53740a07077f8
+
+  # User provided section
+
+  # List of Local paths (relative to this file) that should be
+  # ignored by the migrate tool.
+  #
+  # Files that are not part of the templates will be ignored by default.
+  unmanaged_files:
+    - 'lib/main.dart'
+    - 'ios/Runner.xcodeproj/project.pbxproj'
+</file>
+
+<file path="analysis_options.yaml">
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - web/**
+</file>
+
+<file path="pubspec.lock">
+# Generated by pub
+# See https://dart.dev/tools/pub/glossary#lockfile
+packages:
+  _flutterfire_internals:
+    dependency: transitive
+    description:
+      name: _flutterfire_internals
+      sha256: "37a42d06068e2fe3deddb2da079a8c4d105f241225ba27b7122b37e9865fd8f7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.35"
+  args:
+    dependency: transitive
+    description:
+      name: args
+      sha256: d0481093c50b1da8910eb0bb301626d4d8eb7284aa739614d2b394ee09e3ea04
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.7.0"
+  async:
+    dependency: transitive
+    description:
+      name: async
+      sha256: e2eb0491ba5ddb6177742d2da23904574082139b07c1e33b8503b9f46f3e1a37
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.13.1"
+  boolean_selector:
+    dependency: transitive
+    description:
+      name: boolean_selector
+      sha256: "8aab1771e1243a5063b8b0ff68042d67334e3feab9e95b9490f9a6ebf73b42ea"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.2"
+  cached_network_image:
+    dependency: "direct main"
+    description:
+      name: cached_network_image
+      sha256: "4a5d8d2c728b0f3d0245f69f921d7be90cae4c2fd5288f773088672c0893f819"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.4.0"
+  cached_network_image_platform_interface:
+    dependency: transitive
+    description:
+      name: cached_network_image_platform_interface
+      sha256: "35814b016e37fbdc91f7ae18c8caf49ba5c88501813f73ce8a07027a395e2829"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.1"
+  cached_network_image_web:
+    dependency: transitive
+    description:
+      name: cached_network_image_web
+      sha256: "6322dde7a5ad92202e64df659241104a43db20ed594c41ca18de1014598d7996"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
+  characters:
+    dependency: transitive
+    description:
+      name: characters
+      sha256: faf38497bda5ead2a8c7615f4f7939df04333478bf32e4173fcb06d428b5716b
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  clock:
+    dependency: transitive
+    description:
+      name: clock
+      sha256: e51d50bca3217c9a9fa2b41a30e4a38971133f5f9ec7a3d57bae095007f1d28e
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.3"
+  code_assets:
+    dependency: transitive
+    description:
+      name: code_assets
+      sha256: bf394f466ba9205f1812a0433b392d6af280f155f56651eda7c18cc32ed493b8
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.1"
+  collection:
+    dependency: transitive
+    description:
+      name: collection
+      sha256: "2f5709ae4d3d59dd8f7cd309b4e023046b57d8a6c82130785d2b0e5868084e76"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.19.1"
+  connectivity_plus:
+    dependency: transitive
+    description:
+      name: connectivity_plus
+      sha256: b5e72753cf63becce2c61fd04dfe0f1c430cc5278b53a1342dc5ad839eab29ec
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.5"
+  connectivity_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: connectivity_plus_platform_interface
+      sha256: "3c09627c536d22fd24691a905cdd8b14520de69da52c7a97499c8be5284a32ed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
+  crypto:
+    dependency: transitive
+    description:
+      name: crypto
+      sha256: e3626ae6270383c9e3a549f34c9e4cd26c09ae6a9adaab2bf4737a00340efdc4
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.8"
+  dart_webrtc:
+    dependency: transitive
+    description:
+      name: dart_webrtc
+      sha256: ac7ef077084b3e54004716f1d736fcd839e1b60bc3f21f4122a35a9bb5ca2e47
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.8"
+  dbus:
+    dependency: transitive
+    description:
+      name: dbus
+      sha256: a48d5da28e89bd02196e80d81ed8d7954923d00a0f4a68cc20b575038f023383
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.15"
+  device_info_plus:
+    dependency: transitive
+    description:
+      name: device_info_plus
+      sha256: a7fd703482b391a87d60b6061d04dfdeab07826b96f9abd8f5ed98068acc0074
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.1.2"
+  device_info_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: device_info_plus_platform_interface
+      sha256: e1ea89119e34903dca74b883d0dd78eb762814f97fb6c76f35e9ff74d261a18f
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.3"
+  dio:
+    dependency: "direct main"
+    description:
+      name: dio
+      sha256: "852ec3b48cc431ac04fff978413c541502b67ffc3e26921e74e3d994694192c1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.11.1"
+  dio_web_adapter:
+    dependency: transitive
+    description:
+      name: dio_web_adapter
+      sha256: "3a1b2cd7be71086f38504956e3ebcd2837288d231ff454bafa78021244102bfc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.2"
+  fake_async:
+    dependency: transitive
+    description:
+      name: fake_async
+      sha256: "5368f224a74523e8d2e7399ea1638b37aecfca824a3cc4dfdf77bf1fa905ac44"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.3"
+  ffi:
+    dependency: transitive
+    description:
+      name: ffi
+      sha256: "6d7fd89431262d8f3125e81b50d3847a091d846eafcd4fdb88dd06f36d705a45"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
+  file:
+    dependency: transitive
+    description:
+      name: file
+      sha256: a3b4f84adafef897088c160faf7dfffb7696046cb13ae90b508c2cbc95d3b8d4
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.1"
+  firebase_core:
+    dependency: "direct main"
+    description:
+      name: firebase_core
+      sha256: "26de145bb9688a90962faec6f838247377b0b0d32cc0abecd9a4e43525fc856c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.32.0"
+  firebase_core_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_core_platform_interface
+      sha256: "8bcfad6d7033f5ea951d15b867622a824b13812178bfec0c779b9d81de011bbb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.4.2"
+  firebase_core_web:
+    dependency: transitive
+    description:
+      name: firebase_core_web
+      sha256: "362e52457ed2b7b180964769c1e04d1e0ea0259fdf7025fdfedd019d4ae2bd88"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.17.5"
+  firebase_messaging:
+    dependency: "direct main"
+    description:
+      name: firebase_messaging
+      sha256: a1662cc95d9750a324ad9df349b873360af6f11414902021f130c68ec02267c4
+      url: "https://pub.dev"
+    source: hosted
+    version: "14.9.4"
+  firebase_messaging_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_messaging_platform_interface
+      sha256: "87c4a922cb6f811cfb7a889bdbb3622702443c52a0271636cbc90d813ceac147"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.5.37"
+  firebase_messaging_web:
+    dependency: transitive
+    description:
+      name: firebase_messaging_web
+      sha256: "0d34dca01a7b103ed7f20138bffbb28eb0e61a677bf9e78a028a932e2c7322d5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.8.7"
+  fixnum:
+    dependency: transitive
+    description:
+      name: fixnum
+      sha256: b6dc7065e46c974bc7c5f143080a6764ec7a4be6da1285ececdc37be96de53be
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
+  flutter:
+    dependency: "direct main"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  flutter_cache_manager:
+    dependency: transitive
+    description:
+      name: flutter_cache_manager
+      sha256: "7253cd28eed9b79cbf403d72247459a2f333c8b2ccc702161eaeeac205c4a1cb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.4.6"
+  flutter_card_swiper:
+    dependency: "direct main"
+    description:
+      name: flutter_card_swiper
+      sha256: "895c6974729b51cf73a35f1b58ab57a0af3293131319e2cbccac3bc57ffcd69f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.2.0"
+  flutter_lints:
+    dependency: "direct dev"
+    description:
+      name: flutter_lints
+      sha256: "9e8c3858111da373efc5aa341de011d9bd23e2c5c5e0c62bccf32438e192d7b1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
+  flutter_riverpod:
+    dependency: "direct main"
+    description:
+      name: flutter_riverpod
+      sha256: "9532ee6db4a943a1ed8383072a2e3eeda041db5657cdf6d2acecf3c21ecbe7e1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.1"
+  flutter_secure_storage:
+    dependency: "direct main"
+    description:
+      name: flutter_secure_storage
+      sha256: "9cad52d75ebc511adfae3d447d5d13da15a55a92c9410e50f67335b6d21d16ea"
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.2.4"
+  flutter_secure_storage_linux:
+    dependency: transitive
+    description:
+      name: flutter_secure_storage_linux
+      sha256: be76c1d24a97d0b98f8b54bce6b481a380a6590df992d0098f868ad54dc8f688
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.3"
+  flutter_secure_storage_macos:
+    dependency: transitive
+    description:
+      name: flutter_secure_storage_macos
+      sha256: "6c0a2795a2d1de26ae202a0d78527d163f4acbb11cde4c75c670f3a0fc064247"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.3"
+  flutter_secure_storage_platform_interface:
+    dependency: transitive
+    description:
+      name: flutter_secure_storage_platform_interface
+      sha256: cf91ad32ce5adef6fba4d736a542baca9daf3beac4db2d04be350b87f69ac4a8
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.2"
+  flutter_secure_storage_web:
+    dependency: transitive
+    description:
+      name: flutter_secure_storage_web
+      sha256: f4ebff989b4f07b2656fb16b47852c0aab9fed9b4ec1c70103368337bc1886a9
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.1"
+  flutter_secure_storage_windows:
+    dependency: transitive
+    description:
+      name: flutter_secure_storage_windows
+      sha256: b20b07cb5ed4ed74fc567b78a72936203f587eba460af1df11281c9326cd3709
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.2"
+  flutter_svg:
+    dependency: "direct main"
+    description:
+      name: flutter_svg
+      sha256: "100c19dcc4ff60083e95a44a6f44f3a1bb887d353c5d86f6a9b688aa3cb46236"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.2"
+  flutter_test:
+    dependency: "direct dev"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  flutter_web_plugins:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  flutter_webrtc:
+    dependency: transitive
+    description:
+      name: flutter_webrtc
+      sha256: "67faa07cf49392b50b1aa14590a83caa64d2109345fabd29899dcd8da8538348"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.11.6+hotfix.1"
+  google_fonts:
+    dependency: "direct main"
+    description:
+      name: google_fonts
+      sha256: ba03d03bcaa2f6cb7bd920e3b5027181db75ab524f8891c8bc3aa603885b8055
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.3.3"
+  hooks:
+    dependency: transitive
+    description:
+      name: hooks
+      sha256: "9a62a50b50b769a737bc0a8ff381f333529df3ab746b2f6b02e83760231455ba"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
+  http:
+    dependency: transitive
+    description:
+      name: http
+      sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.6.0"
+  http_parser:
+    dependency: transitive
+    description:
+      name: http_parser
+      sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.2"
+  jni:
+    dependency: transitive
+    description:
+      name: jni
+      sha256: d8df6dab6847855512fe44dd9032b0bbe34dda7bf7597e41d30750879779813f
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
+  jni_flutter:
+    dependency: transitive
+    description:
+      name: jni_flutter
+      sha256: "0dd33d67797560f66e961a6053882d4df54bd345bf063b8fe7ea133f7ad8b191"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4+1"
+  jni_util:
+    dependency: transitive
+    description:
+      name: jni_util
+      sha256: "1ba86da04a5f2bf18fde2edb235587e70c5b0fc5bd4ba955f46b00942c3fc35f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  js:
+    dependency: transitive
+    description:
+      name: js
+      sha256: f2c445dce49627136094980615a031419f7f3eb393237e4ecd97ac15dea343f3
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.7"
+  leak_tracker:
+    dependency: transitive
+    description:
+      name: leak_tracker
+      sha256: "33e2e26bdd85a0112ec15400c8cbffea70d0f9c3407491f672a2fad47915e2de"
+      url: "https://pub.dev"
+    source: hosted
+    version: "11.0.2"
+  leak_tracker_flutter_testing:
+    dependency: transitive
+    description:
+      name: leak_tracker_flutter_testing
+      sha256: "1dbc140bb5a23c75ea9c4811222756104fbcd1a27173f0c34ca01e16bea473c1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.10"
+  leak_tracker_testing:
+    dependency: transitive
+    description:
+      name: leak_tracker_testing
+      sha256: "8d5a2d49f4a66b49744b23b018848400d23e54caf9463f4eb20df3eb8acb2eb1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
+  lints:
+    dependency: transitive
+    description:
+      name: lints
+      sha256: cbf8d4b858bb0134ef3ef87841abdf8d63bfc255c266b7bf6b39daa1085c4290
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
+  livekit_client:
+    dependency: "direct main"
+    description:
+      name: livekit_client
+      sha256: fc86a8b65b74b41faef646cc671c1892a457c24fd69910e25f7a50dc8cdd3155
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.4"
+  logging:
+    dependency: transitive
+    description:
+      name: logging
+      sha256: c8245ada5f1717ed44271ed1c26b8ce85ca3228fd2ffdb75468ab01979309d61
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
+  maplibre_gl:
+    dependency: "direct main"
+    description:
+      name: maplibre_gl
+      sha256: "825154b717ea6fda2802e95e2fb39c16356d8802d98bfc090e732e6678e42b99"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.16.0"
+  maplibre_gl_platform_interface:
+    dependency: transitive
+    description:
+      name: maplibre_gl_platform_interface
+      sha256: fe80e69346275fc8e0b027d01b3b766781beb15eb2fff2c067fb453d94898b7e
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.16.0"
+  matcher:
+    dependency: transitive
+    description:
+      name: matcher
+      sha256: "31bd099b47c10cd1aeb55146a2d46ce0277630ecef3f7dae54ad7873f36696cd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.12.20"
+  material_color_utilities:
+    dependency: transitive
+    description:
+      name: material_color_utilities
+      sha256: "9c337007e82b1889149c82ed242ed1cb24a66044e30979c44912381e9be4c48b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.13.0"
+  meta:
+    dependency: transitive
+    description:
+      name: meta
+      sha256: c82594181e3312f3d0695fc95aaaf7758d75b8d4ae2bbecf223b9fd5109a059d
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.18.3"
+  mime:
+    dependency: transitive
+    description:
+      name: mime
+      sha256: bd47de35f07e27267e69c8c8b22edf9473bfee170a60d60fcc93730c5144b7f6
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
+  nm:
+    dependency: transitive
+    description:
+      name: nm
+      sha256: "2c9aae4127bdc8993206464fcc063611e0e36e72018696cd9631023a31b24254"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
+  objective_c:
+    dependency: transitive
+    description:
+      name: objective_c
+      sha256: b7fb95a6d9a4f009edd63dc5ac69f07420b23a16161c6dd8660290b59c602e8e
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.5.0"
+  octo_image:
+    dependency: transitive
+    description:
+      name: octo_image
+      sha256: "49c4f93afc10f1ad4fdef9db88fed9c65a8eb5d9ad0a4fa9b128d7fedeb41418"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.2"
+  package_config:
+    dependency: transitive
+    description:
+      name: package_config
+      sha256: ffcf4cf3d6c0b74ac43708d9f56625506e8a68aa935abe9d267a7330f320eb5d
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
+  path:
+    dependency: transitive
+    description:
+      name: path
+      sha256: "75cca69d1490965be98c73ceaea117e8a04dd21217b37b292c9ddbec0d955bc5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.9.1"
+  path_parsing:
+    dependency: transitive
+    description:
+      name: path_parsing
+      sha256: "883402936929eac138ee0a45da5b0f2c80f89913e6dc3bf77eb65b84b409c6ca"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
+  path_provider:
+    dependency: transitive
+    description:
+      name: path_provider
+      sha256: a7f4874f987173da295a61c181b8ee71dab59b332a486b391babf26a1b884825
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.6"
+  path_provider_android:
+    dependency: transitive
+    description:
+      name: path_provider_android
+      sha256: "69cbd515a62b94d32a7944f086b2f82b4ac40a1d45bebfc00813a430ab2dabcd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.1"
+  path_provider_foundation:
+    dependency: transitive
+    description:
+      name: path_provider_foundation
+      sha256: "2a376b7d6392d80cd3705782d2caa734ca4727776db0b6ec36ef3f1855197699"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.0"
+  path_provider_linux:
+    dependency: transitive
+    description:
+      name: path_provider_linux
+      sha256: "58c2005f147315b11e9b4a7bc889cd5203e250cba8e3f012dae259b4972b5c16"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.2"
+  path_provider_platform_interface:
+    dependency: transitive
+    description:
+      name: path_provider_platform_interface
+      sha256: "484838772624c3a4b94f1e44a3e19897fee738f2d5c4ce448443b0417f7c9dda"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.3"
+  path_provider_windows:
+    dependency: transitive
+    description:
+      name: path_provider_windows
+      sha256: bd6f00dbd873bfb70d0761682da2b3a2c2fccc2b9e84c495821639601d81afe7
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.0"
+  petitparser:
+    dependency: transitive
+    description:
+      name: petitparser
+      sha256: "91bd59303e9f769f108f8df05e371341b15d59e995e6806aefab827b58336675"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.2"
+  platform:
+    dependency: transitive
+    description:
+      name: platform
+      sha256: a36d119c13416516a7b5913fbe8af8531e11633d784c550b2125f76c758524ec
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.0"
+  platform_detect:
+    dependency: transitive
+    description:
+      name: platform_detect
+      sha256: "6e91e2158b9db7f6f4581a0f0b3a77171570b392108de196ba0c52e3c1976334"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.6"
+  plugin_platform_interface:
+    dependency: transitive
+    description:
+      name: plugin_platform_interface
+      sha256: "4820fbfdb9478b1ebae27888254d445073732dae3d6ea81f0b7e06d5dedc3f02"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.8"
+  protobuf:
+    dependency: transitive
+    description:
+      name: protobuf
+      sha256: "68645b24e0716782e58948f8467fd42a880f255096a821f9e7d0ec625b00c84d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.0"
+  pub_semver:
+    dependency: transitive
+    description:
+      name: pub_semver
+      sha256: "261236774e8b1d69cfc6b9eabbc96c40f25e7a2d6b171f3385d4f65d5734fb24"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.1"
+  record_use:
+    dependency: transitive
+    description:
+      name: record_use
+      sha256: "2551bd8eecfe95d14ae75f6021ad0248be5c27f138c2ec12fcb52b500b3ba1ed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.0"
+  riverpod:
+    dependency: transitive
+    description:
+      name: riverpod
+      sha256: "59062512288d3056b2321804332a13ffdd1bf16df70dcc8e506e411280a72959"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.1"
+  rxdart:
+    dependency: transitive
+    description:
+      name: rxdart
+      sha256: "5c3004a4a8dbb94bd4bf5412a4def4acdaa12e12f269737a5751369e12d1a962"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.28.0"
+  sdp_transform:
+    dependency: transitive
+    description:
+      name: sdp_transform
+      sha256: "73e412a5279a5c2de74001535208e20fff88f225c9a4571af0f7146202755e45"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.2"
+  sky_engine:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  source_span:
+    dependency: transitive
+    description:
+      name: source_span
+      sha256: "56a02f1f4cd1a2d96303c0144c93bd6d909eea6bee6bf5a0e0b685edbd4c47ab"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.10.2"
+  sqflite:
+    dependency: transitive
+    description:
+      name: sqflite
+      sha256: "21a9750de2deb464946e9f41c7ddf176e25553618afdfc774868cd454990c06a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.5"
+  sqflite_android:
+    dependency: transitive
+    description:
+      name: sqflite_android
+      sha256: "3986f4cbdde19ca538aae877981c5a53400dcc4601499df18e7ed9e848a0bdd4"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.5"
+  sqflite_common:
+    dependency: transitive
+    description:
+      name: sqflite_common
+      sha256: b80e94ff0d551d5f1f8c7d14348d29b576cca3ae30f6e195a7c380552c32b1e0
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.14"
+  sqflite_darwin:
+    dependency: transitive
+    description:
+      name: sqflite_darwin
+      sha256: "8de68fc306040f992aaf378750c16f95e4298c4bb150dd45091d75e42b1f08ee"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.4+1"
+  sqflite_platform_interface:
+    dependency: transitive
+    description:
+      name: sqflite_platform_interface
+      sha256: "5b611dbcb9bab33e7073594ecac111bf0a86ffc342652c2081160d7038a45fb6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.3"
+  stack_trace:
+    dependency: transitive
+    description:
+      name: stack_trace
+      sha256: "277654b3034d17ac6f9f1cb5595db011b1d5d41e8806866db28e0abaa101c490"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.12.2"
+  state_notifier:
+    dependency: transitive
+    description:
+      name: state_notifier
+      sha256: b8677376aa54f2d7c58280d5a007f9e8774f1968d1fb1c096adcb4792fba29bb
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  stream_channel:
+    dependency: transitive
+    description:
+      name: stream_channel
+      sha256: "969e04c80b8bcdf826f8f16579c7b14d780458bd97f56d107d3950fdbeef059d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.4"
+  string_scanner:
+    dependency: transitive
+    description:
+      name: string_scanner
+      sha256: "921cd31725b72fe181906c6a94d987c78e3b98c2e205b397ea399d4054872b43"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  synchronized:
+    dependency: transitive
+    description:
+      name: synchronized
+      sha256: b3d516dbd3757ff2a458735e4f6cbac9ff261f576f6e87bcb17feabb39e657c5
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.5.0"
+  term_glyph:
+    dependency: transitive
+    description:
+      name: term_glyph
+      sha256: "7f554798625ea768a7518313e58f83891c7f5024f88e46e7182a4558850a4b8e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.2"
+  test_api:
+    dependency: transitive
+    description:
+      name: test_api
+      sha256: "2a122cbe059f8b610d3a5415f42e255b6c17b1f21eee1d960f31080237fb4f11"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.12"
+  typed_data:
+    dependency: transitive
+    description:
+      name: typed_data
+      sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
+  uuid:
+    dependency: transitive
+    description:
+      name: uuid
+      sha256: "9b129329f58692f6e6578329498a8fe9fbe98f090beb764ffbb8ee2eadd01dcd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.6.0"
+  vector_graphics:
+    dependency: transitive
+    description:
+      name: vector_graphics
+      sha256: "0964703d02677ac8636b4aef95de0b7e816224ff0082908c2c950529cb9a2f5e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.4"
+  vector_graphics_codec:
+    dependency: transitive
+    description:
+      name: vector_graphics_codec
+      sha256: "99fd9fbd34d9f9a32efd7b6a6aae14125d8237b10403b422a6a6dfeac2806146"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.13"
+  vector_graphics_compiler:
+    dependency: transitive
+    description:
+      name: vector_graphics_compiler
+      sha256: "40c92d6de05024a337a6f25feff931e1480c76cb0bb35fc37553c48951526b2f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.3"
+  vector_math:
+    dependency: transitive
+    description:
+      name: vector_math
+      sha256: "1d774bbdf6b72a0b12122fc1560c9c2d2a67db5a4a4cc2bd8a5c990ab20e3188"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.0"
+  vm_service:
+    dependency: transitive
+    description:
+      name: vm_service
+      sha256: "89b11d62e1040ee681af3b4f1c97a803ecbf010c6e8b9c5896ee5b08c3bf7b78"
+      url: "https://pub.dev"
+    source: hosted
+    version: "15.4.0"
+  web:
+    dependency: transitive
+    description:
+      name: web
+      sha256: "97da13628db363c635202ad97068d47c5b8aa555808e7a9411963c533b449b27"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.1"
+  web_socket_channel:
+    dependency: "direct main"
+    description:
+      name: web_socket_channel
+      sha256: "58c6666b342a38816b2e7e50ed0f1e261959630becd4c879c4f26bfa14aa5a42"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.5"
+  webrtc_interface:
+    dependency: transitive
+    description:
+      name: webrtc_interface
+      sha256: c6f100eac5057d9a817a60473126f9828c796d42884d498af4f339c97b21014f
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.5.1"
+  win32:
+    dependency: transitive
+    description:
+      name: win32
+      sha256: d7cb55e04cd34096cd3a79b3330245f54cb96a370a1c27adb3c84b917de8b08e
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.15.0"
+  win32_registry:
+    dependency: transitive
+    description:
+      name: win32_registry
+      sha256: "21ec76dfc731550fd3e2ce7a33a9ea90b828fdf19a5c3bcf556fa992cfa99852"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.5"
+  xdg_directories:
+    dependency: transitive
+    description:
+      name: xdg_directories
+      sha256: "7a3f37b05d989967cdddcbb571f1ea834867ae2faa29725fd085180e0883aa15"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
+  xml:
+    dependency: transitive
+    description:
+      name: xml
+      sha256: "67f0aff7be013d107995e9b75bf4e7f2c3ef2dfdb2c8e68024bba0a7fd5756a4"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.1"
+  yaml:
+    dependency: transitive
+    description:
+      name: yaml
+      sha256: f67cdd8e07d3c6329146aaef1ba043542b3134c12489f553ca9a7435d1068aea
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.4"
+sdks:
+  dart: ">=3.12.0 <4.0.0"
+  flutter: ">=3.44.0"
+</file>
+
+<file path="pubspec.yaml">
+name: younme_mobile
+description: "YoUnMe Dating App — Cross-Platform Flutter Mobile Client (v3.2)"
+publish_to: "none"
+version: 3.2.0+1
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # LiveKit Cloud WebRTC Media Engine
+  livekit_client: ^2.1.2
+  # Geospatial Discovery
+  maplibre_gl: ^0.16.0
+  # HTTP & WebSocket Networking
+  dio: ^5.4.3+1
+  web_socket_channel: ^2.4.5
+  # State Management
+  flutter_riverpod: ^2.5.1
+  # Push Notifications
+  firebase_core: ^2.30.0
+  firebase_messaging: ^14.8.0
+  # Secure Storage
+  flutter_secure_storage: ^9.0.0
+  # UI & Animations
+  cached_network_image: ^3.3.1
+  flutter_card_swiper: ^7.0.0
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+</file>
+
+<file path="README.md">
+# younme_mobile
+
+A new Flutter project.
+</file>
+
+</files>
