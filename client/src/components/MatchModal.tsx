@@ -36,7 +36,7 @@ export const MatchModal: React.FC<MatchModalProps> = ({
         
         <button
           onClick={onClose}
-          style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ position: 'absolute', top: '16px', right: '16px', background: 'var(--surface-strong)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <X size={18} />
         </button>

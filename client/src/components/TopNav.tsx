@@ -8,6 +8,7 @@ interface TopNavProps {
   streakDays: number;
   onOpenStore: () => void;
   onOpenWheel: () => void;
+  unreadChatCount?: number;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -17,17 +18,18 @@ export const TopNav: React.FC<TopNavProps> = ({
   streakDays,
   onOpenStore,
   onOpenWheel,
+  unreadChatCount = 4,
 }) => {
   const tabs = [
     { id: 'discovery', label: 'Discovery', icon: Compass },
     { id: 'connect', label: 'Connect', icon: Heart },
-    { id: 'chat', label: 'Chat', icon: MessageSquare },
+    { id: 'chat', label: 'Chat', icon: MessageSquare, badge: unreadChatCount },
     { id: 'calls', label: 'LiveKit Calls', icon: PhoneCall },
     { id: 'profile', label: 'Profile & Ledger', icon: UserCheck },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full" style={{ background: 'rgba(8, 10, 16, 0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+    <header className="sticky top-0 z-40 w-full" style={{ background: 'var(--bg-dark)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--surface-strong)' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         
         {/* Brand Logo */}
@@ -46,15 +48,17 @@ export const TopNav: React.FC<TopNavProps> = ({
         </div>
 
         {/* 5-Tab Navigation Pill */}
-        <nav style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.04)', padding: '4px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-glass)' }}>
+        <nav style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-soft)', padding: '4px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-glass)' }}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const hasBadge = tab.badge && tab.badge > 0;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
+                  position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
@@ -72,6 +76,21 @@ export const TopNav: React.FC<TopNavProps> = ({
               >
                 <Icon size={16} />
                 <span>{tab.label}</span>
+                {hasBadge && (
+                  <span
+                    style={{
+                      background: isActive ? '#ffffff' : '#ff2d55',
+                      color: isActive ? '#ff2d55' : '#ffffff',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      borderRadius: 'var(--radius-full)',
+                      padding: '1px 6px',
+                      marginLeft: '2px',
+                    }}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}

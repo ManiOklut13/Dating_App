@@ -88,7 +88,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({ onOpenChat, onOpenCall, 
               </div>
 
               {m.last_message && (
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 10px', borderRadius: 'var(--radius-sm)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'var(--surface-soft)', padding: '8px 10px', borderRadius: 'var(--radius-sm)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   💬 "{m.last_message.body}"
                 </div>
               )}
@@ -127,7 +127,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({ onOpenChat, onOpenCall, 
           <span style={{ fontSize: '12px', color: '#ffd700', fontWeight: 600 }}>Secret Admirers</span>
         </div>
 
-        <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid rgba(255, 215, 0, 0.25)', background: 'radial-gradient(circle at 50% 0%, rgba(255, 215, 0, 0.08) 0%, rgba(15, 18, 29, 0.95) 100%)' }}>
+        <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid rgba(255, 215, 0, 0.25)', background: 'radial-gradient(circle at 50% 0%, rgba(255, 215, 0, 0.08) 0%, var(--card-base) 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               {/* Blurred Avatar Stack */}
@@ -141,7 +141,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({ onOpenChat, onOpenCall, 
                       borderRadius: '50%',
                       overflow: 'hidden',
                       marginLeft: i > 0 ? '-24px' : '0',
-                      border: '3px solid #0f121d',
+                      border: '3px solid var(--bg-dark)',
                       boxShadow: 'var(--shadow-sm)',
                     }}
                   >
@@ -188,7 +188,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({ onOpenChat, onOpenCall, 
                 <span style={{ color: 'var(--text-secondary)' }}>🎵 Music & Indie Vinyl Taste</span>
                 <strong style={{ color: '#00e5ff' }}>95%</strong>
               </div>
-              <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '6px', background: 'var(--surface-hover)', borderRadius: '3px', overflow: 'hidden' }}>
                 <div style={{ width: '95%', height: '100%', background: 'var(--gradient-cyan)' }} />
               </div>
             </div>
@@ -198,7 +198,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({ onOpenChat, onOpenCall, 
                 <span style={{ color: 'var(--text-secondary)' }}>☕ Cafe Culture & City Vibes</span>
                 <strong style={{ color: '#ff2d55' }}>92%</strong>
               </div>
-              <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '6px', background: 'var(--surface-hover)', borderRadius: '3px', overflow: 'hidden' }}>
                 <div style={{ width: '92%', height: '100%', background: 'var(--gradient-flame)' }} />
               </div>
             </div>
@@ -208,7 +208,7 @@ export const ConnectTab: React.FC<ConnectTabProps> = ({ onOpenChat, onOpenCall, 
                 <span style={{ color: 'var(--text-secondary)' }}>💬 Wit & Conversation Depth</span>
                 <strong style={{ color: '#ffd700' }}>88%</strong>
               </div>
-              <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '6px', background: 'var(--surface-hover)', borderRadius: '3px', overflow: 'hidden' }}>
                 <div style={{ width: '88%', height: '100%', background: 'var(--gradient-gold)' }} />
               </div>
             </div>

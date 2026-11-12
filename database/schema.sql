@@ -94,16 +94,23 @@ CREATE TABLE IF NOT EXISTS calls (
     caller_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     callee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     kind VARCHAR(20) NOT NULL CHECK (kind IN ('audio', 'video', 'random')),
+    -- Direction is stored from the perspective of the record's owner, so the
+    -- Call History pages can render incoming/outgoing without re-deriving it.
+    direction VARCHAR(20) NOT NULL DEFAULT 'outgoing' CHECK (direction IN ('incoming', 'outgoing')),
     livekit_room_sid VARCHAR(128) NOT NULL,
     started_at TIMESTAMPTZ DEFAULT NOW(),
     ended_at TIMESTAMPTZ DEFAULT NULL,
     duration_s INTEGER DEFAULT 0,
     cost_coins INTEGER DEFAULT 0,
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'dropped'))
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'missed', 'declined', 'failed', 'dropped'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_calls_caller_callee ON calls(caller_id, callee_id);
+
+-- Call History pages: per-user, per-type, most-recent-first.
+CREATE INDEX IF NOT EXISTS idx_calls_history ON calls(caller_id, kind, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_calls_history_callee ON calls(callee_id, kind, started_at DESC);
 
 -- 8. WALLETS TABLE (Live Integer Coin Balance with zero double-spending)
 CREATE TABLE IF NOT EXISTS wallets (

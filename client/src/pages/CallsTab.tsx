@@ -130,14 +130,14 @@ export const CallsTab: React.FC<CallsTabProps> = ({
       
       {/* Toast Alert */}
       {billingToast && (
-        <div style={{ background: 'rgba(255, 45, 85, 0.95)', border: '1px solid #ffffff', borderRadius: 'var(--radius-full)', padding: '10px 20px', fontSize: '13px', fontWeight: 700, color: '#ffffff', textAlign: 'center', marginBottom: '16px', boxShadow: 'var(--shadow-glow)' }}>
+        <div style={{ background: 'rgba(255, 45, 85, 0.95)', border: '1px solid #ffffff', borderRadius: 'var(--radius-full)', padding: '10px 20px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', textAlign: 'center', marginBottom: '16px', boxShadow: 'var(--shadow-glow)' }}>
           {billingToast}
         </div>
       )}
 
       {/* Screen 1: Active LiveKit Call Screen */}
       {inCall ? (
-        <div className="glass-panel" style={{ height: '600px', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '24px', background: 'radial-gradient(circle at 50% 30%, rgba(255, 45, 85, 0.15) 0%, rgba(8, 10, 16, 0.98) 80%)' }}>
+        <div className="glass-panel" style={{ height: '600px', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '24px', background: 'radial-gradient(circle at 50% 30%, rgba(255, 45, 85, 0.15) 0%, var(--bg-dark) 80%)' }}>
           
           {/* Call Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -146,7 +146,7 @@ export const CallsTab: React.FC<CallsTabProps> = ({
               <span style={{ fontSize: '12px', fontWeight: 700, color: '#00e676' }}>LIVEKIT SFU ENCRYPTED</span>
             </div>
 
-            <div style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', background: 'rgba(255, 255, 255, 0.1)', padding: '6px 14px', borderRadius: 'var(--radius-full)' }}>
+            <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', background: 'var(--surface-hover)', padding: '6px 14px', borderRadius: 'var(--radius-full)' }}>
               {formatTime(callDuration)}
             </div>
           </div>
@@ -170,30 +170,30 @@ export const CallsTab: React.FC<CallsTabProps> = ({
           </div>
 
           {/* In-Call Interactive Mini-Game */}
-          <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-md)', padding: '14px 18px', border: '1px solid var(--border-glass)' }}>
+          <div style={{ background: 'var(--surface-muted)', borderRadius: 'var(--radius-md)', padding: '14px 18px', border: '1px solid var(--border-glass)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <span style={{ fontSize: '11px', color: 'var(--cyan-vibe)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
                 ⚡ In-Call Icebreaker Mini-Game
               </span>
-              <button onClick={nextMiniGame} style={{ background: 'none', border: 'none', color: '#ffffff', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' }}>
+              <button onClick={nextMiniGame} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' }}>
                 Next Question
               </button>
             </div>
-            <p style={{ fontSize: '13px', color: '#ffffff', fontWeight: 600 }}>"{miniGameQuestion}"</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>"{miniGameQuestion}"</p>
           </div>
 
           {/* Call Controls */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
             <button
               onClick={() => setMicMuted(!micMuted)}
-              style={{ width: '54px', height: '54px', borderRadius: '50%', background: micMuted ? '#ff4757' : 'rgba(255, 255, 255, 0.1)', border: 'none', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              style={{ width: '54px', height: '54px', borderRadius: '50%', background: micMuted ? '#ff4757' : 'var(--surface-hover)', border: 'none', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
               {micMuted ? <MicOff size={22} /> : <Mic size={22} />}
             </button>
 
             <button
               onClick={endCall}
-              style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ff2d55', border: 'none', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 25px #ff2d55' }}
+              style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#ff2d55', border: 'none', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 25px #ff2d55' }}
             >
               <PhoneOff size={26} />
             </button>
@@ -208,7 +208,7 @@ export const CallsTab: React.FC<CallsTabProps> = ({
             <div style={{ width: '64px', height: '64px', margin: '0 auto 16px', borderRadius: '20px', background: 'var(--gradient-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(0, 229, 255, 0.4)' }}>
               <PhoneCall size={32} color="#ffffff" />
             </div>
-            <h1 style={{ fontSize: '26px', fontWeight: 800 }}>LiveKit Real-Time Calls</h1>
+            <h1 style={{ fontSize: '26px', fontWeight: 800 }}>Calls</h1>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
               Low-latency WebRTC peer-to-peer and SFU audio/video sessions
             </p>
@@ -229,31 +229,11 @@ export const CallsTab: React.FC<CallsTabProps> = ({
             </div>
           )}
 
-          {/* Privacy & Safety Settings */}
-          <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '24px', border: '1px solid var(--border-glass)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <UserX size={20} color="var(--cyan-vibe)" />
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: 600 }}>Anonymous Call Avatar Mask</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Shields real camera stream with an avatar preset</div>
-                </div>
-              </div>
-
-              <input
-                type="checkbox"
-                checked={anonymousAvatar}
-                onChange={(e) => setAnonymousAvatar(e.target.checked)}
-                style={{ width: '18px', height: '18px', accentColor: '#ff2d55', cursor: 'pointer' }}
-              />
-            </div>
-          </div>
-
           {/* Call Options Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
             
             {/* Option 1: Audio Call */}
-            <div style={{ borderRadius: 'var(--radius-md)', padding: '20px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-glass)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ borderRadius: 'var(--radius-md)', padding: '20px', background: 'var(--surface-soft)', border: '1px solid var(--border-glass)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <PhoneCall size={24} color="#00e5ff" />
                 <span style={{ fontSize: '12px', color: '#ffd700', fontWeight: 700 }}>20 Coins / min</span>
@@ -272,7 +252,7 @@ export const CallsTab: React.FC<CallsTabProps> = ({
             </div>
 
             {/* Option 2: Video Call */}
-            <div style={{ borderRadius: 'var(--radius-md)', padding: '20px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-glass)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ borderRadius: 'var(--radius-md)', padding: '20px', background: 'var(--surface-soft)', border: '1px solid var(--border-glass)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Video size={24} color="#ff2d55" />
                 <span style={{ fontSize: '12px', color: '#ffd700', fontWeight: 700 }}>50 Coins / min</span>

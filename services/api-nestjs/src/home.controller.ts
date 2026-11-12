@@ -12,7 +12,7 @@ const userStreaks = new Map<string, { current_streak: number; last_spin: string 
  */
 homeRouter.get('/feed', (req: Request, res: Response) => {
   const userId = (req.query.user_id as string) || '11111111-1111-1111-1111-111111111111';
-  const wallet = db.wallets.get(userId) || { user_id: userId, balance: 250, updated_at: new Date().toISOString() };
+  const wallet = db.wallets.get(userId) || { user_id: userId, balance: 0, updated_at: new Date().toISOString() };
   const profile = db.profiles.get(userId);
 
   let streakData = userStreaks.get(userId);

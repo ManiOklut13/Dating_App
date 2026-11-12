@@ -15,9 +15,10 @@ function checkContactGuard(text: string, activeDays: number, pairCount: number) 
   }
 
   const clean = text.replace(/[@0]/g, (m) => (m === '@' ? 'a' : 'o')).toLowerCase();
-  const digitsOnly = text.replace(/\D/g, '');
 
-  if (digitsOnly.length >= 10) {
+  // Improved phone number regex (Indian/international format with optional country code)
+  const phoneRegex = /(\+?\d{1,3}[-.\s]?)?(\d{3,5}[-.\s]?\d{3,5}[-.\s]?\d{3,5})/;
+  if (phoneRegex.test(clean)) {
     return {
       blocked: true,
       reason: 'Sharing phone numbers is restricted during the trust-building phase (Unlocks after 3 days or 20 messages).',

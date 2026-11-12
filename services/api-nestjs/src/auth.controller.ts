@@ -82,7 +82,7 @@ authRouter.post('/otp/verify', (req: Request, res: Response) => {
   }
 
   const stored = otpStore.get(phone);
-  const isValid = (stored && stored.code === code && stored.expiresAt > Date.now()) || code === '123456';
+  const isValid = stored && stored.code === code && stored.expiresAt > Date.now();
 
   if (!isValid) {
     return res.status(401).json({ error: 'Invalid or expired OTP code' });

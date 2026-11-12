@@ -83,7 +83,7 @@ export const ProfileWalletTab: React.FC<ProfileWalletTabProps> = ({
         </div>
 
         {/* 9-Step Completion Meter */}
-        <div style={{ background: 'rgba(255, 255, 255, 0.04)', borderRadius: 'var(--radius-md)', padding: '16px 20px', textAlign: 'center', border: '1px solid var(--border-glass)' }}>
+        <div style={{ background: 'var(--surface-soft)', borderRadius: 'var(--radius-md)', padding: '16px 20px', textAlign: 'center', border: '1px solid var(--border-glass)' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Onboarding Progress</div>
           <div style={{ fontSize: '28px', fontWeight: 800, color: '#00e676', margin: '4px 0' }}>{profileProgress}%</div>
           <div style={{ fontSize: '11px', color: '#1da1f2' }}>Auto-awarded Blue Tick (&gt;=70%)</div>
@@ -91,14 +91,14 @@ export const ProfileWalletTab: React.FC<ProfileWalletTabProps> = ({
       </div>
 
       {/* Wallet Balance Hero Section */}
-      <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '28px', marginBottom: '24px', background: 'radial-gradient(circle at 10% 20%, rgba(255, 215, 0, 0.12) 0%, rgba(15, 18, 29, 0.95) 100%)', border: '1px solid rgba(255, 215, 0, 0.3)' }}>
+      <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg)', padding: '28px', marginBottom: '24px', background: 'radial-gradient(circle at 10% 20%, rgba(255, 215, 0, 0.12) 0%, var(--card-base) 100%)', border: '1px solid rgba(255, 215, 0, 0.3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffd700', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
               <Coins size={18} />
               Double-Entry Wallet Ledger
             </div>
-            <div style={{ fontSize: '42px', fontWeight: 800, color: '#ffffff', margin: '6px 0' }}>
+            <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--text-primary)', margin: '6px 0' }}>
               {coinBalance} <span style={{ fontSize: '18px', color: '#ffd700', fontWeight: 600 }}>YoUnMe Coins</span>
             </div>
             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
@@ -129,7 +129,7 @@ export const ProfileWalletTab: React.FC<ProfileWalletTabProps> = ({
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {onboardingSteps.map((step, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', borderBottom: '1px solid var(--border-glass)' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>{idx + 1}. {step.title}</span>
                 <span style={{ color: '#00e676', fontWeight: 700 }}>✓ Done</span>
               </div>
@@ -159,8 +159,8 @@ export const ProfileWalletTab: React.FC<ProfileWalletTabProps> = ({
                       justifyContent: 'space-between',
                       padding: '10px',
                       borderRadius: 'var(--radius-sm)',
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      background: 'var(--surface-faint)',
+                      border: '1px solid var(--surface-muted)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

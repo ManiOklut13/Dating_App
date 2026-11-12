@@ -116,7 +116,7 @@ export const DiscoveryTab: React.FC<DiscoveryTabProps> = ({ onMutualMatch, onCoi
       
       {/* Toast Alert */}
       {toastMessage && (
-        <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(20, 24, 38, 0.95)', border: '1px solid rgba(255, 45, 85, 0.4)', borderRadius: 'var(--radius-full)', padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: '#ffffff', zIndex: 30, boxShadow: 'var(--shadow-glow)', whiteSpace: 'nowrap' }}>
+        <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--card-base)', border: '1px solid rgba(255, 45, 85, 0.4)', borderRadius: 'var(--radius-full)', padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', zIndex: 30, boxShadow: 'var(--shadow-glow)', whiteSpace: 'nowrap' }}>
           {toastMessage}
         </div>
       )}
@@ -129,7 +129,7 @@ export const DiscoveryTab: React.FC<DiscoveryTabProps> = ({ onMutualMatch, onCoi
         </div>
 
         {/* Card / Map Radar Toggle */}
-        <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-full)', padding: '3px', border: '1px solid var(--border-glass)' }}>
+        <div style={{ display: 'flex', background: 'var(--surface-muted)', borderRadius: 'var(--radius-full)', padding: '3px', border: '1px solid var(--border-glass)' }}>
           <button
             onClick={() => setViewMode('cards')}
             style={{
@@ -140,7 +140,7 @@ export const DiscoveryTab: React.FC<DiscoveryTabProps> = ({ onMutualMatch, onCoi
               fontWeight: 600,
               cursor: 'pointer',
               background: viewMode === 'cards' ? 'var(--gradient-flame)' : 'transparent',
-              color: '#ffffff',
+              color: viewMode === 'cards' ? '#ffffff' : 'var(--text-secondary)',
             }}
           >
             Cards
@@ -155,7 +155,7 @@ export const DiscoveryTab: React.FC<DiscoveryTabProps> = ({ onMutualMatch, onCoi
               fontWeight: 600,
               cursor: 'pointer',
               background: viewMode === 'radar' ? 'var(--gradient-cyan)' : 'transparent',
-              color: '#ffffff',
+              color: viewMode === 'radar' ? '#ffffff' : 'var(--text-secondary)',
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
@@ -239,7 +239,7 @@ export const DiscoveryTab: React.FC<DiscoveryTabProps> = ({ onMutualMatch, onCoi
                     fontSize: '12px',
                     fontWeight: 600,
                     color: audioPlaying ? '#ff2d55' : '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    border: '1px solid var(--border-soft)',
                     cursor: 'pointer',
                   }}
                 >
@@ -316,7 +316,7 @@ export const DiscoveryTab: React.FC<DiscoveryTabProps> = ({ onMutualMatch, onCoi
           <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '20px' }}>Real-time ST_DWithin geospatial tracking (Mumbai Center: 19.0596° N, 72.8295° E)</p>
 
           {/* Radar Screen with Grid Rings */}
-          <div style={{ position: 'relative', width: '300px', height: '300px', margin: '0 auto', borderRadius: '50%', border: '2px solid rgba(0, 229, 255, 0.4)', background: 'radial-gradient(circle, rgba(0, 229, 255, 0.08) 0%, rgba(8, 10, 16, 0.95) 70%)', overflow: 'hidden' }}>
+          <div style={{ position: 'relative', width: '300px', height: '300px', margin: '0 auto', borderRadius: '50%', border: '2px solid rgba(0, 229, 255, 0.4)', background: 'radial-gradient(circle, rgba(0, 229, 255, 0.08) 0%, var(--card-base) 70%)', overflow: 'hidden' }}>
             
             {/* Concentric distance rings */}
             <div style={{ position: 'absolute', inset: '50px', borderRadius: '50%', border: '1px dashed rgba(0, 229, 255, 0.25)' }} />

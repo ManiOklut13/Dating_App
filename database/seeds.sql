@@ -97,3 +97,20 @@ VALUES
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222', 'text', 'Hey Arjun! Saw you love filter kaapi and vinyl records. Have you tried Subko in Bandra?', FALSE, NOW() - INTERVAL '12 hours'),
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'text', 'Subko is practically my second office! Their sourdough croissants and pour-over are unbeatable.', FALSE, NOW() - INTERVAL '11 hours'),
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222', 'text', 'Haha great taste! What indie bands are currently playing on your turntable?', FALSE, NOW() - INTERVAL '10 hours');
+
+-- 5. DEVELOPMENT-ONLY CALL HISTORY SEEDS
+-- Mirrors database/db.ts seedCall(). These exist so the Audio / Video call
+-- history pages have content during local development. Delete this block
+-- before running against any shared or production database — real history is
+-- written by POST /v1/calls once calls actually happen.
+INSERT INTO calls (id, caller_id, callee_id, kind, direction, livekit_room_sid, started_at, ended_at, duration_s, cost_coins, status)
+VALUES
+('c0000001-0000-4000-8000-000000000001', '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'audio',  'outgoing', 'livekit_rm_c0000001', NOW() - INTERVAL '2 hours',  NOW() - INTERVAL '101 minutes', 860,  300, 'completed'),
+('c0000002-0000-4000-8000-000000000002', '22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'video',  'incoming', 'livekit_rm_c0000002', NOW() - INTERVAL '5 hours',  NOW() - INTERVAL '296 minutes', 525,  450, 'completed'),
+('c0000003-0000-4000-8000-000000000003', '44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'audio',  'incoming', 'livekit_rm_c0000003', NOW() - INTERVAL '26 hours', NOW() - INTERVAL '26 hours',    0,    0, 'missed'),
+('c0000004-0000-4000-8000-000000000004', '11111111-1111-1111-1111-111111111111', '44444444-4444-4444-4444-444444444444', 'video',  'outgoing', 'livekit_rm_c0000004', NOW() - INTERVAL '30 hours', NOW() - INTERVAL '29 minutes', 12,   50, 'failed'),
+('c0000005-0000-4000-8000-000000000005', '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'audio',  'outgoing', 'livekit_rm_c0000005', NOW() - INTERVAL '2 days',  NOW() - INTERVAL '2 days',      1330, 460, 'completed'),
+('c0000006-0000-4000-8000-000000000006', '22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'video',  'incoming', 'livekit_rm_c0000006', NOW() - INTERVAL '3 days',  NOW() - INTERVAL '3 days',      1420, 1250, 'completed'),
+('c0000007-0000-4000-8000-000000000007', '22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'audio',  'incoming', 'livekit_rm_c0000007', NOW() - INTERVAL '4 days',  NOW() - INTERVAL '4 days',      0,    0, 'declined'),
+('c0000008-0000-4000-8000-000000000008', '44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'video',  'incoming', 'livekit_rm_c0000008', NOW() - INTERVAL '5 days',  NOW() - INTERVAL '5 days',      0,    0, 'missed')
+ON CONFLICT (id) DO NOTHING;

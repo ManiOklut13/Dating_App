@@ -91,7 +91,7 @@ export const CoinStoreModal: React.FC<CoinStoreModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          style={{ position: 'absolute', top: '18px', right: '18px', background: 'rgba(255, 255, 255, 0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ position: 'absolute', top: '18px', right: '18px', background: 'var(--surface-strong)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <X size={18} />
         </button>
@@ -108,7 +108,7 @@ export const CoinStoreModal: React.FC<CoinStoreModalProps> = ({
         </div>
 
         {/* Sub Tabs: Buy Coins vs Creator Cash-Out */}
-        <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-md)', padding: '4px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', background: 'var(--surface-muted)', borderRadius: 'var(--radius-md)', padding: '4px', marginBottom: '20px' }}>
           <button
             onClick={() => { setActiveSubTab('buy'); setMessage(null); }}
             style={{
@@ -120,7 +120,7 @@ export const CoinStoreModal: React.FC<CoinStoreModalProps> = ({
               fontSize: '13px',
               cursor: 'pointer',
               background: activeSubTab === 'buy' ? 'var(--gradient-flame)' : 'transparent',
-              color: '#ffffff',
+              color: activeSubTab === 'buy' ? '#ffffff' : 'var(--text-secondary)',
               transition: 'all var(--transition-fast)',
             }}
           >
@@ -146,7 +146,7 @@ export const CoinStoreModal: React.FC<CoinStoreModalProps> = ({
         </div>
 
         {message && (
-          <div style={{ padding: '12px', borderRadius: 'var(--radius-md)', background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.15)', fontSize: '13px', marginBottom: '16px', color: '#ffffff' }}>
+          <div style={{ padding: '12px', borderRadius: 'var(--radius-md)', background: 'var(--surface-soft)', border: '1px solid var(--border-soft)', fontSize: '13px', marginBottom: '16px', color: 'var(--text-primary)' }}>
             {message}
           </div>
         )}
@@ -163,7 +163,7 @@ export const CoinStoreModal: React.FC<CoinStoreModalProps> = ({
                   justifyContent: 'space-between',
                   padding: '16px',
                   borderRadius: 'var(--radius-md)',
-                  background: pkg.highlight ? 'rgba(255, 45, 85, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                  background: pkg.highlight ? 'rgba(255, 45, 85, 0.1)' : 'var(--surface-soft)',
                   border: pkg.highlight ? '1px solid rgba(255, 45, 85, 0.4)' : '1px solid var(--border-glass)',
                   transition: 'transform var(--transition-fast)',
                 }}
@@ -171,7 +171,7 @@ export const CoinStoreModal: React.FC<CoinStoreModalProps> = ({
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontWeight: 700, fontSize: '15px' }}>{pkg.name}</span>
-                    <span style={{ fontSize: '11px', background: pkg.highlight ? 'var(--gradient-flame)' : 'rgba(255, 255, 255, 0.1)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 600 }}>
+                    <span style={{ fontSize: '11px', background: pkg.highlight ? 'var(--gradient-flame)' : 'var(--surface-hover)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 600, color: pkg.highlight ? '#ffffff' : 'inherit' }}>
                       {pkg.tag}
                     </span>
                   </div>
@@ -213,7 +213,7 @@ export const CoinStoreModal: React.FC<CoinStoreModalProps> = ({
                 step="50"
                 value={cashoutAmount}
                 onChange={(e) => setCashoutAmount(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-glass)', color: '#ffffff', fontSize: '14px' }}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-muted)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', fontSize: '14px' }}
               />
               <span style={{ fontSize: '11px', color: '#ffd700', marginTop: '4px', display: 'block' }}>
                 Estimated payout: ₹{Math.floor(parseInt(cashoutAmount || '0', 10) * 0.8)} INR
@@ -227,7 +227,7 @@ export const CoinStoreModal: React.FC<CoinStoreModalProps> = ({
                 value={upiId}
                 onChange={(e) => setUpiId(e.target.value)}
                 placeholder="name@okhdfcbank"
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-glass)', color: '#ffffff', fontSize: '14px' }}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-muted)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', fontSize: '14px' }}
               />
             </div>
 

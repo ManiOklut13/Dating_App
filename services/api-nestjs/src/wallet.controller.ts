@@ -93,7 +93,7 @@ walletRouter.post('/payout', (req: Request, res: Response) => {
     });
   }
 
-  if (!wallet || wallet.balance < 500 || amount > wallet.balance) {
+  if (!wallet || wallet.balance < 500 || amount > wallet.balance || amount < 500) {
     return res.status(400).json({
       error: 'INSUFFICIENT_CASHOUT_BALANCE',
       message: 'Minimum withdrawal requirement is 500 coins and cannot exceed your wallet balance.',

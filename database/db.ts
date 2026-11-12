@@ -66,18 +66,33 @@ export interface Message {
   created_at: string;
 }
 
+/**
+ * Call session / call history record.
+ *
+ * `status` intentionally carries both the live-session lifecycle states
+ * (active / dropped) and the terminal history states the Call History pages
+ * render (completed / missed / declined / failed).
+ *
+ * `direction` is the perspective of the *authenticated* user, so it cannot be
+ * derived from caller_id alone at read time — it is stored per record.
+ */
+export type CallKind = 'audio' | 'video' | 'random';
+export type CallDirection = 'incoming' | 'outgoing';
+export type CallStatus = 'active' | 'completed' | 'missed' | 'declined' | 'failed' | 'dropped';
+
 export interface CallSession {
   id: string;
   caller_id: string;
   callee_id: string;
-  kind: 'audio' | 'video' | 'random';
+  kind: CallKind;
+  direction: CallDirection;
   livekit_room_sid: string;
   started_at: string;
   ended_at?: string | null;
   duration_s: number;
   cost_coins: number;
   rating?: number;
-  status: 'active' | 'completed' | 'dropped';
+  status: CallStatus;
 }
 
 export interface Wallet {
@@ -107,6 +122,14 @@ export interface CandidateCard {
   profile_progress: number;
   vibe_score?: number;
 }
+
+// Coin rates per minute, mirroring services/api-nestjs/src/calls.controller.ts
+// (Table 7 of the Master Technical Architecture).
+export const CALL_RATES: Record<CallKind, { spend: number; earn: number }> = {
+  audio: { spend: 20, earn: 5 },
+  video: { spend: 50, earn: 10 },
+  random: { spend: 20, earn: 5 },
+};
 
 // Haversine formula calculation for PostGIS ST_Distance simulation
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -318,6 +341,46 @@ class DatabaseStore {
       is_flagged: false,
       created_at: new Date(Date.now() - 3600000 * 10).toISOString(),
     });
+
+    // Development-only call history seeds.
+    // These give the /v1/calls/history pages something to render before any
+    // real call has been placed. They live ONLY in this in-memory dev adapter
+    // (and the matching seeds.sql block); database/schema.sql does not seed
+    // them, so a real Postgres deployment starts with an empty history.
+    const seedCall = (
+      id: string,
+      caller_id: string,
+      callee_id: string,
+      kind: CallKind,
+      direction: CallDirection,
+      status: CallStatus,
+      startedAtMsAgo: number,
+      duration_s: number
+    ) => {
+      const started_at = new Date(Date.now() - startedAtMsAgo).toISOString();
+      this.calls.set(id, {
+        id,
+        caller_id,
+        callee_id,
+        kind,
+        direction,
+        livekit_room_sid: `livekit_rm_${id}`,
+        started_at,
+        ended_at: status === 'active' ? null : new Date(Date.now() - startedAtMsAgo + duration_s * 1000).toISOString(),
+        duration_s,
+        cost_coins: duration_s === 0 ? 0 : Math.ceil(duration_s / 60) * CALL_RATES[kind].spend,
+        status,
+      });
+    };
+
+    seedCall('call-seed-audio-1', arjunId, ananyaId, 'audio', 'outgoing', 'completed', 3600000 * 2, 860);
+    seedCall('call-seed-video-1', ananyaId, arjunId, 'video', 'incoming', 'completed', 3600000 * 5, 525);
+    seedCall('call-seed-audio-2', riyaId, arjunId, 'audio', 'incoming', 'missed', 3600000 * 26, 0);
+    seedCall('call-seed-video-2', arjunId, riyaId, 'video', 'outgoing', 'failed', 3600000 * 30, 12);
+    seedCall('call-seed-audio-3', arjunId, ananyaId, 'audio', 'outgoing', 'completed', 86400000 * 2, 1330);
+    seedCall('call-seed-video-3', ananyaId, arjunId, 'video', 'incoming', 'completed', 86400000 * 3, 1420);
+    seedCall('call-seed-audio-4', ananyaId, arjunId, 'audio', 'incoming', 'declined', 86400000 * 4, 0);
+    seedCall('call-seed-video-4', riyaId, arjunId, 'video', 'incoming', 'missed', 86400000 * 5, 0);
   }
 
   // --- Strict Double-Entry Ledger ---

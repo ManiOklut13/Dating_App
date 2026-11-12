@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TopNav } from './components/TopNav';
+import { BottomNav } from './components/BottomNav';
 import { CoinStoreModal } from './components/CoinStoreModal';
 import { SpinWheelModal } from './components/SpinWheelModal';
 import { MatchModal } from './components/MatchModal';
@@ -7,12 +7,24 @@ import { MatchModal } from './components/MatchModal';
 import { DiscoveryTab } from './pages/DiscoveryTab';
 import { ConnectTab } from './pages/ConnectTab';
 import { ChatTab } from './pages/ChatTab';
-import { CallsTab } from './pages/CallsTab';
-import { ProfileWalletTab } from './pages/ProfileWalletTab';
+
+import { ProfileTab } from './pages/ProfileTab';
 import { CandidateCard } from './types';
 
-export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('discovery');
+import { ProfileProvider } from './modules/profile/ProfileContext';
+import { SettingsMenu } from './modules/profile/components/SettingsMenu';
+import { SettingsModals } from './modules/profile/components/SettingsModals';
+import { AccountModals } from './modules/profile/components/AccountModals';
+import { SettingsProvider } from './modules/settings/SettingsContext';
+import { SettingsRouter } from './modules/settings/SettingsRouter';
+import { CallsProvider } from './modules/calls/CallsContext';
+import { CallsRouter } from './modules/calls/CallsRouter';
+import { ChatProvider } from './modules/chat/ChatContext';
+import { CallModals } from './modules/chat/CallModals';
+import { PresenceProvider } from './modules/presence/PresenceContext';
+
+const AppShell: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('profile');
   const [coinBalance, setCoinBalance] = useState(250);
   const [streakDays, setStreakDays] = useState(4);
 
@@ -26,6 +38,10 @@ export const App: React.FC = () => {
   const [selectedConvId, setSelectedConvId] = useState<string | undefined>(undefined);
   const [directCallTarget, setDirectCallTarget] = useState<{ calleeId: string; name: string; avatar: string } | null>(null);
 
+  // True while a full-screen conversation is open inside the Chats tab. Used on
+  // mobile to hide the bottom navigation and give the chat the whole viewport.
+  const [isConversationOpen, setIsConversationOpen] = useState(false);
+
   const handleMutualMatch = (profile: CandidateCard) => {
     setMatchedProfile(profile);
     setIsMatchOpen(true);
@@ -33,31 +49,19 @@ export const App: React.FC = () => {
 
   const handleOpenChatFromMatch = () => {
     setIsMatchOpen(false);
-    setSelectedConvId('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+    setSelectedConvId('conv-ananya-1');
     setActiveTab('chat');
   };
 
-  const handleOpenCallFromMatch = (calleeId = '22222222-2222-2222-2222-222222222222', name = 'Ananya', avatar = '/ananya.jpg') => {
+  const handleOpenCallFromMatch = () => {
     setIsMatchOpen(false);
-    setDirectCallTarget({ calleeId, name, avatar });
-    setActiveTab('calls');
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      
-      {/* Top App Header & Nav */}
-      <TopNav
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        coinBalance={coinBalance}
-        streakDays={streakDays}
-        onOpenStore={() => setIsStoreOpen(true)}
-        onOpenWheel={() => setIsWheelOpen(true)}
-      />
+    <div className={`app-shell${activeTab === 'chat' && isConversationOpen ? ' app-shell--immersive' : ''}`}>
 
       {/* Main Tab View Container */}
-      <main style={{ flex: 1, paddingBottom: '40px' }}>
+      <main className={`app-main${activeTab === 'chat' ? ' app-main--fixed' : ''}`}>
         {activeTab === 'discovery' && (
           <DiscoveryTab
             onMutualMatch={handleMutualMatch}
@@ -80,22 +84,19 @@ export const App: React.FC = () => {
           <ChatTab
             selectedConvId={selectedConvId}
             onStartCall={handleOpenCallFromMatch}
+            onOpenCalls={() => setActiveTab('chat')}
+            onConversationOpenChange={setIsConversationOpen}
           />
         )}
 
-        {activeTab === 'calls' && (
-          <CallsTab
-            currentBalance={coinBalance}
-            onCoinsDeducted={(newBal) => setCoinBalance(newBal)}
-            directCallTarget={directCallTarget}
-          />
-        )}
 
         {activeTab === 'profile' && (
-          <ProfileWalletTab
+          <ProfileTab
             coinBalance={coinBalance}
             onOpenStore={() => setIsStoreOpen(true)}
             onOpenWheel={() => setIsWheelOpen(true)}
+            onOpenMatches={() => setActiveTab('connect')}
+            onBack={() => setActiveTab('discovery')}
           />
         )}
       </main>
@@ -126,7 +127,45 @@ export const App: React.FC = () => {
         onStartCall={() => handleOpenCallFromMatch()}
       />
 
+      {/* Instagram-style Settings & Activity pages (hash-routed, browser back works) */}
+      <SettingsRouter />
+
+      {/* Calls pages: #/calls -> /calls/audio | /calls/video -> /calls/:type/:callId.
+          Rendered as an overlay so the Chat tab underneath keeps its state.
+          A scoped ChatProvider + CallModals makes "Start call" in the call logs
+          launch the same simulated audio/video overlay screens as the chat. */}
+      <ChatProvider>
+        <CallsRouter />
+        <CallModals />
+      </ChatProvider>
+
+      {/* Global 3-Dot quick menu + its settings screens (frontend only) */}
+      <SettingsMenu />
+      <SettingsModals />
+      <AccountModals />
+
+      {/* Fixed Bottom Navigation Bar */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        unreadCount={4}
+      />
+
     </div>
   );
 };
+
+export const App: React.FC = () => (
+  <ProfileProvider>
+    <SettingsProvider>
+      {/* Presence sits above Calls and Chat so every presence indicator reads
+          from one WebSocket-backed source of truth. */}
+      <PresenceProvider>
+        <CallsProvider>
+          <AppShell />
+        </CallsProvider>
+      </PresenceProvider>
+    </SettingsProvider>
+  </ProfileProvider>
+);
 export default App;

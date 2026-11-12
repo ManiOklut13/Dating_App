@@ -81,7 +81,7 @@ discoveryRouter.post('/swipes', (req: Request, res: Response) => {
 
   const swipeResult = db.recordSwipe(currentUserId, target_id, action);
 
-  let targetProfile = db.profiles.get(target_id);
+  let targetProfile = db.profiles.get(target_id) || { nickname: 'Unknown', photo_urls: [], city: 'Mumbai', is_verified: false };
 
   return res.json({
     success: true,
