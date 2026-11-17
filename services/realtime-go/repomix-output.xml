@@ -1,0 +1,3369 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+auth/
+  auth_test.go
+  auth.go
+config/
+  config.go
+db/
+  repo.go
+guard/
+  link_guard_test.go
+  link_guard.go
+hub/
+  client.go
+  hub_test.go
+  hub.go
+  message.go
+.env.example
+Dockerfile
+go.mod
+main_test.go
+main.go
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="auth/auth_test.go">
+package auth
+
+import (
+	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"younme/realtime/config"
+)
+
+const testJWTSecret = "test-secret-for-unit-tests-only"
+
+func ecPublicKeyToJWK(pub *ecdsa.PublicKey, kid string) map[string]interface{} {
+	pad := func(b []byte, size int) []byte {
+		if len(b) >= size {
+			return b
+		}
+		padded := make([]byte, size)
+		copy(padded[size-len(b):], b)
+		return padded
+	}
+
+	xBytes := pad(pub.X.Bytes(), 32)
+	yBytes := pad(pub.Y.Bytes(), 32)
+
+	return map[string]interface{}{
+		"kty": "EC",
+		"crv": "P-256",
+		"x":   base64.RawURLEncoding.EncodeToString(xBytes),
+		"y":   base64.RawURLEncoding.EncodeToString(yBytes),
+		"kid": kid,
+		"alg": "ES256",
+		"use": "sig",
+	}
+}
+
+func setupMockJWKSServer(t *testing.T, keys map[string]*ecdsa.PublicKey) (*httptest.Server, *int) {
+	t.Helper()
+	callCount := 0
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if r.URL.Path != "/auth/v1/.well-known/jwks.json" {
+			http.NotFound(w, r)
+			return
+		}
+		jwkList := make([]map[string]interface{}, 0, len(keys))
+		for kid, pub := range keys {
+			jwkList = append(jwkList, ecPublicKeyToJWK(pub, kid))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"keys": jwkList})
+	})
+	server := httptest.NewServer(handler)
+	return server, &callCount
+}
+
+func signES256Token(t *testing.T, key *ecdsa.PrivateKey, kid string, claims jwt.MapClaims) string {
+	t.Helper()
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	if kid != "" {
+		token.Header["kid"] = kid
+	}
+	signed, err := token.SignedString(key)
+	if err != nil {
+		t.Fatalf("failed to sign ES256 token: %v", err)
+	}
+	return signed
+}
+
+// signHS256Token builds an HS256 token signed with testJWTSecret.
+func signHS256Token(t *testing.T, secret string, claims jwt.MapClaims) string {
+	t.Helper()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString([]byte(secret))
+	if err != nil {
+		t.Fatalf("failed to sign HS256 token: %v", err)
+	}
+	return signed
+}
+
+func testLegacyVerifier(t *testing.T) *SupabaseVerifier {
+	t.Helper()
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseJwtSecret:  testJWTSecret,
+		SupabaseProjectRef: "ocacwpazrfaecmckmtbz",
+	})
+	if err != nil {
+		t.Fatalf("failed to build legacy verifier: %v", err)
+	}
+	return v
+}
+
+func TestMockVerifier_ValidToken(t *testing.T) {
+	mock := NewMockVerifier(map[string]*UserInfo{
+		"valid-token-user-1": {
+			ID:    "user_123",
+			Email: "user1@example.com",
+		},
+	})
+
+	ctx := context.Background()
+	info, err := mock.VerifyToken(ctx, "valid-token-user-1")
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if info.ID != "user_123" {
+		t.Errorf("expected ID 'user_123', got '%s'", info.ID)
+	}
+	if info.Email != "user1@example.com" {
+		t.Errorf("expected email 'user1@example.com', got '%s'", info.Email)
+	}
+}
+
+func TestMockVerifier_MissingToken(t *testing.T) {
+	mock := NewMockVerifier(nil)
+	ctx := context.Background()
+
+	_, err := mock.VerifyToken(ctx, "")
+	if !errors.Is(err, ErrMissingToken) {
+		t.Errorf("expected ErrMissingToken, got %v", err)
+	}
+
+	_, err = mock.VerifyToken(ctx, "   ")
+	if !errors.Is(err, ErrMissingToken) {
+		t.Errorf("expected ErrMissingToken for whitespace, got %v", err)
+	}
+}
+
+func TestMockVerifier_ExpiredToken(t *testing.T) {
+	mock := NewMockVerifier(nil)
+	ctx := context.Background()
+
+	_, err := mock.VerifyToken(ctx, "expired-token")
+	if !errors.Is(err, ErrExpiredToken) {
+		t.Errorf("expected ErrExpiredToken, got %v", err)
+	}
+}
+
+func TestMockVerifier_InvalidToken(t *testing.T) {
+	mock := NewMockVerifier(nil)
+	ctx := context.Background()
+
+	_, err := mock.VerifyToken(ctx, "random-garbage-token")
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken, got %v", err)
+	}
+}
+
+func TestNewSupabaseVerifier_MissingConfig(t *testing.T) {
+	cfg := &config.Config{}
+
+	_, err := NewSupabaseVerifier(cfg)
+	if err == nil {
+		t.Fatalf("expected error when credentials missing, got nil")
+	}
+	if !errors.Is(err, ErrNotConfigured) {
+		t.Errorf("expected error wrapping ErrNotConfigured, got %v", err)
+	}
+}
+
+func TestNewSupabaseVerifier_ValidWithURLOnly(t *testing.T) {
+	cfg := &config.Config{
+		SupabaseURL: "https://ocacwpazrfaecmckmtbz.supabase.co",
+	}
+
+	v, err := NewSupabaseVerifier(cfg)
+	if err != nil {
+		t.Fatalf("expected nil error for valid URL config, got %v", err)
+	}
+	if !v.es256Enabled {
+		t.Errorf("expected es256Enabled to be true")
+	}
+	if v.legacyHS256Enabled {
+		t.Errorf("expected legacyHS256Enabled to be false when secret is empty")
+	}
+}
+
+func TestSupabaseVerifier_ES256_ValidUserToken(t *testing.T) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate ecdsa key: %v", err)
+	}
+	kid := "test-kid-1"
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key.PublicKey})
+	defer server.Close()
+
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL:        server.URL,
+		SupabaseProjectRef: "test-ref",
+	})
+	if err != nil {
+		t.Fatalf("failed to create verifier: %v", err)
+	}
+
+	token := signES256Token(t, key, kid, jwt.MapClaims{
+		"sub":   "11111111-1111-1111-1111-111111111111",
+		"email": "user@example.com",
+		"phone": "+1234567890",
+		"role":  "authenticated",
+		"ref":   "test-ref",
+		"iss":   server.URL + "/auth/v1",
+		"exp":   time.Now().Add(time.Hour).Unix(),
+		"iat":   time.Now().Unix(),
+	})
+
+	info, err := v.VerifyToken(context.Background(), token)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if info.ID != "11111111-1111-1111-1111-111111111111" {
+		t.Errorf("unexpected user id: %s", info.ID)
+	}
+	if info.Email != "user@example.com" {
+		t.Errorf("unexpected email: %s", info.Email)
+	}
+	if info.PhoneNumber != "+1234567890" {
+		t.Errorf("unexpected phone: %s", info.PhoneNumber)
+	}
+	if info.Role != "authenticated" {
+		t.Errorf("unexpected role: %s", info.Role)
+	}
+}
+
+func TestSupabaseVerifier_ES256_JWKSCaching(t *testing.T) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate ecdsa key: %v", err)
+	}
+	kid := "cache-test-kid"
+	server, callCount := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key.PublicKey})
+	defer server.Close()
+
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL:        server.URL,
+		SupabaseProjectRef: "test-ref",
+	})
+	if err != nil {
+		t.Fatalf("failed to create verifier: %v", err)
+	}
+
+	token := signES256Token(t, key, kid, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"iss":  server.URL + "/auth/v1",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+
+	// First verification fetches JWKS
+	_, err = v.VerifyToken(context.Background(), token)
+	if err != nil {
+		t.Fatalf("first verify failed: %v", err)
+	}
+	if *callCount != 1 {
+		t.Fatalf("expected 1 JWKS server call, got %d", *callCount)
+	}
+
+	// Second verification must use in-memory cache without hitting network
+	_, err = v.VerifyToken(context.Background(), token)
+	if err != nil {
+		t.Fatalf("second verify failed: %v", err)
+	}
+	if *callCount != 1 {
+		t.Errorf("expected JWKS call count to stay 1 due to caching, got %d", *callCount)
+	}
+}
+
+func TestSupabaseVerifier_ES256_InvalidSignature(t *testing.T) {
+	key1, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	key2, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader) // Different key!
+	kid := "key-1"
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key1.PublicKey})
+	defer server.Close()
+
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL: server.URL,
+	})
+	if err != nil {
+		t.Fatalf("failed to create verifier: %v", err)
+	}
+
+	// Signed with key2, but header claims kid is key-1
+	token := signES256Token(t, key2, kid, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"iss":  server.URL + "/auth/v1",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+
+	_, err = v.VerifyToken(context.Background(), token)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken for invalid signature, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_ES256_ExpiredToken(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	kid := "key-1"
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key.PublicKey})
+	defer server.Close()
+
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL: server.URL,
+	})
+	if err != nil {
+		t.Fatalf("failed to create verifier: %v", err)
+	}
+
+	token := signES256Token(t, key, kid, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"iss":  server.URL + "/auth/v1",
+		"exp":  time.Now().Add(-5 * time.Minute).Unix(),
+	})
+
+	_, err = v.VerifyToken(context.Background(), token)
+	if !errors.Is(err, ErrExpiredToken) {
+		t.Errorf("expected ErrExpiredToken, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_ES256_WrongIssuer(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	kid := "key-1"
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key.PublicKey})
+	defer server.Close()
+
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL: server.URL,
+	})
+	if err != nil {
+		t.Fatalf("failed to create verifier: %v", err)
+	}
+
+	// Case 1: Foreign issuer
+	token := signES256Token(t, key, kid, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"iss":  "https://other-project.supabase.co/auth/v1",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+	_, err = v.VerifyToken(context.Background(), token)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken for foreign issuer, got %v", err)
+	}
+
+	// Case 2: Missing issuer
+	tokenNoIss := signES256Token(t, key, kid, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+	_, err = v.VerifyToken(context.Background(), tokenNoIss)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken for missing issuer, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_ES256_WrongRole(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	kid := "key-1"
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key.PublicKey})
+	defer server.Close()
+
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL: server.URL,
+	})
+	if err != nil {
+		t.Fatalf("failed to create verifier: %v", err)
+	}
+
+	for _, badRole := range []string{"anon", "service_role", "admin"} {
+		token := signES256Token(t, key, kid, jwt.MapClaims{
+			"sub":  "11111111-1111-1111-1111-111111111111",
+			"role": badRole,
+			"iss":  server.URL + "/auth/v1",
+			"exp":  time.Now().Add(time.Hour).Unix(),
+		})
+
+		_, err = v.VerifyToken(context.Background(), token)
+		if !errors.Is(err, ErrInvalidRole) {
+			t.Errorf("expected ErrInvalidRole for role=%q, got %v", badRole, err)
+		}
+	}
+}
+
+func TestSupabaseVerifier_ES256_UnknownKid(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	kid := "known-kid"
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key.PublicKey})
+	defer server.Close()
+
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL: server.URL,
+	})
+	if err != nil {
+		t.Fatalf("failed to create verifier: %v", err)
+	}
+
+	token := signES256Token(t, key, "unknown-kid-999", jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"iss":  server.URL + "/auth/v1",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+
+	_, err = v.VerifyToken(context.Background(), token)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken for unknown kid, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_ES256_MissingKid(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	kid := "known-kid"
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key.PublicKey})
+	defer server.Close()
+
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL: server.URL,
+	})
+	if err != nil {
+		t.Fatalf("failed to create verifier: %v", err)
+	}
+
+	// Omit kid from header
+	token := signES256Token(t, key, "", jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"iss":  server.URL + "/auth/v1",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+
+	_, err = v.VerifyToken(context.Background(), token)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken for missing kid header, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_UnsupportedAlgorithms(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	kid := "key-1"
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key.PublicKey})
+	defer server.Close()
+
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL: server.URL,
+	})
+	if err != nil {
+		t.Fatalf("failed to create verifier: %v", err)
+	}
+
+	// 1. Alg None
+	unsigned := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"iss":  server.URL + "/auth/v1",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+	signedNone, _ := unsigned.SignedString(jwt.UnsafeAllowNoneSignatureType)
+	_, err = v.VerifyToken(context.Background(), signedNone)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken for alg=none, got %v", err)
+	}
+
+	// 2. RS256
+	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	rsaToken := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"iss":  server.URL + "/auth/v1",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+	signedRSA, _ := rsaToken.SignedString(rsaKey)
+	_, err = v.VerifyToken(context.Background(), signedRSA)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken for RS256, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_NoSilentFallbackToHS256(t *testing.T) {
+	key1, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	key2, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	kid := "key-1"
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{kid: &key1.PublicKey})
+	defer server.Close()
+
+	// Both ES256 and HS256 configured simultaneously
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL:              server.URL,
+		SupabaseJwtSecret:        testJWTSecret,
+		SupabaseAllowLegacyHS256: true,
+	})
+	if err != nil {
+		t.Fatalf("failed to create dual-configured verifier: %v", err)
+	}
+
+	// Token has alg: ES256, but signed with wrong key
+	badES256 := signES256Token(t, key2, kid, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"iss":  server.URL + "/auth/v1",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+
+	_, err = v.VerifyToken(context.Background(), badES256)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken on invalid ES256 signature without falling back to HS256, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_LegacyHS256_ValidUserToken(t *testing.T) {
+	v := testLegacyVerifier(t)
+
+	token := signHS256Token(t, testJWTSecret, jwt.MapClaims{
+		"sub":   "11111111-1111-1111-1111-111111111111",
+		"email": "arjun@younme.social",
+		"phone": "+919820011111",
+		"role":  "authenticated",
+		"ref":   "ocacwpazrfaecmckmtbz",
+		"exp":   time.Now().Add(time.Hour).Unix(),
+		"iat":   time.Now().Unix(),
+	})
+
+	info, err := v.VerifyToken(context.Background(), token)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if info.ID != "11111111-1111-1111-1111-111111111111" {
+		t.Errorf("unexpected id %q", info.ID)
+	}
+	if info.Email != "arjun@younme.social" {
+		t.Errorf("unexpected email %q", info.Email)
+	}
+	if info.PhoneNumber != "+919820011111" {
+		t.Errorf("unexpected phone %q", info.PhoneNumber)
+	}
+	if info.Role != "authenticated" {
+		t.Errorf("unexpected role %q", info.Role)
+	}
+}
+
+func TestSupabaseVerifier_LegacyHS256_RejectsAPIKeyRoles(t *testing.T) {
+	v := testLegacyVerifier(t)
+
+	for _, role := range []string{"anon", "service_role"} {
+		token := signHS256Token(t, testJWTSecret, jwt.MapClaims{
+			"sub":  "some-key-subject",
+			"role": role,
+			"ref":  "ocacwpazrfaecmckmtbz",
+			"exp":  time.Now().Add(time.Hour).Unix(),
+			"iat":  time.Now().Unix(),
+		})
+
+		_, err := v.VerifyToken(context.Background(), token)
+		if !errors.Is(err, ErrInvalidRole) {
+			t.Errorf("expected ErrInvalidRole for role=%q, got %v", role, err)
+		}
+	}
+}
+
+func TestSupabaseVerifier_LegacyHS256_RejectsExpiredToken(t *testing.T) {
+	v := testLegacyVerifier(t)
+
+	token := signHS256Token(t, testJWTSecret, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"ref":  "ocacwpazrfaecmckmtbz",
+		"exp":  time.Now().Add(-time.Minute).Unix(),
+		"iat":  time.Now().Add(-2 * time.Hour).Unix(),
+	})
+
+	_, err := v.VerifyToken(context.Background(), token)
+	if !errors.Is(err, ErrExpiredToken) {
+		t.Errorf("expected ErrExpiredToken, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_LegacyHS256_RejectsWrongSecret(t *testing.T) {
+	v := testLegacyVerifier(t)
+
+	signed := signHS256Token(t, "a-different-secret", jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"ref":  "ocacwpazrfaecmckmtbz",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+
+	_, err := v.VerifyToken(context.Background(), signed)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_LegacyHS256_RejectsTokenFromOtherProject(t *testing.T) {
+	v := testLegacyVerifier(t)
+
+	token := signHS256Token(t, testJWTSecret, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"ref":  "someotherprojectref",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+
+	_, err := v.VerifyToken(context.Background(), token)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken for foreign project ref, got %v", err)
+	}
+}
+
+func TestSupabaseVerifier_LegacyHS256_CanBeDisabled(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	server, _ := setupMockJWKSServer(t, map[string]*ecdsa.PublicKey{"kid-1": &key.PublicKey})
+	defer server.Close()
+
+	t.Setenv("SUPABASE_ALLOW_LEGACY_HS256", "false")
+	v, err := NewSupabaseVerifier(&config.Config{
+		SupabaseURL:              server.URL,
+		SupabaseJwtSecret:        testJWTSecret,
+		SupabaseAllowLegacyHS256: false,
+	})
+	if err != nil {
+		t.Fatalf("failed to initialize verifier: %v", err)
+	}
+
+	hsToken := signHS256Token(t, testJWTSecret, jwt.MapClaims{
+		"sub":  "11111111-1111-1111-1111-111111111111",
+		"role": "authenticated",
+		"exp":  time.Now().Add(time.Hour).Unix(),
+	})
+
+	_, err = v.VerifyToken(context.Background(), hsToken)
+	if !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("expected ErrInvalidToken when legacy HS256 is disabled, got %v", err)
+	}
+}
+
+func TestProjectRefFromURL(t *testing.T) {
+	cases := map[string]string{
+		"https://ocacwpazrfaecmckmtbz.supabase.co":  "ocacwpazrfaecmckmtbz",
+		"https://ocacwpazrfaecmckmtbz.supabase.co/": "ocacwpazrfaecmckmtbz",
+		"http://ocacwpazrfaecmckmtbz.supabase.co":   "ocacwpazrfaecmckmtbz",
+		"": "",
+	}
+
+	for input, want := range cases {
+		if got := projectRefFromURL(input); got != want {
+			t.Errorf("projectRefFromURL(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+</file>
+
+<file path="auth/auth.go">
+package auth
+
+import (
+	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"math/big"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"younme/realtime/config"
+)
+
+var (
+	// ErrMissingToken occurs when no authentication token was supplied.
+	ErrMissingToken = errors.New("authentication token is missing")
+
+	// ErrInvalidToken occurs when the provided token fails signature verification,
+	// has an unknown kid, unsupported algorithm, malformed structure, or invalid issuer.
+	ErrInvalidToken = errors.New("authentication token is invalid")
+
+	// ErrExpiredToken occurs when the token's lifetime has lapsed.
+	ErrExpiredToken = errors.New("authentication token has expired")
+
+	// ErrInvalidRole occurs when a validly signed token is not a user session
+	// (for example the public anon API key or the service_role API key).
+	ErrInvalidRole = errors.New("authentication token is not an authenticated user token")
+
+	// ErrNotConfigured occurs when Supabase authentication is not configured.
+	ErrNotConfigured = errors.New("supabase authentication is not configured")
+)
+
+// UserInfo represents the verified identity derived from a Supabase access token.
+type UserInfo struct {
+	// ID is the Supabase auth.users.id (UUID). Replaces the Firebase UID.
+	ID          string `json:"id"`
+	Email       string `json:"email,omitempty"`
+	PhoneNumber string `json:"phone_number,omitempty"`
+	Role        string `json:"role,omitempty"`
+	SessionID   string `json:"session_id,omitempty"`
+}
+
+// TokenVerifier defines the interface for validating user identity tokens.
+type TokenVerifier interface {
+	VerifyToken(ctx context.Context, accessToken string) (*UserInfo, error)
+}
+
+type jwkKey struct {
+	Kty string `json:"kty"`
+	Crv string `json:"crv"`
+	X   string `json:"x"`
+	Y   string `json:"y"`
+	Kid string `json:"kid"`
+	Alg string `json:"alg"`
+	Use string `json:"use"`
+}
+
+type jwksResponse struct {
+	Keys []jwkKey `json:"keys"`
+}
+
+type jwksCache struct {
+	mu          sync.RWMutex
+	keys        map[string]*ecdsa.PublicKey
+	fetchedAt   time.Time
+	ttl         time.Duration
+	minInterval time.Duration
+	httpClient  *http.Client
+	jwksURL     string
+}
+
+func decodeBase64URL(raw string) ([]byte, error) {
+	raw = strings.TrimRight(strings.TrimSpace(raw), "=")
+	if raw == "" {
+		return nil, errors.New("empty base64 string")
+	}
+	b, err := base64.RawURLEncoding.DecodeString(raw)
+	if err != nil {
+		b, err = base64.RawStdEncoding.DecodeString(raw)
+	}
+	return b, err
+}
+
+func parseECPublicKey(xStr, yStr string) (*ecdsa.PublicKey, error) {
+	xBytes, err := decodeBase64URL(xStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid x coordinate: %w", err)
+	}
+	yBytes, err := decodeBase64URL(yStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid y coordinate: %w", err)
+	}
+
+	curve := elliptic.P256()
+	x := new(big.Int).SetBytes(xBytes)
+	y := new(big.Int).SetBytes(yBytes)
+
+	if !curve.IsOnCurve(x, y) {
+		return nil, errors.New("jwk EC point is not on curve P-256")
+	}
+
+	return &ecdsa.PublicKey{
+		Curve: curve,
+		X:     x,
+		Y:     y,
+	}, nil
+}
+
+func (c *jwksCache) GetKey(ctx context.Context, kid string) (*ecdsa.PublicKey, error) {
+	if strings.TrimSpace(kid) == "" {
+		return nil, errors.New("empty key id (kid)")
+	}
+
+	c.mu.RLock()
+	key, ok := c.keys[kid]
+	isFresh := time.Since(c.fetchedAt) < c.ttl
+	c.mu.RUnlock()
+
+	if ok && isFresh {
+		return key, nil
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Double check under write lock
+	if key, ok := c.keys[kid]; ok && time.Since(c.fetchedAt) < c.ttl {
+		return key, nil
+	}
+
+	// Rate limit fetches for unknown kids to protect the JWKS endpoint
+	if time.Since(c.fetchedAt) < c.minInterval && len(c.keys) > 0 {
+		if key, ok := c.keys[kid]; ok {
+			return key, nil
+		}
+		return nil, fmt.Errorf("key id %q not found in JWKS", kid)
+	}
+
+	if err := c.refreshLocked(ctx); err != nil {
+		if key, ok := c.keys[kid]; ok {
+			return key, nil
+		}
+		return nil, fmt.Errorf("failed to fetch JWKS: %w", err)
+	}
+
+	key, ok = c.keys[kid]
+	if !ok {
+		return nil, fmt.Errorf("key id %q not found in JWKS", kid)
+	}
+	return key, nil
+}
+
+func (c *jwksCache) refreshLocked(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.jwksURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create JWKS request: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "younme-realtime/1.0")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to fetch JWKS from %s: %w", c.jwksURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("JWKS endpoint %s returned status %d", c.jwksURL, resp.StatusCode)
+	}
+
+	var jwks jwksResponse
+	limited := io.LimitReader(resp.Body, 1024*1024)
+	if err := json.NewDecoder(limited).Decode(&jwks); err != nil {
+		return fmt.Errorf("failed to decode JWKS JSON: %w", err)
+	}
+
+	newKeys := make(map[string]*ecdsa.PublicKey, len(jwks.Keys))
+	for _, k := range jwks.Keys {
+		if k.Kid == "" {
+			continue
+		}
+		if k.Kty != "EC" || (k.Crv != "" && k.Crv != "P-256") {
+			continue
+		}
+		if k.Alg != "" && k.Alg != "ES256" {
+			continue
+		}
+		if k.Use != "" && k.Use != "sig" {
+			continue
+		}
+		pubKey, err := parseECPublicKey(k.X, k.Y)
+		if err != nil {
+			continue
+		}
+		newKeys[k.Kid] = pubKey
+	}
+
+	if len(newKeys) == 0 {
+		return errors.New("no valid ES256 P-256 public keys found in JWKS response")
+	}
+
+	c.keys = newKeys
+	c.fetchedAt = time.Now()
+	return nil
+}
+
+// SupabaseVerifier validates Supabase (GoTrue) access tokens.
+//
+// Modern Supabase tokens are ES256-signed and verified via public keys retrieved
+// from the project's JWKS endpoint (<SUPABASE_URL>/auth/v1/.well-known/jwks.json).
+// Legacy HS256 tokens signed with SUPABASE_JWT_SECRET are also supported when enabled.
+type SupabaseVerifier struct {
+	supabaseURL        string
+	projectRef         string
+	requiredRole       string
+	es256Enabled       bool
+	legacyHS256Enabled bool
+	jwtSecret          []byte
+	validMethods       []string
+	jwksCache          *jwksCache
+}
+
+// VerifierOption configures optional behavior of SupabaseVerifier.
+type VerifierOption func(*SupabaseVerifier)
+
+// WithHTTPClient allows setting a custom HTTP client for JWKS fetching.
+func WithHTTPClient(client *http.Client) VerifierOption {
+	return func(v *SupabaseVerifier) {
+		if client != nil && v.jwksCache != nil {
+			v.jwksCache.httpClient = client
+		}
+	}
+}
+
+// WithJWKSCacheTTL configures cache expiration and rate-limiting cooldown for JWKS.
+func WithJWKSCacheTTL(ttl, minInterval time.Duration) VerifierOption {
+	return func(v *SupabaseVerifier) {
+		if v.jwksCache != nil {
+			v.jwksCache.ttl = ttl
+			v.jwksCache.minInterval = minInterval
+		}
+	}
+}
+
+// NewSupabaseVerifier builds a verifier from the Supabase configuration.
+func NewSupabaseVerifier(cfg *config.Config, opts ...VerifierOption) (*SupabaseVerifier, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("%w: configuration is nil", ErrNotConfigured)
+	}
+
+	projectRef := strings.TrimSpace(cfg.SupabaseProjectRef)
+	supabaseURL := strings.TrimSpace(cfg.SupabaseURL)
+	if projectRef == "" && supabaseURL != "" {
+		projectRef = projectRefFromURL(supabaseURL)
+	}
+	if supabaseURL == "" && projectRef != "" {
+		supabaseURL = fmt.Sprintf("https://%s.supabase.co", projectRef)
+	}
+
+	var es256Enabled bool
+	var jwksURL string
+	if supabaseURL != "" {
+		parsedURL, err := url.Parse(supabaseURL)
+		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+			return nil, fmt.Errorf("%w: invalid SUPABASE_URL: %s", ErrNotConfigured, supabaseURL)
+		}
+		trimmed := strings.TrimRight(supabaseURL, "/")
+		base := strings.TrimSuffix(trimmed, "/auth/v1")
+		jwksURL = base + "/auth/v1/.well-known/jwks.json"
+		es256Enabled = true
+	}
+
+	secret := strings.TrimSpace(cfg.SupabaseJwtSecret)
+	allowLegacyHS256 := cfg.SupabaseAllowLegacyHS256
+	if !allowLegacyHS256 && secret != "" {
+		// When SUPABASE_JWT_SECRET is set, default to allowing legacy HS256 unless explicitly forbidden
+		if env := os.Getenv("SUPABASE_ALLOW_LEGACY_HS256"); !strings.EqualFold(env, "false") && env != "0" {
+			allowLegacyHS256 = true
+		}
+	}
+
+	var legacyHS256Enabled bool
+	var jwtSecret []byte
+	if allowLegacyHS256 && secret != "" {
+		legacyHS256Enabled = true
+		jwtSecret = []byte(secret)
+	}
+
+	if !es256Enabled && !legacyHS256Enabled {
+		return nil, fmt.Errorf("%w: please set SUPABASE_URL (for ES256) or SUPABASE_JWT_SECRET (for legacy HS256)", ErrNotConfigured)
+	}
+
+	requiredRole := strings.TrimSpace(cfg.SupabaseRequiredRole)
+	if requiredRole == "" {
+		requiredRole = "authenticated"
+	}
+
+	var validMethods []string
+	if es256Enabled {
+		validMethods = append(validMethods, jwt.SigningMethodES256.Alg())
+	}
+	if legacyHS256Enabled {
+		validMethods = append(validMethods, jwt.SigningMethodHS256.Alg())
+	}
+
+	var cache *jwksCache
+	if es256Enabled {
+		cache = &jwksCache{
+			keys:        make(map[string]*ecdsa.PublicKey),
+			ttl:         1 * time.Hour,
+			minInterval: 10 * time.Second,
+			httpClient:  &http.Client{Timeout: 5 * time.Second},
+			jwksURL:     jwksURL,
+		}
+	}
+
+	v := &SupabaseVerifier{
+		supabaseURL:        strings.TrimRight(supabaseURL, "/"),
+		projectRef:         projectRef,
+		requiredRole:       requiredRole,
+		es256Enabled:       es256Enabled,
+		legacyHS256Enabled: legacyHS256Enabled,
+		jwtSecret:          jwtSecret,
+		validMethods:       validMethods,
+		jwksCache:          cache,
+	}
+
+	for _, opt := range opts {
+		opt(v)
+	}
+
+	return v, nil
+}
+
+// projectRefFromURL extracts the project ref from https://<ref>.supabase.co.
+func projectRefFromURL(rawURL string) string {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return ""
+	}
+	trimmed := strings.TrimPrefix(strings.TrimPrefix(rawURL, "https://"), "http://")
+	trimmed = strings.TrimSuffix(trimmed, "/")
+	if idx := strings.Index(trimmed, "/"); idx != -1 {
+		trimmed = trimmed[:idx]
+	}
+	if idx := strings.Index(trimmed, "."); idx != -1 {
+		trimmed = trimmed[:idx]
+	}
+	return trimmed
+}
+
+func (v *SupabaseVerifier) isValidIssuer(iss string) bool {
+	iss = strings.TrimRight(strings.TrimSpace(iss), "/")
+	if iss == "" {
+		return false
+	}
+
+	if v.supabaseURL != "" {
+		base := strings.TrimRight(v.supabaseURL, "/")
+		baseWithoutAuth := strings.TrimSuffix(base, "/auth/v1")
+		if iss == base || iss == base+"/auth/v1" || iss == baseWithoutAuth || iss == baseWithoutAuth+"/auth/v1" {
+			return true
+		}
+	}
+
+	if v.projectRef != "" {
+		projectBase := fmt.Sprintf("https://%s.supabase.co", v.projectRef)
+		if iss == projectBase || iss == projectBase+"/auth/v1" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// VerifyToken verifies a Supabase access token and returns the verified identity.
+// Never logs raw tokens, secrets, or private keys.
+func (v *SupabaseVerifier) VerifyToken(ctx context.Context, accessToken string) (*UserInfo, error) {
+	if strings.TrimSpace(accessToken) == "" {
+		return nil, ErrMissingToken
+	}
+
+	claims := jwt.MapClaims{}
+	parser := jwt.NewParser(
+		// Pin valid methods: reject "alg: none", RS256, and cross-algorithm confusion
+		jwt.WithValidMethods(v.validMethods),
+		jwt.WithExpirationRequired(),
+	)
+
+	token, err := parser.ParseWithClaims(accessToken, claims, func(t *jwt.Token) (interface{}, error) {
+		alg := t.Method.Alg()
+		switch alg {
+		case jwt.SigningMethodES256.Alg():
+			if !v.es256Enabled || v.jwksCache == nil {
+				return nil, fmt.Errorf("%w: ES256 verification is not configured", ErrInvalidToken)
+			}
+			kidRaw, ok := t.Header["kid"]
+			if !ok {
+				return nil, fmt.Errorf("%w: missing kid in token header", ErrInvalidToken)
+			}
+			kid, ok := kidRaw.(string)
+			if !ok || strings.TrimSpace(kid) == "" {
+				return nil, fmt.Errorf("%w: invalid kid in token header", ErrInvalidToken)
+			}
+			pubKey, err := v.jwksCache.GetKey(ctx, kid)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %v", ErrInvalidToken, err)
+			}
+			return pubKey, nil
+
+		case jwt.SigningMethodHS256.Alg():
+			if !v.legacyHS256Enabled || len(v.jwtSecret) == 0 {
+				return nil, fmt.Errorf("%w: HS256 verification is not enabled", ErrInvalidToken)
+			}
+			return v.jwtSecret, nil
+
+		default:
+			return nil, fmt.Errorf("%w: unsupported signing algorithm %q", ErrInvalidToken, alg)
+		}
+	})
+
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, ErrExpiredToken
+		}
+		return nil, fmt.Errorf("%w: %v", ErrInvalidToken, err)
+	}
+
+	if !token.Valid {
+		return nil, ErrInvalidToken
+	}
+
+	role, _ := claims["role"].(string)
+
+	// CRITICAL SECURITY CONTROL.
+	// The `anon` and `service_role` API keys are JWTs signed with the same keys
+	// as user access tokens. Only `authenticated` role tokens represent user sessions.
+	if v.requiredRole != "" && role != v.requiredRole {
+		return nil, ErrInvalidRole
+	}
+
+	// Validate issuer against configured Supabase project URL
+	iss, hasIss := claims["iss"].(string)
+	if token.Method.Alg() == jwt.SigningMethodES256.Alg() {
+		// ES256 tokens MUST have an issuer that matches the configured Supabase URL
+		if !hasIss || !v.isValidIssuer(iss) {
+			return nil, fmt.Errorf("%w: token issuer %q does not match configured Supabase project URL", ErrInvalidToken, iss)
+		}
+	} else {
+		// For legacy HS256 tokens, validate issuer whenever present
+		if hasIss && strings.TrimSpace(iss) != "" {
+			if !v.isValidIssuer(iss) {
+				return nil, fmt.Errorf("%w: token issuer %q does not match configured Supabase project URL", ErrInvalidToken, iss)
+			}
+		}
+	}
+
+	// A token minted by a different Supabase project must not be accepted.
+	if v.projectRef != "" {
+		if ref, ok := claims["ref"].(string); ok && ref != "" && ref != v.projectRef {
+			return nil, fmt.Errorf("%w: token was issued for a different project", ErrInvalidToken)
+		}
+	}
+
+	subject, _ := claims["sub"].(string)
+	if strings.TrimSpace(subject) == "" {
+		return nil, fmt.Errorf("%w: token has no subject", ErrInvalidToken)
+	}
+
+	userInfo := &UserInfo{
+		ID:    subject,
+		Role:  role,
+		Email: "",
+	}
+	if email, ok := claims["email"].(string); ok {
+		userInfo.Email = email
+	}
+	if phone, ok := claims["phone"].(string); ok {
+		userInfo.PhoneNumber = phone
+	}
+	if sessionID, ok := claims["session_id"].(string); ok {
+		userInfo.SessionID = sessionID
+	}
+
+	log.Printf("[Auth] Verified Supabase access token for user %s (role=%s)", subject, role)
+
+	return userInfo, nil
+}
+
+// MockVerifier provides an in-memory token verifier for testing.
+type MockVerifier struct {
+	ValidTokens map[string]*UserInfo
+}
+
+// NewMockVerifier creates a MockVerifier with predefined token mappings.
+func NewMockVerifier(tokens map[string]*UserInfo) *MockVerifier {
+	if tokens == nil {
+		tokens = make(map[string]*UserInfo)
+	}
+	return &MockVerifier{ValidTokens: tokens}
+}
+
+// VerifyToken validates against the in-memory mock map.
+func (m *MockVerifier) VerifyToken(ctx context.Context, accessToken string) (*UserInfo, error) {
+	if strings.TrimSpace(accessToken) == "" {
+		return nil, ErrMissingToken
+	}
+	if accessToken == "expired-token" {
+		return nil, ErrExpiredToken
+	}
+	if info, exists := m.ValidTokens[accessToken]; exists {
+		return info, nil
+	}
+	return nil, ErrInvalidToken
+}
+</file>
+
+<file path="config/config.go">
+package config
+
+import (
+	"os"
+	"strings"
+
+	"github.com/joho/godotenv"
+)
+
+func init() {
+	// Load services/realtime-go/.env (non-fatally) so `go run .` and
+	// scripts/start-all.js pick up credentials the same way the NestJS
+	// ConfigModule does. Real environment variables always win: godotenv
+	// never overrides variables that are already set.
+	_ = godotenv.Load()
+}
+
+// Config holds runtime configuration loaded from environment variables.
+type Config struct {
+	Port                     string
+	AllowedOrigins           []string
+	SupabaseURL              string
+	SupabaseProjectRef       string
+	SupabaseAnonKey          string
+	SupabaseServiceRoleKey   string
+	SupabaseJwtSecret        string
+	SupabaseRequiredRole     string
+	SupabaseAllowLegacyHS256 bool
+	DatabaseURL              string
+}
+
+// Load reads configuration from environment variables with sensible defaults.
+func Load() *Config {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8081"
+	}
+
+	var allowedOrigins []string
+	if origins := os.Getenv("ALLOWED_ORIGINS"); origins != "" {
+		for _, o := range strings.Split(origins, ",") {
+			trimmed := strings.TrimSpace(o)
+			if trimmed != "" {
+				allowedOrigins = append(allowedOrigins, trimmed)
+			}
+		}
+	}
+
+	allowLegacyHS256 := false
+	if v := os.Getenv("SUPABASE_ALLOW_LEGACY_HS256"); v != "" {
+		allowLegacyHS256 = strings.EqualFold(v, "true") || v == "1"
+	} else if os.Getenv("SUPABASE_JWT_SECRET") != "" {
+		allowLegacyHS256 = true
+	}
+
+	return &Config{
+		Port:                     port,
+		AllowedOrigins:           allowedOrigins,
+		SupabaseURL:              os.Getenv("SUPABASE_URL"),
+		SupabaseProjectRef:       os.Getenv("SUPABASE_PROJECT_REF"),
+		SupabaseAnonKey:          os.Getenv("SUPABASE_ANON_KEY"),
+		SupabaseServiceRoleKey:   os.Getenv("SUPABASE_SERVICE_ROLE_KEY"),
+		SupabaseJwtSecret:        os.Getenv("SUPABASE_JWT_SECRET"),
+		SupabaseRequiredRole:     os.Getenv("SUPABASE_REQUIRED_ROLE"),
+		SupabaseAllowLegacyHS256: allowLegacyHS256,
+		DatabaseURL:              os.Getenv("DATABASE_URL"),
+	}
+}
+</file>
+
+<file path="db/repo.go">
+package db
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+// MessageStore defines the interface for chat message persistence operations.
+type MessageStore interface {
+	SaveMessage(ctx context.Context, roomID, senderID, messageType, rawContent string, isViewOnce bool, scanStatus string, isFlagged bool, status string) error
+	GetConversationHistory(ctx context.Context, roomID string, limit, offset int) ([]ChatMessage, error)
+	GetUndeliveredMessages(ctx context.Context, roomID string) ([]ChatMessage, error)
+	MarkMessageDelivered(ctx context.Context, messageID string) error
+	MarkMessageRead(ctx context.Context, messageID string) error
+}
+
+// ChatMessage represents a chat message with its persistence fields.
+type ChatMessage struct {
+	ID          string
+	RoomID      string
+	SenderID    string
+	MessageType string
+	RawContent  string
+	IsViewOnce  bool
+	ScanStatus  string
+	IsFlagged   bool
+	Status      string
+	SentAt      time.Time
+	DeliveredAt *time.Time
+	ReadAt      *time.Time
+	CreatedAt   time.Time
+}
+
+// chatMessageDB is the internal database representation.
+type chatMessageDB struct {
+	ID          string
+	RoomID      string
+	SenderID    string
+	MessageType string
+	RawContent  string
+	IsViewOnce  bool
+	ScanStatus  string
+	IsFlagged   bool
+	Status      string
+	SentAt      time.Time
+	DeliveredAt sql.NullTime
+	ReadAt      sql.NullTime
+	CreatedAt   time.Time
+}
+
+// NewMessageStore creates a new PostgreSQL-backed MessageStore.
+func NewMessageStore(pool *pgxpool.Pool) MessageStore {
+	return &pgMessageStore{pool: pool}
+}
+
+// pgMessageStore implements MessageStore using PostgreSQL via pgxpool.
+type pgMessageStore struct {
+	pool *pgxpool.Pool
+}
+
+// SaveMessage persists a new chat message to the database.
+func (s *pgMessageStore) SaveMessage(ctx context.Context, roomID, senderID, messageType, rawContent string, isViewOnce bool, scanStatus string, isFlagged bool, status string) error {
+	q := `
+		INSERT INTO chat_messages (
+			id, room_id, sender_id, message_type, raw_content,
+			is_view_once, scan_status, is_flagged,
+			status, sent_at, delivered_at, read_at, created_at
+		) VALUES (
+			gen_random_uuid(), $1, $2, $3, $4,
+			$5, $6, $7, $8, now(), NULL, NULL, now()
+		)`
+	_, err := s.pool.Exec(ctx, q,
+		roomID, senderID, messageType, rawContent,
+		isViewOnce, scanStatus, isFlagged,
+		status,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to save message: %w", err)
+	}
+	log.Printf("[DB] Saved message from %s to room %s", senderID, roomID)
+	return nil
+}
+
+// GetConversationHistory retrieves paginated conversation history for a room.
+func (s *pgMessageStore) GetConversationHistory(ctx context.Context, roomID string, limit, offset int) ([]ChatMessage, error) {
+	q := `
+		SELECT id, room_id, sender_id, message_type, raw_content,
+			   is_view_once, scan_status, is_flagged,
+			   status, sent_at, delivered_at, read_at, created_at
+		FROM chat_messages
+		WHERE room_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3`
+	rows, err := s.pool.Query(ctx, q, roomID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query conversation history: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []ChatMessage
+	for rows.Next() {
+		var m chatMessageDB
+		var deliveredAt, readAt sql.NullTime
+		if err := rows.Scan(
+			&m.ID, &m.RoomID, &m.SenderID, &m.MessageType, &m.RawContent,
+			&m.IsViewOnce, &m.ScanStatus, &m.IsFlagged,
+			&m.Status, &m.SentAt, &deliveredAt, &readAt, &m.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan message: %w", err)
+		}
+
+		var deliveredAtPtr, readAtPtr *time.Time
+		if deliveredAt.Valid {
+			deliveredAtPtr = &deliveredAt.Time
+		}
+		if readAt.Valid {
+			readAtPtr = &readAt.Time
+		}
+
+		messages = append(messages, ChatMessage{
+			ID:          m.ID,
+			RoomID:      m.RoomID,
+			SenderID:    m.SenderID,
+			MessageType: m.MessageType,
+			RawContent:  m.RawContent,
+			IsViewOnce:  m.IsViewOnce,
+			ScanStatus:  m.ScanStatus,
+			IsFlagged:   m.IsFlagged,
+			Status:      m.Status,
+			SentAt:      m.SentAt,
+			DeliveredAt: deliveredAtPtr,
+			ReadAt:      readAtPtr,
+			CreatedAt:   m.CreatedAt,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %w", err)
+	}
+	return messages, nil
+}
+
+// GetUndeliveredMessages retrieves messages with status 'sent' that haven't been delivered yet.
+func (s *pgMessageStore) GetUndeliveredMessages(ctx context.Context, roomID string) ([]ChatMessage, error) {
+	q := `
+		SELECT id, room_id, sender_id, message_type, raw_content,
+			   is_view_once, scan_status, is_flagged,
+			   status, sent_at, delivered_at, read_at, created_at
+		FROM chat_messages
+		WHERE room_id = $1 AND status = 'sent'
+		ORDER BY created_at ASC`
+	rows, err := s.pool.Query(ctx, q, roomID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query undelivered messages: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []ChatMessage
+	for rows.Next() {
+		var m chatMessageDB
+		var deliveredAt, readAt sql.NullTime
+		if err := rows.Scan(
+			&m.ID, &m.RoomID, &m.SenderID, &m.MessageType, &m.RawContent,
+			&m.IsViewOnce, &m.ScanStatus, &m.IsFlagged,
+			&m.Status, &m.SentAt, &deliveredAt, &readAt, &m.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan undelivered message: %w", err)
+		}
+
+		var deliveredAtPtr, readAtPtr *time.Time
+		if deliveredAt.Valid {
+			deliveredAtPtr = &deliveredAt.Time
+		}
+		if readAt.Valid {
+			readAtPtr = &readAt.Time
+		}
+
+		messages = append(messages, ChatMessage{
+			ID:          m.ID,
+			RoomID:      m.RoomID,
+			SenderID:    m.SenderID,
+			MessageType: m.MessageType,
+			RawContent:  m.RawContent,
+			IsViewOnce:  m.IsViewOnce,
+			ScanStatus:  m.ScanStatus,
+			IsFlagged:   m.IsFlagged,
+			Status:      m.Status,
+			SentAt:      m.SentAt,
+			DeliveredAt: deliveredAtPtr,
+			ReadAt:      readAtPtr,
+			CreatedAt:   m.CreatedAt,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %w", err)
+	}
+	return messages, nil
+}
+
+// MarkMessageDelivered updates a message's status to 'delivered' and sets delivered_at timestamp.
+func (s *pgMessageStore) MarkMessageDelivered(ctx context.Context, messageID string) error {
+	q := `UPDATE chat_messages SET status = 'delivered', delivered_at = now() WHERE id = $1 AND status = 'sent'`
+	result, err := s.pool.Exec(ctx, q, messageID)
+	if err != nil {
+		return fmt.Errorf("failed to mark message delivered: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("message not found or already processed")
+	}
+	log.Printf("[DB] Marked message %s as delivered", messageID)
+	return nil
+}
+
+// MarkMessageRead updates a message's status to 'read' and sets read_at timestamp.
+func (s *pgMessageStore) MarkMessageRead(ctx context.Context, messageID string) error {
+	q := `UPDATE chat_messages SET status = 'read', read_at = now() WHERE id = $1 AND status IN ('sent', 'delivered')`
+	result, err := s.pool.Exec(ctx, q, messageID)
+	if err != nil {
+		return fmt.Errorf("failed to mark message read: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("message not found or already processed")
+	}
+	log.Printf("[DB] Marked message %s as read", messageID)
+	return nil
+}
+</file>
+
+<file path="guard/link_guard_test.go">
+package guard
+
+import (
+	"testing"
+)
+
+func TestCheckContactGuard_PhoneNumbers(t *testing.T) {
+	tests := []struct {
+		name        string
+		text        string
+		activeDays  int
+		pairCount   int
+		shouldBlock bool
+	}{
+		{
+			name:        "Standard 10-digit number (new user)",
+			text:        "Call me at 9876543210 please",
+			activeDays:  1,
+			pairCount:   5,
+			shouldBlock: true,
+		},
+		{
+			name:        "Formatted phone number with dashes",
+			text:        "Hit me up at +91-98765-43210",
+			activeDays:  1,
+			pairCount:   2,
+			shouldBlock: true,
+		},
+		{
+			name:        "Phone number allowed after 3 active days",
+			text:        "My number is 9876543210",
+			activeDays:  3,
+			pairCount:   5,
+			shouldBlock: false,
+		},
+		{
+			name:        "Phone number allowed after 20 message pairs",
+			text:        "My number is 9876543210",
+			activeDays:  1,
+			pairCount:   20,
+			shouldBlock: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res := CheckContactGuard(tc.text, tc.activeDays, tc.pairCount)
+			if res.IsBlocked != tc.shouldBlock {
+				t.Errorf("expected is_blocked=%v, got %v (reason: %s)", tc.shouldBlock, res.IsBlocked, res.Reason)
+			}
+		})
+	}
+}
+
+func TestCheckContactGuard_SocialHandles(t *testing.T) {
+	tests := []struct {
+		name        string
+		text        string
+		shouldBlock bool
+	}{
+		{
+			// The regex matches "insta" followed by separator then a handle.
+			// "insta:dating_star" format triggers the capture group.
+			name:        "Instagram handle with colon separator",
+			text:        "My insta:dating_star is on there",
+			shouldBlock: true,
+		},
+		{
+			// "telegram:" followed by handle matches the regex
+			name:        "Telegram handle",
+			text:        "Add me on telegram:cool_guy99",
+			shouldBlock: true,
+		},
+		{
+			// "snap:" followed by handle matches the regex
+			name:        "Snapchat handle with colon separator",
+			text:        "My snap:sweet_girl xoxo",
+			shouldBlock: true,
+		},
+		{
+			// t.me URL is also detected by the social regex
+			name:        "Telegram t.me link",
+			text:        "Find me at t.me/myusername",
+			shouldBlock: true,
+		},
+		{
+			name:        "Normal friendly text",
+			text:        "Hey! How is your weekend going?",
+			shouldBlock: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res := CheckContactGuard(tc.text, 1, 5)
+			if res.IsBlocked != tc.shouldBlock {
+				t.Errorf("expected is_blocked=%v, got %v (reason: %s)", tc.shouldBlock, res.IsBlocked, res.Reason)
+			}
+		})
+	}
+}
+
+func TestCheckContactGuard_ExternalUrls(t *testing.T) {
+	tests := []struct {
+		name        string
+		text        string
+		shouldBlock bool
+	}{
+		{
+			name:        "Full https URL",
+			text:        "Check this out: https://suspicious-site.com/login",
+			shouldBlock: true,
+		},
+		{
+			name:        "Raw domain name",
+			text:        "Go to mywebsite.org to see my photos",
+			shouldBlock: true,
+		},
+		{
+			name:        "Clean greeting",
+			text:        "Let's grab a coffee at Marine Drive!",
+			shouldBlock: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res := CheckContactGuard(tc.text, 1, 5)
+			if res.IsBlocked != tc.shouldBlock {
+				t.Errorf("expected is_blocked=%v, got %v (reason: %s)", tc.shouldBlock, res.IsBlocked, res.Reason)
+			}
+		})
+	}
+}
+</file>
+
+<file path="guard/link_guard.go">
+package guard
+
+import (
+	"regexp"
+	"strings"
+	"unicode"
+)
+
+// ContactGuardResult contains validation analysis
+type ContactGuardResult struct {
+	IsBlocked     bool   `json:"is_blocked"`
+	Reason        string `json:"reason,omitempty"`
+	DetectedType  string `json:"detected_type,omitempty"`
+	NormalizedTxt string `json:"normalized_text"`
+}
+
+// Homoglyph map to intercept character obfuscation (e.g. 0 for o, @ for a, 1 for l/i)
+var homoglyphs = map[rune]rune{
+	'@': 'a',
+	'0': 'o',
+	'1': 'i',
+	'3': 'e',
+	'$': 's',
+	'5': 's',
+	'7': 't',
+	'!': 'i',
+}
+
+// Normalizes text by mapping homoglyphs and stripping non-alphanumeric separators
+func NormalizeText(input string) string {
+	var builder strings.Builder
+	for _, r := range input {
+		if mapped, ok := homoglyphs[r]; ok {
+			builder.WriteRune(mapped)
+		} else if unicode.IsLetter(r) || unicode.IsDigit(r) || unicode.IsSpace(r) {
+			builder.WriteRune(unicode.ToLower(r))
+		}
+	}
+	return builder.String()
+}
+
+// CheckContactGuard checks if text contains restricted communication handles
+func CheckContactGuard(content string, activeDays int, messagePairCount int) ContactGuardResult {
+	// Rule: Contact sharing restriction unlocks after 3 days of active matching OR 20 message pairs exchanged
+	if activeDays >= 3 || messagePairCount >= 20 {
+		return ContactGuardResult{
+			IsBlocked:     false,
+			NormalizedTxt: content,
+		}
+	}
+
+	norm := NormalizeText(content)
+
+	// Regex 1: Phone numbers (Indian/international 10+ digits, with spaces or dashes)
+	phoneRegex := regexp.MustCompile(`(\+?\d{1,3}[-.\s]?)?(\d{3,5}[-.\s]?\d{3,5}[-.\s]?\d{3,5})`)
+	// Extract continuous digits only
+	digitOnly := regexp.MustCompile(`\D`).ReplaceAllString(content, "")
+	if len(digitOnly) >= 10 {
+		return ContactGuardResult{
+			IsBlocked:     true,
+			Reason:        "Contact Guard: Sharing phone numbers is restricted during initial conversation.",
+			DetectedType:  "phone_number",
+			NormalizedTxt: norm,
+		}
+	}
+	if phoneRegex.MatchString(norm) && len(digitOnly) >= 7 {
+		return ContactGuardResult{
+			IsBlocked:     true,
+			Reason:        "Contact Guard: Direct contact numbers are blocked for your safety.",
+			DetectedType:  "phone_number",
+			NormalizedTxt: norm,
+		}
+	}
+
+	// Regex 2: Instagram / Telegram / Social Handles
+	socialRegex := regexp.MustCompile(`(?i)(insta|ig|telegram|snap|snapchat|t\.me|wa\.me|whatsapp|sc)\s*[:@\s_-]?\s*([a-zA-Z0-9_.]{3,})`)
+	if socialRegex.MatchString(content) || socialRegex.MatchString(norm) {
+		return ContactGuardResult{
+			IsBlocked:     true,
+			Reason:        "Contact Guard: Social handles (Instagram/Telegram/Snapchat) unlock after 3 days of chatting.",
+			DetectedType:  "social_handle",
+			NormalizedTxt: norm,
+		}
+	}
+
+	// Regex 3: URLs and domains
+	urlRegex := regexp.MustCompile(`(?i)(https?:\/\/|www\.)[^\s]+|([a-zA-Z0-9-]+\.(com|org|net|io|in|me|app|link|xyz))`)
+	if urlRegex.MatchString(content) {
+		return ContactGuardResult{
+			IsBlocked:     true,
+			Reason:        "Contact Guard: External web links are blocked for anti-fraud safety.",
+			DetectedType:  "external_url",
+			NormalizedTxt: norm,
+		}
+	}
+
+	return ContactGuardResult{
+		IsBlocked:     false,
+		NormalizedTxt: norm,
+	}
+}
+</file>
+
+<file path="hub/client.go">
+package hub
+
+import (
+	"encoding/json"
+	"errors"
+	"log"
+	"sync"
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+const (
+	// writeWait is the maximum time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
+	// pongWait is the maximum time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// pingPeriod sends pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+
+	// maxMessageSize is the maximum message size allowed from peer (64 KB).
+	maxMessageSize = 65536
+)
+
+// Client represents a connected WebSocket user session.
+type Client struct {
+	ID       string          // Unique session ID (e.g. RemoteAddr)
+	UserID   string          // Verified Supabase user id (auth.users.id)
+	Conn     *websocket.Conn // Gorilla WebSocket connection
+	Send     chan []byte     // Buffered channel of outbound messages
+	Hub      *Hub            // Pointer to the central messaging Hub
+	channels map[string]bool // Subscribed channel names
+	mu       sync.Mutex
+	isClosed bool
+}
+
+// NewClient initializes a new connected client instance.
+func NewClient(id, userID string, conn *websocket.Conn, hub *Hub) *Client {
+	return &Client{
+		ID:       id,
+		UserID:   userID,
+		Conn:     conn,
+		Send:     make(chan []byte, 256),
+		Hub:      hub,
+		channels: make(map[string]bool),
+	}
+}
+
+// SendJSON enqueues a JSON-serializable message for transmission via WritePump.
+// Thread-safe and prevents concurrent WebSocket write operations.
+func (c *Client) SendJSON(v interface{}) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.isClosed {
+		return errors.New("client connection already closed")
+	}
+
+	select {
+	case c.Send <- data:
+		return nil
+	default:
+		log.Printf("[Client %s] Send buffer full, dropping message", c.ID)
+		return errors.New("send buffer full")
+	}
+}
+
+// Close safely terminates the outbound channel without double-close panic.
+func (c *Client) Close() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.isClosed {
+		c.isClosed = true
+		close(c.Send)
+	}
+}
+
+// ReadPump handles incoming WebSocket frames, heartbeats, and message dispatching.
+// Runs in its own goroutine per client connection.
+func (c *Client) ReadPump() {
+	defer func() {
+		c.Hub.Unregister(c)
+		c.Conn.Close()
+	}()
+
+	c.Conn.SetReadLimit(maxMessageSize)
+	_ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		_ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
+	for {
+		_, messageBytes, err := c.Conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("[Client %s] Read error: %v", c.ID, err)
+			}
+			break
+		}
+
+		var inbound InboundMessage
+		if err := json.Unmarshal(messageBytes, &inbound); err != nil {
+			_ = c.SendJSON(OutboundMessage{
+				Event: EventError,
+				Payload: ErrorPayload{
+					Code:    "MALFORMED_JSON",
+					Message: "Received invalid JSON structure",
+				},
+				Timestamp: time.Now().UnixMilli(),
+			})
+			continue
+		}
+
+		if err := inbound.Validate(); err != nil {
+			_ = c.SendJSON(OutboundMessage{
+				Event: EventError,
+				Payload: ErrorPayload{
+					Code:    "VALIDATION_ERROR",
+					Message: err.Error(),
+				},
+				Timestamp: time.Now().UnixMilli(),
+			})
+			continue
+		}
+
+		c.Hub.HandleInbound(c, inbound)
+	}
+}
+
+// WritePump serializes all writes to the WebSocket connection.
+// This is the ONLY goroutine allowed to call WriteMessage on c.Conn.
+func (c *Client) WritePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+
+	for {
+		select {
+		case message, ok := <-c.Send:
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// Hub closed the channel
+				_ = c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			if _, err := w.Write(message); err != nil {
+				return
+			}
+
+			// Flush queued messages if any
+			n := len(c.Send)
+			for i := 0; i < n; i++ {
+				if _, err := w.Write([]byte{'\n'}); err != nil {
+					return
+				}
+				if _, err := w.Write(<-c.Send); err != nil {
+					return
+				}
+			}
+
+			if err := w.Close(); err != nil {
+				return
+			}
+
+		case <-ticker.C:
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
+}
+</file>
+
+<file path="hub/hub_test.go">
+package hub
+
+import (
+	"context"
+	"encoding/json"
+	"sync"
+	"testing"
+	"time"
+
+	"younme/realtime/db"
+)
+
+// inMemoryMessageStore is a simple in-memory implementation for testing.
+type inMemoryMessageStore struct {
+	messages map[string][]db.ChatMessage
+}
+
+func (i *inMemoryMessageStore) SaveMessage(_ context.Context, roomID, senderID, messageType, rawContent string, isViewOnce bool, scanStatus string, isFlagged bool, status string) error {
+	return nil
+}
+
+func (i *inMemoryMessageStore) GetConversationHistory(_ context.Context, roomID string, limit, offset int) ([]db.ChatMessage, error) {
+	return nil, nil
+}
+
+func (i *inMemoryMessageStore) GetUndeliveredMessages(_ context.Context, roomID string) ([]db.ChatMessage, error) {
+	return nil, nil
+}
+
+func (i *inMemoryMessageStore) MarkMessageDelivered(_ context.Context, messageID string) error {
+	return nil
+}
+
+func (i *inMemoryMessageStore) MarkMessageRead(_ context.Context, messageID string) error {
+	return nil
+}
+
+func TestInboundMessageValidation(t *testing.T) {
+	// 1. Missing event
+	msg := InboundMessage{Event: ""}
+	if err := msg.Validate(); err == nil {
+		t.Errorf("expected error for empty event")
+	}
+
+	// 2. Chat message missing channel and to_user_id
+	msg = InboundMessage{
+		Event:   EventChatMessage,
+		Payload: json.RawMessage(`{"body":"hello"}`),
+	}
+	if err := msg.Validate(); err == nil {
+		t.Errorf("expected error when both channel and to_user_id are empty")
+	}
+
+	// 3. Chat message missing payload
+	msg = InboundMessage{
+		Event:    EventChatMessage,
+		ToUserID: "usr_2",
+	}
+	if err := msg.Validate(); err == nil {
+		t.Errorf("expected error for empty payload in chat message")
+	}
+
+	// 4. Chat message with empty body
+	msg = InboundMessage{
+		Event:    EventChatMessage,
+		ToUserID: "usr_2",
+		Payload:  json.RawMessage(`{"body":""}`),
+	}
+	if err := msg.Validate(); err == nil {
+		t.Errorf("expected error for empty body")
+	}
+
+	// 5. Valid chat message with to_user_id
+	msg = InboundMessage{
+		Event:    EventChatMessage,
+		ToUserID: "usr_2",
+		Payload:  json.RawMessage(`{"body":"Hey there!"}`),
+	}
+	if err := msg.Validate(); err != nil {
+		t.Errorf("expected valid chat message, got error: %v", err)
+	}
+
+	// 6. Valid subscribe
+	msg = InboundMessage{
+		Event:   EventSubscribe,
+		Channel: "chat:match_123",
+	}
+	if err := msg.Validate(); err != nil {
+		t.Errorf("expected valid subscribe message, got error: %v", err)
+	}
+}
+
+func drainUntilEvent(c *Client, eventName string, timeout time.Duration) (*OutboundMessage, error) {
+	deadline := time.After(timeout)
+	for {
+		select {
+		case data := <-c.Send:
+			var msg OutboundMessage
+			if err := json.Unmarshal(data, &msg); err == nil {
+				if msg.Event == eventName {
+					return &msg, nil
+				}
+			}
+		case <-deadline:
+			return nil, nil
+		}
+	}
+}
+
+func TestHub_UserRegistryAndDirectRouting(t *testing.T) {
+	msgStore := &inMemoryMessageStore{}
+	h := NewHub(nil, msgStore)
+
+	// Create simulated client 1 (User A)
+	client1 := &Client{
+		ID:       "session_1",
+		UserID:   "usr_alice",
+		Send:     make(chan []byte, 50),
+		channels: make(map[string]bool),
+		Hub:      h,
+	}
+	h.Register(client1)
+
+	// Verify User A is online
+	if !h.IsUserOnline("usr_alice") {
+		t.Errorf("expected usr_alice to be online")
+	}
+	activeClients, activeUsers := h.GetStats()
+	if activeClients != 1 || activeUsers != 1 {
+		t.Errorf("expected 1 client and 1 user, got %d clients, %d users", activeClients, activeUsers)
+	}
+
+	// Create simulated client 2 (User B)
+	client2 := &Client{
+		ID:       "session_2",
+		UserID:   "usr_bob",
+		Send:     make(chan []byte, 50),
+		channels: make(map[string]bool),
+		Hub:      h,
+	}
+	h.Register(client2)
+
+	// Send direct message from Alice to Bob
+	directMsg := OutboundMessage{
+		Event:   EventChatMessage,
+		FromUID: "usr_alice",
+		Payload: map[string]string{"body": "Hello Bob!"},
+	}
+	delivered := h.SendToUser("usr_bob", directMsg)
+	if !delivered {
+		t.Errorf("expected message to be delivered to online usr_bob")
+	}
+
+	// Check that Bob received the chat message in Send channel
+	received, err := drainUntilEvent(client2, EventChatMessage, 500*time.Millisecond)
+	if err != nil || received == nil {
+		t.Fatalf("expected Bob to receive EventChatMessage, got nil")
+	}
+	if received.FromUID != "usr_alice" {
+		t.Errorf("expected from usr_alice, got %s", received.FromUID)
+	}
+
+	// Try sending to offline user Charlie
+	directMsg2 := OutboundMessage{
+		Event:   EventChatMessage,
+		FromUID: "usr_alice",
+		Payload: map[string]string{"body": "Hello Charlie!"},
+	}
+	deliveredOffline := h.SendToUser("usr_charlie", directMsg2)
+	if deliveredOffline {
+		t.Errorf("expected SendToUser to return false for offline user")
+	}
+
+	// Unregister Bob
+	h.Unregister(client2)
+	if h.IsUserOnline("usr_bob") {
+		t.Errorf("expected usr_bob to be offline after unregister")
+	}
+
+	// Ensure Bob's channel is closed safely
+	if !client2.isClosed {
+		t.Errorf("expected client2 to be closed")
+	}
+}
+
+func TestHub_ChannelBroadcast(t *testing.T) {
+	msgStore := &inMemoryMessageStore{}
+	h := NewHub(nil, msgStore)
+
+	client1 := &Client{
+		ID:       "c1",
+		UserID:   "usr_1",
+		Send:     make(chan []byte, 50),
+		channels: make(map[string]bool),
+		Hub:      h,
+	}
+	client2 := &Client{
+		ID:       "c2",
+		UserID:   "usr_2",
+		Send:     make(chan []byte, 50),
+		channels: make(map[string]bool),
+		Hub:      h,
+	}
+	h.Register(client1)
+	h.Register(client2)
+
+	// Subscribe both to channel "chat:conv_abc"
+	channelName := "chat:conv_abc"
+	h.Subscribe(client1, channelName)
+	h.Subscribe(client2, channelName)
+
+	broadcastMsg := OutboundMessage{
+		Channel: channelName,
+		Event:   "match:update",
+		FromUID: "usr_1",
+		Payload: map[string]string{"text": "Match status updated"},
+	}
+	h.Broadcast(broadcastMsg)
+
+	// Both client1 and client2 should receive the message
+	for _, client := range []*Client{client1, client2} {
+		msg, err := drainUntilEvent(client, "match:update", 500*time.Millisecond)
+		if err != nil || msg == nil {
+			t.Fatalf("timed out waiting for match:update broadcast on %s", client.ID)
+		}
+		if msg.Channel != channelName {
+			t.Errorf("expected channel %s, got %s", channelName, msg.Channel)
+		}
+	}
+}
+
+func TestHub_ChatRouting_SenderIdentityFromVerifiedClient(t *testing.T) {
+	msgStore := &inMemoryMessageStore{}
+	h := NewHub(nil, msgStore)
+
+	// User A (sender) and User B (recipient) both online
+	clientA := &Client{
+		ID:       "session_sender",
+		UserID:   "11111111-1111-1111-1111-111111111111",
+		Send:     make(chan []byte, 50),
+		channels: make(map[string]bool),
+		Hub:      h,
+	}
+	clientB := &Client{
+		ID:       "session_recipient",
+		UserID:   "22222222-2222-2222-2222-222222222222",
+		Send:     make(chan []byte, 50),
+		channels: make(map[string]bool),
+		Hub:      h,
+	}
+	h.Register(clientA)
+	h.Register(clientB)
+
+	// Inbound chat message: sender identity must come from the verified client (user A),
+	// never from the payload itself.
+	inbound := InboundMessage{
+		Event:    EventChatMessage,
+		ToUserID: "22222222-2222-2222-2222-222222222222",
+		Payload:  json.RawMessage(`{"body":"Hey Bob, nice to meet you!"}`),
+	}
+
+	h.HandleInbound(clientA, inbound)
+
+	// Recipient must receive the chat message, authored by the verified sender
+	received, err := drainUntilEvent(clientB, EventChatMessage, 500*time.Millisecond)
+	if err != nil || received == nil {
+		t.Fatalf("expected recipient to receive EventChatMessage, got nil (err=%v)", err)
+	}
+	if received.FromUID != "11111111-1111-1111-1111-111111111111" {
+		t.Errorf("expected from_uid to be the verified sender (1111...), got %s", received.FromUID)
+	}
+	if received.Event != EventChatMessage {
+		t.Errorf("expected event %s, got %s", EventChatMessage, received.Event)
+	}
+}
+
+func TestHub_ThreadSafetyConcurrent(t *testing.T) {
+	msgStore := &inMemoryMessageStore{}
+	h := NewHub(nil, msgStore)
+	var wg sync.WaitGroup
+
+	numGoroutines := 20
+	numOperations := 25
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(routineID int) {
+			defer wg.Done()
+			for j := 0; j < numOperations; j++ {
+				client := &Client{
+					ID:       "test_client",
+					UserID:   "test_user",
+					Send:     make(chan []byte, 100),
+					channels: make(map[string]bool),
+					Hub:      h,
+				}
+				h.Register(client)
+				h.Subscribe(client, "test_channel")
+				h.Broadcast(OutboundMessage{Channel: "test_channel", Event: "ping"})
+				h.SendToUser("test_user", OutboundMessage{Event: "direct"})
+				h.Unsubscribe(client, "test_channel")
+				h.Unregister(client)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+
+	activeClients, activeUsers := h.GetStats()
+	if activeClients != 0 || activeUsers != 0 {
+		t.Errorf("expected 0 clients and 0 users after full cleanup, got %d clients, %d users", activeClients, activeUsers)
+	}
+}
+</file>
+
+<file path="hub/hub.go">
+package hub
+
+import (
+	"context"
+	"encoding/json"
+	"log"
+	"sync"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"younme/realtime/db"
+	"younme/realtime/guard"
+)
+
+type Hub struct {
+	clients      map[*Client]bool
+	users        map[string]map[*Client]bool // UserID -> set of connected client sessions
+	channels     map[string]map[*Client]bool // ChannelName -> set of connected clients
+	mu           sync.RWMutex
+	MessageStore db.MessageStore // PostgreSQL-backed persistence
+	pool         *pgxpool.Pool
+	ctx          context.Context
+}
+
+func NewHub(pool *pgxpool.Pool, messageStore db.MessageStore) *Hub {
+	return &Hub{
+		clients:      make(map[*Client]bool),
+		users:        make(map[string]map[*Client]bool),
+		channels:     make(map[string]map[*Client]bool),
+		MessageStore: messageStore,
+		pool:         pool,
+		ctx:          context.Background(),
+	}
+}
+
+func NewHubWithDefault(ctx context.Context, pool *pgxpool.Pool, messageStore db.MessageStore) *Hub {
+	// Validate connection by pinging
+	if err := pool.Ping(ctx); err != nil {
+		log.Printf("[Hub] Warning: could not ping database: %v", err)
+	}
+	return NewHub(pool, messageStore)
+}
+
+func (h *Hub) Register(c *Client) {
+	h.mu.Lock()
+	h.clients[c] = true
+
+	if h.users[c.UserID] == nil {
+		h.users[c.UserID] = make(map[*Client]bool)
+	}
+	isFirstConnection := len(h.users[c.UserID]) == 0
+	h.users[c.UserID][c] = true
+
+	// Auto-subscribe to direct user messages and presence
+	h.subscribeUnsafe(c, "user:"+c.UserID)
+	h.subscribeUnsafe(c, "presence:global")
+	h.mu.Unlock()
+
+	log.Printf("[Hub] Registered user '%s' (session %s)", c.UserID, c.ID)
+
+	// Broadcast presence online if user previously had zero active sessions
+	if isFirstConnection {
+		h.Broadcast(OutboundMessage{
+			Channel: EventPresenceOnline,
+			Event:   EventPresenceOnline,
+			FromUID: c.UserID,
+			Payload: map[string]interface{}{
+				"user_id": c.UserID,
+				"status":  "online",
+			},
+			Timestamp: time.Now().UnixMilli(),
+		})
+	}
+
+	log.Printf("[Hub] User %s reconnected; pending message delivery at chat-room level", c.UserID)
+}
+
+func (h *Hub) Unregister(c *Client) {
+	h.mu.Lock()
+	if !h.clients[c] {
+		h.mu.Unlock()
+		return
+	}
+
+	delete(h.clients, c)
+
+	if userSessions, ok := h.users[c.UserID]; ok {
+		delete(userSessions, c)
+	}
+	userFullyOffline := len(h.users[c.UserID]) == 0
+	if userFullyOffline {
+		delete(h.users, c.UserID)
+	}
+
+	// Clean up all channel subscriptions for this client
+	for channelName := range c.channels {
+		if subs, exists := h.channels[channelName]; exists {
+			delete(subs, c)
+			if len(subs) == 0 {
+				delete(h.channels, channelName)
+			}
+		}
+	}
+	h.mu.Unlock()
+
+	c.Close()
+	log.Printf("[Hub] Unregistered session %s (user '%s')", c.ID, c.UserID)
+
+	// If all user sessions disconnected, broadcast offline presence
+	if userFullyOffline {
+		h.Broadcast(OutboundMessage{
+			Channel: EventPresenceOffline,
+			Event:   EventPresenceOffline,
+			FromUID: c.UserID,
+			Payload: map[string]interface{}{
+				"user_id": c.UserID,
+				"status":  "offline",
+			},
+			Timestamp: time.Now().UnixMilli(),
+		})
+	}
+}
+
+func (h *Hub) subscribeUnsafe(c *Client, channel string) {
+	if h.channels[channel] == nil {
+		h.channels[channel] = make(map[*Client]bool)
+	}
+	h.channels[channel][c] = true
+	c.channels[channel] = true
+}
+
+func (h *Hub) Subscribe(c *Client, channel string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.subscribeUnsafe(c, channel)
+}
+
+func (h *Hub) Unsubscribe(c *Client, channel string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if subs, exists := h.channels[channel]; exists {
+		delete(subs, c)
+		if len(subs) == 0 {
+			delete(h.channels, channel)
+		}
+	}
+	delete(c.channels, channel)
+}
+
+func (h *Hub) SendToUser(targetUserID string, msg OutboundMessage) bool {
+	if msg.Timestamp == 0 {
+		msg.Timestamp = time.Now().UnixMilli()
+	}
+
+	h.mu.RLock()
+	var targets []*Client
+	if sessions, exists := h.users[targetUserID]; exists {
+		for client := range sessions {
+			targets = append(targets, client)
+		}
+	}
+	h.mu.RUnlock()
+
+	if len(targets) == 0 {
+		return false
+	}
+
+	delivered := false
+	for _, client := range targets {
+		if err := client.SendJSON(msg); err == nil {
+			delivered = true
+		}
+	}
+	return delivered
+}
+
+func (h *Hub) Broadcast(msg OutboundMessage) {
+	if msg.Timestamp == 0 {
+		msg.Timestamp = time.Now().UnixMilli()
+	}
+
+	h.mu.RLock()
+	var targets []*Client
+	if subs, exists := h.channels[msg.Channel]; exists {
+		for client := range subs {
+			targets = append(targets, client)
+		}
+	}
+	h.mu.RUnlock()
+
+	for _, client := range targets {
+		_ = client.SendJSON(msg)
+	}
+}
+
+func (h *Hub) GetStats() (int, int) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return len(h.clients), len(h.users)
+}
+
+func (h *Hub) IsUserOnline(userID string) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	sessions, exists := h.users[userID]
+	return exists && len(sessions) > 0
+}
+
+func (h *Hub) HandleInbound(c *Client, inbound InboundMessage) {
+	now := time.Now().UnixMilli()
+
+	switch inbound.Event {
+	case EventChatMessage:
+		var chat ChatMessagePayload
+		if err := json.Unmarshal(inbound.Payload, &chat); err != nil {
+			_ = c.SendJSON(OutboundMessage{
+				Event: EventError,
+				Payload: ErrorPayload{
+					Code:    "INVALID_PAYLOAD",
+					Message: "Malformed chat message payload",
+				},
+				Timestamp: now,
+			})
+			return
+		}
+
+		// Security Check: Contact & Link Guard
+		activeDays := chat.ActiveDays
+		if activeDays <= 0 {
+			activeDays = 1
+		}
+		pairCount := chat.PairCount
+		if pairCount <= 0 {
+			pairCount = 5
+		}
+
+		guardResult := guard.CheckContactGuard(chat.Body, activeDays, pairCount)
+		if guardResult.IsBlocked {
+			_ = c.SendJSON(OutboundMessage{
+				Channel: inbound.Channel,
+				Event:   EventGuardBlocked,
+				Payload: map[string]interface{}{
+					"reason":        guardResult.Reason,
+					"detected_type": guardResult.DetectedType,
+				},
+				Timestamp: now,
+			})
+			return
+		}
+
+		// Persist message to database before routing
+		if err := h.MessageStore.SaveMessage(h.ctx, chat.ConvID, c.UserID, chat.Type, chat.Body, chat.MediaURL != "", "clean", false, "sent"); err != nil {
+			log.Printf("[DB] Failed to persist message: %v", err)
+		}
+
+		outbound := OutboundMessage{
+			Channel:   inbound.Channel,
+			Event:     EventChatMessage,
+			FromUID:   c.UserID,
+			Payload:   chat,
+			Timestamp: now,
+		}
+
+		// Route direct to user if target specified
+		if inbound.ToUserID != "" {
+			// If recipient is online, deliver and acknowledge
+			if h.IsUserOnline(inbound.ToUserID) {
+				h.SendToUser(inbound.ToUserID, outbound)
+
+				_ = c.SendJSON(OutboundMessage{
+					Event: EventDeliveryAck,
+					Payload: map[string]interface{}{
+						"recipient_id": inbound.ToUserID,
+						"conv_id":      chat.ConvID,
+						"status":       "delivered",
+					},
+					Timestamp: now,
+				})
+			} else {
+				// Recipient is offline - message is persisted and will be delivered on reconnect
+				_ = c.SendJSON(OutboundMessage{
+					Event: EventUndelivered,
+					Payload: map[string]interface{}{
+						"recipient_id": inbound.ToUserID,
+						"conv_id":      chat.ConvID,
+						"reason":       "user_offline",
+					},
+					Timestamp: now,
+				})
+			}
+		} else if inbound.Channel != "" {
+			// Route to channel subscribers (broadcast)
+			h.Broadcast(outbound)
+		}
+
+	case EventDirectMessage:
+		outbound := OutboundMessage{
+			Event:     EventDirectMessage,
+			FromUID:   c.UserID,
+			Payload:   inbound.Payload,
+			Timestamp: now,
+		}
+		delivered := h.SendToUser(inbound.ToUserID, outbound)
+		if delivered {
+			_ = c.SendJSON(OutboundMessage{
+				Event: EventDeliveryAck,
+				Payload: map[string]interface{}{
+					"recipient_id": inbound.ToUserID,
+				},
+				Timestamp: now,
+			})
+		} else {
+			_ = c.SendJSON(OutboundMessage{
+				Event: EventUndelivered,
+				Payload: map[string]interface{}{
+					"recipient_id": inbound.ToUserID,
+					"reason":       "user_offline",
+				},
+				Timestamp: now,
+			})
+		}
+
+	case EventTyping:
+		outbound := OutboundMessage{
+			Channel:   inbound.Channel,
+			Event:     EventTyping,
+			FromUID:   c.UserID,
+			Payload:   map[string]interface{}{"user_id": c.UserID},
+			Timestamp: now,
+		}
+		if inbound.ToUserID != "" {
+			h.SendToUser(inbound.ToUserID, outbound)
+		}
+		if inbound.Channel != "" {
+			h.Broadcast(outbound)
+		}
+
+	case EventCallSignal, EventCallGameMove:
+		outbound := OutboundMessage{
+			Channel:   inbound.Channel,
+			Event:     inbound.Event,
+			FromUID:   c.UserID,
+			Payload:   inbound.Payload,
+			Timestamp: now,
+		}
+		if inbound.ToUserID != "" {
+			h.SendToUser(inbound.ToUserID, outbound)
+		}
+		if inbound.Channel != "" {
+			h.Broadcast(outbound)
+		}
+	}
+}
+
+func deliveredStatus(delivered bool) string {
+	if delivered {
+		return "delivered"
+	}
+	return "sent"
+}
+</file>
+
+<file path="hub/message.go">
+package hub
+
+import (
+	"encoding/json"
+	"errors"
+	"strings"
+)
+
+// Supported real-time event types
+const (
+	EventChatMessage     = "chat:message"
+	EventDirectMessage   = "direct:message"
+	EventSubscribe       = "subscribe"
+	EventUnsubscribe     = "unsubscribe"
+	EventTyping          = "typing"
+	EventPresenceOnline  = "presence:online"
+	EventPresenceOffline = "presence:offline"
+	EventGuardBlocked    = "guard:blocked"
+	EventError           = "error"
+	EventDeliveryAck     = "chat:delivered"
+	EventUndelivered     = "chat:undelivered"
+	EventCallSignal      = "call:signal"
+	EventCallGameMove    = "call:game_move"
+)
+
+// InboundMessage represents a validated client-sent WebSocket frame.
+type InboundMessage struct {
+	Event     string          `json:"event"`
+	Channel   string          `json:"channel,omitempty"`
+	ToUserID  string          `json:"to_user_id,omitempty"`
+	Payload   json.RawMessage `json:"payload"`
+	Timestamp int64           `json:"timestamp,omitempty"`
+}
+
+// ChatMessagePayload contains specific fields for dating app chat messages.
+type ChatMessagePayload struct {
+	Body       string `json:"body"`
+	ActiveDays int    `json:"active_days,omitempty"`
+	PairCount  int    `json:"pair_count,omitempty"`
+	ConvID     string `json:"conv_id,omitempty"`
+	Type       string `json:"type,omitempty"`
+	MediaURL   string `json:"media_url,omitempty"`
+}
+
+// OutboundMessage represents an envelope pushed to connected clients.
+type OutboundMessage struct {
+	Channel   string      `json:"channel,omitempty"`
+	Event     string      `json:"event"`
+	FromUID   string      `json:"from_uid,omitempty"`
+	Payload   interface{} `json:"payload"`
+	Timestamp int64       `json:"timestamp"`
+}
+
+// ErrorPayload standardizes error reports sent back to clients.
+type ErrorPayload struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// Validate checks the structural validity of an incoming message.
+func (m *InboundMessage) Validate() error {
+	m.Event = strings.TrimSpace(m.Event)
+	if m.Event == "" {
+		return errors.New("event name is required")
+	}
+
+	switch m.Event {
+	case EventChatMessage:
+		if strings.TrimSpace(m.Channel) == "" && strings.TrimSpace(m.ToUserID) == "" {
+			return errors.New("chat:message requires either 'channel' or 'to_user_id'")
+		}
+		if len(m.Payload) == 0 {
+			return errors.New("chat:message requires a non-empty payload")
+		}
+		var chat ChatMessagePayload
+		if err := json.Unmarshal(m.Payload, &chat); err != nil {
+			return errors.New("invalid chat payload json format")
+		}
+		if strings.TrimSpace(chat.Body) == "" {
+			return errors.New("chat body cannot be empty")
+		}
+
+	case EventDirectMessage:
+		if strings.TrimSpace(m.ToUserID) == "" {
+			return errors.New("direct:message requires 'to_user_id'")
+		}
+		if len(m.Payload) == 0 {
+			return errors.New("direct:message requires a payload")
+		}
+
+	case EventSubscribe, EventUnsubscribe:
+		if strings.TrimSpace(m.Channel) == "" {
+			return errors.New("subscribe/unsubscribe requires 'channel'")
+		}
+
+	case EventTyping:
+		if strings.TrimSpace(m.Channel) == "" && strings.TrimSpace(m.ToUserID) == "" {
+			return errors.New("typing requires either 'channel' or 'to_user_id'")
+		}
+	}
+
+	return nil
+}
+</file>
+
+<file path="Dockerfile">
+# Multi-stage production build for GCP Cloud Run (asia-south1)
+FROM golang:1.22-alpine AS builder
+
+WORKDIR /app
+COPY go.mod go.sum* ./
+RUN go mod download || true
+
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o younme-realtime .
+
+FROM alpine:3.19
+RUN apk --no-cache add ca-certificates tzdata
+WORKDIR /root/
+COPY --from=builder /app/younme-realtime .
+
+EXPOSE 8081
+ENV PORT=8081
+CMD ["./younme-realtime"]
+</file>
+
+<file path="go.mod">
+module younme/realtime
+
+go 1.26.0
+
+require (
+	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/gorilla/websocket v1.5.3
+)
+
+require github.com/joho/godotenv v1.5.1
+
+require (
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/pgx/v5 v5.11.0 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	golang.org/x/sync v0.17.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
+)
+</file>
+
+<file path="main_test.go">
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"younme/realtime/auth"
+	"younme/realtime/config"
+	"younme/realtime/db"
+	"younme/realtime/hub"
+
+	"github.com/gorilla/websocket"
+)
+
+// inMemoryMessageStore is a simple in-memory implementation for testing.
+type inMemoryMessageStore struct {
+	messages map[string][]db.ChatMessage
+}
+
+func (i *inMemoryMessageStore) SaveMessage(_ context.Context, roomID, senderID, messageType, rawContent string, isViewOnce bool, scanStatus string, isFlagged bool, status string) error {
+	if i.messages == nil {
+		i.messages = make(map[string][]db.ChatMessage)
+	}
+	i.messages[roomID] = append(i.messages[roomID], db.ChatMessage{
+		ID:          "test-" + time.Now().UTC().Format("20060102150405.999"),
+		RoomID:      roomID,
+		SenderID:    senderID,
+		MessageType: messageType,
+		RawContent:  rawContent,
+		IsViewOnce:  isViewOnce,
+		ScanStatus:  scanStatus,
+		IsFlagged:   isFlagged,
+		Status:      status,
+		SentAt:      time.Now().UTC(),
+	})
+	return nil
+}
+
+func (i *inMemoryMessageStore) GetConversationHistory(_ context.Context, roomID string, limit, offset int) ([]db.ChatMessage, error) {
+	if i.messages == nil {
+		return nil, nil
+	}
+	msgs := i.messages[roomID]
+	var result []db.ChatMessage
+	for range msgs {
+		offset++
+	}
+	return result, nil
+}
+
+func (i *inMemoryMessageStore) GetUndeliveredMessages(_ context.Context, roomID string) ([]db.ChatMessage, error) {
+	if i.messages == nil {
+		return nil, nil
+	}
+	var result []db.ChatMessage
+	for _, m := range i.messages[roomID] {
+		if m.Status == "sent" {
+			result = append(result, m)
+		}
+	}
+	return result, nil
+}
+
+func (i *inMemoryMessageStore) MarkMessageDelivered(_ context.Context, messageID string) error {
+	return nil
+}
+
+func (i *inMemoryMessageStore) MarkMessageRead(_ context.Context, messageID string) error {
+	return nil
+}
+
+func TestHealthCheck(t *testing.T) {
+	cfg := &config.Config{Port: "8081"}
+	msgStore := &inMemoryMessageStore{}
+	h := hub.NewHub(nil, msgStore)
+	handler := SetupRouter(cfg, nil, h)
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var res map[string]interface{}
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatalf("failed to parse JSON response: %v", err)
+	}
+
+	if res["status"] != "healthy" {
+		t.Errorf("expected status 'healthy', got %v", res["status"])
+	}
+	if res["service"] != "realtime-go" {
+		t.Errorf("expected service 'realtime-go', got %v", res["service"])
+	}
+}
+
+func TestHealthCheck_MethodNotAllowed(t *testing.T) {
+	cfg := &config.Config{Port: "8081"}
+	msgStore := &inMemoryMessageStore{}
+	h := hub.NewHub(nil, msgStore)
+	handler := SetupRouter(cfg, nil, h)
+
+	req := httptest.NewRequest(http.MethodPost, "/health", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected status 405, got %d", rec.Code)
+	}
+}
+
+func TestWebSocket_AuthenticationFailures(t *testing.T) {
+	cfg := &config.Config{Port: "8081"}
+	msgStore := &inMemoryMessageStore{}
+	h := hub.NewHub(nil, msgStore)
+	mockVerifier := auth.NewMockVerifier(map[string]*auth.UserInfo{
+		"valid-token": {ID: "usr_alice"},
+	})
+	handler := SetupRouter(cfg, mockVerifier, h)
+
+	// Case 1: Missing Token
+	req := httptest.NewRequest(http.MethodGet, "/ws", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for missing token, got %d", rec.Code)
+	}
+
+	// Case 2: Invalid Token
+	req = httptest.NewRequest(http.MethodGet, "/ws?token=invalid-fake-token", nil)
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for invalid token, got %d", rec.Code)
+	}
+
+	// Case 3: Expired Token
+	req = httptest.NewRequest(http.MethodGet, "/ws?token=expired-token", nil)
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 for expired token, got %d", rec.Code)
+	}
+
+	// Case 4: Missing Verifier (Server has no Supabase configuration)
+	unconfiguredHandler := SetupRouter(cfg, nil, h)
+	req = httptest.NewRequest(http.MethodGet, "/ws?token=any-token", nil)
+	rec = httptest.NewRecorder()
+	unconfiguredHandler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 when Supabase is unconfigured, got %d", rec.Code)
+	}
+}
+
+func TestWebSocket_AuthenticatedConnectionAndEcho(t *testing.T) {
+	cfg := &config.Config{Port: "8081"}
+	msgStore := &inMemoryMessageStore{}
+	h := hub.NewHub(nil, msgStore)
+	mockVerifier := auth.NewMockVerifier(map[string]*auth.UserInfo{
+		"valid-token": {ID: "usr_alice"},
+	})
+
+	server := httptest.NewServer(SetupRouter(cfg, mockVerifier, h))
+	defer server.Close()
+
+	// Convert http URL to ws URL
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws?token=valid-token"
+
+	// Connect via Gorilla WebSocket client
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatalf("failed to dial websocket: %v (status: %v)", err, resp)
+	}
+	defer conn.Close()
+
+	// Verify usr_alice is now online in the Hub
+	time.Sleep(50 * time.Millisecond)
+	if !h.IsUserOnline("usr_alice") {
+		t.Errorf("expected usr_alice to be online in hub")
+	}
+
+	// Send a valid chat message to Bob
+	sendMsg := hub.InboundMessage{
+		Event:    hub.EventChatMessage,
+		ToUserID: "usr_bob",
+		Payload:  json.RawMessage(`{"body":"Hey Bob, nice to meet you!"}`),
+	}
+	msgBytes, _ := json.Marshal(sendMsg)
+	if err := conn.WriteMessage(websocket.TextMessage, msgBytes); err != nil {
+		t.Fatalf("failed to write message: %v", err)
+	}
+
+	// Because Bob is offline, Alice should receive an undelivered ack
+	var outbound hub.OutboundMessage
+	receivedAck := false
+	deadline := time.Now().Add(2 * time.Second)
+
+	for time.Now().Before(deadline) {
+		_ = conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+		_, receivedBytes, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		if err := json.Unmarshal(receivedBytes, &outbound); err == nil {
+			if outbound.Event == hub.EventUndelivered {
+				receivedAck = true
+				break
+			}
+		}
+	}
+
+	if !receivedAck {
+		t.Errorf("expected event 'chat:undelivered' from server for offline recipient")
+	}
+}
+
+func TestCORS_PreflightAndHeaders(t *testing.T) {
+	cfg := &config.Config{
+		Port:           "8081",
+		AllowedOrigins: []string{"http://localhost:5173", "http://localhost:3000"},
+	}
+	msgStore := &inMemoryMessageStore{}
+	h := hub.NewHub(nil, msgStore)
+	handler := SetupRouter(cfg, nil, h)
+
+	// 1. OPTIONS preflight request
+	req := httptest.NewRequest(http.MethodOptions, "/health", nil)
+	req.Header.Set("Origin", "http://localhost:5173")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Errorf("expected status 204 for OPTIONS preflight, got %d", rec.Code)
+	}
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
+		t.Errorf("expected Access-Control-Allow-Origin 'http://localhost:5173', got %q", got)
+	}
+	if got := rec.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
+		t.Errorf("expected Access-Control-Allow-Credentials 'true', got %q", got)
+	}
+
+	// 2. GET request with Origin header
+	getReq := httptest.NewRequest(http.MethodGet, "/health", nil)
+	getReq.Header.Set("Origin", "http://localhost:5173")
+	getRec := httptest.NewRecorder()
+	handler.ServeHTTP(getRec, getReq)
+
+	if getRec.Code != http.StatusOK {
+		t.Errorf("expected status 200 for GET /health, got %d", getRec.Code)
+	}
+	if got := getRec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
+		t.Errorf("expected Access-Control-Allow-Origin 'http://localhost:5173', got %q", got)
+	}
+}
+</file>
+
+<file path="main.go">
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"younme/realtime/auth"
+	"younme/realtime/config"
+	"younme/realtime/db"
+	"younme/realtime/hub"
+
+	"github.com/gorilla/websocket"
+)
+
+var startTime = time.Now()
+
+// BuildUpgrader creates a Gorilla WebSocket upgrader respecting allowed origins.
+func BuildUpgrader(allowedOrigins []string) websocket.Upgrader {
+	return websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			if len(allowedOrigins) == 0 {
+				return true // Permissive in dev / staging
+			}
+			origin := r.Header.Get("Origin")
+			for _, allowed := range allowedOrigins {
+				if allowed == "*" || allowed == origin {
+					return true
+				}
+			}
+			return false
+		},
+	}
+}
+
+// ExtractToken retrieves the authentication token from query params or Authorization header.
+func ExtractToken(r *http.Request) string {
+	// 1. Check query parameter ?token= or ?access_token=
+	if t := r.URL.Query().Get("token"); strings.TrimSpace(t) != "" {
+		return strings.TrimSpace(t)
+	}
+	if t := r.URL.Query().Get("access_token"); strings.TrimSpace(t) != "" {
+		return strings.TrimSpace(t)
+	}
+
+	// 2. Check Authorization: Bearer <token> header
+	authHeader := r.Header.Get("Authorization")
+	if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+		return strings.TrimSpace(authHeader[7:])
+	}
+
+	// 3. Check Sec-WebSocket-Protocol header fallback
+	if subproto := r.Header.Get("Sec-WebSocket-Protocol"); subproto != "" {
+		parts := strings.Split(subproto, ",")
+		if len(parts) > 0 && strings.TrimSpace(parts[0]) != "" {
+			return strings.TrimSpace(parts[0])
+		}
+	}
+
+	return ""
+}
+
+// SetupRouter constructs the HTTP handler for health checks and authenticated WebSockets.
+func SetupRouter(cfg *config.Config, verifier auth.TokenVerifier, h *hub.Hub) http.Handler {
+	upgrader := BuildUpgrader(cfg.AllowedOrigins)
+	mux := http.NewServeMux()
+
+	// GET /health
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, `{"error":"Method Not Allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+
+		activeConns, activeUsers := h.GetStats()
+		uptimeSecs := int64(time.Since(startTime).Seconds())
+
+		response := map[string]interface{}{
+			"status":             "healthy",
+			"service":            "realtime-go",
+			"uptime_seconds":     uptimeSecs,
+			"active_connections": activeConns,
+			"active_users":       activeUsers,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+	})
+
+	// GET /ws (WebSocket endpoint with Supabase token authentication)
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, `{"error":"Method Not Allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Security Check: Verify authentication token before upgrading
+		token := ExtractToken(r)
+		if token == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error":   "Unauthorized",
+				"message": "Missing authentication token. Provide ?token=<supabase_access_token> or Authorization header.",
+			})
+			return
+		}
+
+		if verifier == nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error":   "Unauthorized",
+				"message": "Supabase authentication is not configured on the server. Configure SUPABASE_URL (and/or SUPABASE_JWT_SECRET).",
+			})
+			return
+		}
+
+		userInfo, err := verifier.VerifyToken(r.Context(), token)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error":   "Unauthorized",
+				"message": "Invalid or expired authentication token",
+			})
+			return
+		}
+
+		// Strictly derive the user's identity from the verified access token
+		verifiedUserID := userInfo.ID
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("[WebSocket] Upgrade handshake error: %v", err)
+			return
+		}
+
+		sessionID := fmt.Sprintf("%s-%d", r.RemoteAddr, time.Now().UnixNano())
+		client := hub.NewClient(sessionID, verifiedUserID, conn, h)
+
+		// Safely register client with Hub
+		h.Register(client)
+
+		// Start dedicated reader and writer pump goroutines
+		go client.WritePump()
+		go client.ReadPump()
+	})
+
+	return WithCORS(mux, cfg.AllowedOrigins)
+}
+
+// WithCORS wraps an http.Handler with CORS headers supporting frontend dev/prod origins.
+func WithCORS(next http.Handler, allowedOrigins []string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		allow := false
+
+		if len(allowedOrigins) == 0 {
+			// Permissive in dev: allow request origin or wildcard
+			allow = true
+		} else {
+			for _, o := range allowedOrigins {
+				if o == "*" || o == origin {
+					allow = true
+					break
+				}
+			}
+		}
+
+		if allow && origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With, apikey, Sec-WebSocket-Protocol")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		} else if allow && origin == "" {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func main() {
+	cfg := config.Load()
+
+	// Initialize PostgreSQL connection pool
+	pool, err := newPgxPool(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("[Go Real-Time Engine] Failed to create database connection pool: %v", err)
+	}
+	defer pool.Close()
+
+	// Initialize Supabase Authentication
+	var verifier auth.TokenVerifier
+	supabaseVerifier, err := auth.NewSupabaseVerifier(cfg)
+	if err != nil {
+		log.Printf("[Go Real-Time Engine] WARNING: Supabase authentication not initialized (%v).", err)
+		log.Println("[Go Real-Time Engine] NOTICE: WebSocket connections will require valid credentials to verify tokens.")
+	} else {
+		verifier = supabaseVerifier
+		log.Println("[Go Real-Time Engine] Supabase access-token verifier initialized successfully.")
+	}
+
+	// Initialize DB repository
+	dbRepo := db.NewMessageStore(pool)
+
+	h := hub.NewHub(pool, dbRepo)
+	router := SetupRouter(cfg, verifier, h)
+
+	server := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	// Graceful shutdown handling
+	stopChan := make(chan os.Signal, 1)
+	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		log.Printf("[Go Real-Time Engine] Starting on :%s (PID: %d)...", cfg.Port, os.Getpid())
+		log.Printf("[Go Real-Time Engine] WebSocket Endpoint: ws://localhost:%s/ws", cfg.Port)
+		log.Printf("[Go Real-Time Engine] Health Check: http://localhost:%s/health", cfg.Port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[Go Real-Time Engine] Server failed to start: %v", err)
+		}
+	}()
+
+	<-stopChan
+	log.Println("[Go Real-Time Engine] Received shutdown signal. Gracefully shutting down...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("[Go Real-Time Engine] Error during server shutdown: %v", err)
+	}
+
+	log.Println("[Go Real-Time Engine] Server stopped gracefully.")
+}
+
+// newPgxPool creates a PostgreSQL connection pool from the DATABASE_URL.
+func newPgxPool(databaseURL string) (*pgxpool.Pool, error) {
+	cfg, err := pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		return nil, err
+	}
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		return nil, err
+	}
+	return pool, nil
+}
+</file>
+
+</files>
