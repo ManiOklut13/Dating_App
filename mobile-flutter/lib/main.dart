@@ -102,7 +102,7 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
               ),
               extensions: const [YoUnMeThemeExtension.dark],
             ),
-            home: const MainShellScreen(),
+              home: const AuthGate(),   
           );
         },
       ),
@@ -131,7 +131,7 @@ class MainShellScreen extends StatefulWidget {
 }
 
 class _MainShellScreenState extends State<MainShellScreen> {
-  int _currentIndex = 2; // Default to Chat tab for immediate verification
+  int _currentIndex = 0; // Default to Chat tab for immediate verification
 
   // Placeholder body widgets for unimplemented tabs
   Widget _placeholder(String label, YoUnMeThemeExtension theme) => Center(
@@ -340,5 +340,37 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
       ),
     );
+  }
+}
+class AuthGate extends ConsumerWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appState = ref.watch(appStateProvider);
+    final notifier = ref.read(appStateProvider.notifier);
+    if (!appState.isAuthenticated) {
+      switch (appState.authScreen) {
+        case AuthScreen.splash:
+          return SplashLandingScreen(
+            onCreateAccount: () =>
+                notifier.setAuthScreen(AuthScreen.onboarding),
+            onSignIn: () => notifier.setAuthScreen(AuthScreen.signin),
+          );
+        case AuthScreen.signin:
+          return SignInScreen(
+            onBack: () => notifier.setAuthScreen(AuthScreen.splash),
+            onLogin: (id, pw) => notifier.setAuthenticated(true),
+            onGoToSignUp: () => notifier.setAuthScreen(AuthScreen.onboarding),
+          );
+        case AuthScreen.onboarding:
+          return OnboardingWizardScreen(
+            onBack: () => notifier.setAuthScreen(AuthScreen.splash),
+            onComplete: (data) => notifier.setAuthenticated(true),
+            onGoToSignIn: () => notifier.setAuthScreen(AuthScreen.signin),
+          );
+      }
+    }
+    return const MainShellScreen();
   }
 }
