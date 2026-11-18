@@ -11,12 +11,17 @@ import {
   UnauthorizedException,
   Logger,
   Optional,
+  SetMetadata,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { SupabaseService } from '../../supabase/supabase.service.js';
 import { DatabaseService } from '../../modules/database/database.service.js';
 import { AuthenticatedUser } from '../../auth/interfaces/authenticated-user.interface.js';
+
+export const IS_OPTIONAL_AUTH_KEY = 'isOptionalAuth';
+export const OptionalAuth = () => SetMetadata(IS_OPTIONAL_AUTH_KEY, true);
 
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
@@ -26,13 +31,22 @@ export class SupabaseAuthGuard implements CanActivate {
     private readonly supabaseService: SupabaseService,
     private readonly configService: ConfigService,
     @Optional() private readonly databaseService?: DatabaseService,
+    @Optional() private readonly reflector?: Reflector,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers?.authorization;
 
+    const isOptional = this.reflector?.getAllAndOverride<boolean>(IS_OPTIONAL_AUTH_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
     if (!authHeader) {
+      if (isOptional) {
+        return true;
+      }
       throw new UnauthorizedException('Authorization header is missing');
     }
 

@@ -2,14 +2,33 @@
  * YoUnMe Dating App — Sign-In Response DTO
  * Returned by POST /v1/auth/signin after the Supabase Auth token is verified.
  */
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SignInUserDto {
-  @ApiProperty({ example: '11111111-1111-1111-1111-111111111111', description: 'Internal PostgreSQL UUID / Supabase UID' })
+  @ApiProperty({
+    example: '11111111-1111-1111-1111-111111111111',
+    description: 'Internal PostgreSQL UUID / Supabase UID',
+  })
   uid: string;
 
-  @ApiProperty({ example: 'user@example.com', nullable: true, description: 'Verified email claim' })
+  @ApiPropertyOptional({
+    example: '11111111-1111-1111-1111-111111111111',
+    description: 'Internal PostgreSQL UUID',
+  })
+  id?: string;
+
+  @ApiProperty({
+    example: 'user@example.com',
+    nullable: true,
+    description: 'Verified email claim',
+  })
   email?: string;
+
+  @ApiPropertyOptional({ example: '+919820011111' })
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'user' })
+  role?: string;
 }
 
 export class SignInResponseDto {
@@ -21,4 +40,7 @@ export class SignInResponseDto {
 
   @ApiProperty({ type: SignInUserDto })
   user: SignInUserDto;
+
+  @ApiPropertyOptional({ description: 'Supabase JWT session data' })
+  session?: any;
 }

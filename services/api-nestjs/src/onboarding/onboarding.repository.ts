@@ -264,27 +264,60 @@ export class PostgresOnboardingRepository implements IOnboardingRepository {
 
         const query = `
           INSERT INTO user_profiles (
-            user_id, nickname, bio, city, gender,
-            is_verified, liveness_verified, profile_progress, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
+            user_id, first_name, nickname, date_of_birth, gender,
+            sexual_orientations, looking_for, languages, interests,
+            bio, profession, education, city, country_code, avatar_object_key,
+            is_verified, verification_status, is_voice_verified, liveness_verified,
+            profile_progress, updated_at
+          ) VALUES (
+            $1, $2, $3, $4, $5,
+            $6, $7, $8, $9,
+            $10, $11, $12, $13, $14, $15,
+            $16, $17, $18, $19,
+            $20, now()
+          )
           ON CONFLICT (user_id) DO UPDATE SET
-            nickname = COALESCE($2, user_profiles.nickname),
-            bio = COALESCE($3, user_profiles.bio),
-            city = COALESCE($4, user_profiles.city),
+            first_name = COALESCE($2, user_profiles.first_name),
+            nickname = COALESCE($3, user_profiles.nickname),
+            date_of_birth = COALESCE($4, user_profiles.date_of_birth),
             gender = COALESCE($5, user_profiles.gender),
-            is_verified = COALESCE($6, user_profiles.is_verified),
-            liveness_verified = COALESCE($7, user_profiles.liveness_verified),
-            profile_progress = COALESCE($8, user_profiles.profile_progress),
+            sexual_orientations = COALESCE($6, user_profiles.sexual_orientations),
+            looking_for = COALESCE($7, user_profiles.looking_for),
+            languages = COALESCE($8, user_profiles.languages),
+            interests = COALESCE($9, user_profiles.interests),
+            bio = COALESCE($10, user_profiles.bio),
+            profession = COALESCE($11, user_profiles.profession),
+            education = COALESCE($12, user_profiles.education),
+            city = COALESCE($13, user_profiles.city),
+            country_code = COALESCE($14, user_profiles.country_code),
+            avatar_object_key = COALESCE($15, user_profiles.avatar_object_key),
+            is_verified = COALESCE($16, user_profiles.is_verified),
+            verification_status = COALESCE($17, user_profiles.verification_status),
+            is_voice_verified = COALESCE($18, user_profiles.is_voice_verified),
+            liveness_verified = COALESCE($19, user_profiles.liveness_verified),
+            profile_progress = COALESCE($20, user_profiles.profile_progress),
             updated_at = now()
           RETURNING *;
         `;
         const res = await this.dbService.query(query, [
           userId,
+          merged.first_name || null,
           merged.nickname || 'User',
-          merged.bio || null,
-          merged.city || null,
+          merged.date_of_birth || null,
           merged.gender || null,
+          merged.sexual_orientations || [],
+          merged.looking_for || [],
+          merged.languages || [],
+          merged.interests || [],
+          merged.bio || null,
+          merged.profession || null,
+          merged.education || null,
+          merged.city || null,
+          merged.country_code || null,
+          merged.avatar_object_key || null,
           merged.is_verified ?? false,
+          merged.verification_status || 'not_started',
+          merged.is_voice_verified ?? false,
           merged.liveness_verified ?? false,
           merged.profile_progress ?? 0,
         ]);
@@ -293,6 +326,10 @@ export class PostgresOnboardingRepository implements IOnboardingRepository {
           this.fallback.upsertProfile(userId, partial);
           return {
             ...row,
+            sexual_orientations: row.sexual_orientations || [],
+            looking_for: row.looking_for || [],
+            languages: row.languages || [],
+            interests: row.interests || [],
             profile_progress: row.profile_progress ?? 0,
             is_verified: !!row.is_verified,
             liveness_verified: !!row.liveness_verified,

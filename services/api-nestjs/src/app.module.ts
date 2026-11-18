@@ -19,11 +19,13 @@ import { AuthModule } from './auth/auth.module.js';
 import { OnboardingModule } from './onboarding/onboarding.module.js';
 import { DiscoveryModule } from './modules/discovery/discovery.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
+import { DatesModule } from './modules/dates/dates.module.js';
 import { CallsModule } from './modules/calls/calls.module.js';
 import { WalletModule } from './modules/wallet/wallet.module.js';
 import { HomeModule } from './modules/home/home.module.js';
 import { WorkerModule } from './modules/worker/worker.module.js';
 import { MeetupModule } from './modules/meetup/meetup.module.js';
+import { ProfileModule } from './modules/profile/profile.module.js';
 
 @Module({
   imports: [
@@ -45,6 +47,7 @@ import { MeetupModule } from './modules/meetup/meetup.module.js';
     HomeModule,
     WorkerModule,
     MeetupModule,
+    ProfileModule,
   ],
   controllers: [AppController, HealthController],
 })

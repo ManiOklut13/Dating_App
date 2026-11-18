@@ -61,4 +61,97 @@ export class ChatController {
       sender_id: effectiveSenderId,
     });
   }
+
+  // ── Conversation & Messaging Endpoints ────────────────────────────────
+
+  @Get('conversations')
+  getConversations(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('user_id') userId?: string,
+  ) {
+    const effectiveUserId = userId || user?.id || user?.uid;
+    return this.chatService.getConversations(effectiveUserId);
+  }
+
+  @Get('conversations/:conversationId/messages')
+  getConversationMessages(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('conversationId') conversationId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const effectiveUserId = user?.id || user?.uid || '';
+    return this.chatService.getConversationMessages(
+      effectiveUserId,
+      conversationId,
+      page ? Number(page) : undefined,
+      limit ? Number(limit) : undefined,
+    );
+  }
+
+  @Post('conversations/:conversationId/messages')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  sendConversationMessage(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('conversationId') conversationId: string,
+    @Body() body: SendMessageDto,
+  ) {
+    const effectiveSenderId = body.sender_id || user?.id || user?.uid;
+    return this.chatService.sendConversationMessage(
+      conversationId,
+      {
+        ...body,
+        sender_id: effectiveSenderId,
+      },
+    );
+  }
+
+  @Get('icebreakers')
+  getIcebreakers() {
+    return this.chatService.getIcebreakers();
+  }
+
+  @Get('conversations/:conversationId/call-history')
+  getCallHistory(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('conversationId') conversationId: string,
+  ) {
+    const effectiveUserId = user?.id || user?.uid || '';
+    return this.chatService.getCallHistory(conversationId, effectiveUserId);
+  }
+
+  @Post('conversations/:conversationId/calls/initiate')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  initiateCall(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('conversationId') conversationId: string,
+    @Body() body: { call_type: 'audio' | 'video'; duration_seconds?: number },
+  ) {
+    const effectiveUserId = user?.id || user?.uid || '';
+    return this.chatService.initiateCall(
+      conversationId,
+      effectiveUserId,
+      body.call_type,
+      body.duration_seconds,
+    );
+  }
+
+  @Post('conversations/:conversationId/settings/action')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  chatSettingsAction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('conversationId') conversationId: string,
+    @Body() body: {
+      action: 'block' | 'restrict' | 'report' | 'unmatch';
+      reason?: string;
+    },
+  ) {
+    const effectiveUserId = user?.id || user?.uid || '';
+    return this.chatService.chatSettingsAction(
+      conversationId,
+      effectiveUserId,
+      body.action,
+      body.reason,
+    );
+  }
 }

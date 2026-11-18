@@ -19,6 +19,7 @@ import {
 } from '@nestjs/common';
 import { OnboardingService } from './onboarding.service.js';
 import { OnboardingWizardDto } from './dto/onboarding-wizard.dto.js';
+import { DemographicsDto } from './dto/demographics.dto.js';
 import {
   IWizardResponse,
   IOnboardingStatusResponse,
@@ -31,6 +32,21 @@ import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interfa
 @UseGuards(SupabaseAuthGuard)
 export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
+
+  /**
+   * POST /v1/onboarding/demographics
+   * Saves name, nickname, DOB (validates >18 yrs), gender, orientation, and interests.
+   */
+  @Post('demographics')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  public async saveDemographics(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: DemographicsDto,
+  ) {
+    const userId = user?.id || user?.uid;
+    return this.onboardingService.saveDemographics(userId, dto);
+  }
 
   /**
    * POST /v1/onboarding/wizard

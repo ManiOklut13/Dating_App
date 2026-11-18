@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ChatController } from './chat.controller.js';
+import { RequestsController } from './requests.controller.js';
 import { ChatService } from './chat.service.js';
 import { ContactGuardService } from './contact-guard.service.js';
 import { MeetupModule } from '../meetup/meetup.module.js';
 
 @Module({
   imports: [MeetupModule],
-  controllers: [ChatController],
+  controllers: [ChatController, RequestsController],
   providers: [ChatService, ContactGuardService],
   exports: [ChatService, MeetupModule],
 })

@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { OnboardingService } from './onboarding.service.js';
 import { ONBOARDING_REPOSITORY_TOKEN } from './onboarding.repository.js';
@@ -218,6 +218,42 @@ describe('OnboardingService', () => {
 
       const persisted = upsertProfileMock.mock.calls[0][1];
       expect(persisted.is_verified).toBeUndefined();
+    });
+  });
+
+  describe('saveDemographics', () => {
+    it('should save demographics successfully when age is >= 18', async () => {
+      const result = await service.saveDemographics(DEMO_USER_ID, {
+        nickname: 'Aarav',
+        first_name: 'Aarav Mehta',
+        date_of_birth: '2000-01-15',
+        gender: 'male',
+        sexual_orientations: ['straight'],
+        interests: ['travel', 'coffee'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.profile_progress).toBeGreaterThan(0);
+      expect(result.profile.nickname).toBe('Aarav');
+      expect(result.profile.date_of_birth).toBe('2000-01-15');
+      expect(upsertProfileMock).toHaveBeenCalled();
+    });
+
+    it('should reject with BadRequestException when user is under 18', async () => {
+      // Calculate a DOB that is 16 years ago
+      const underageDate = new Date();
+      underageDate.setFullYear(underageDate.getFullYear() - 16);
+      const dobStr = underageDate.toISOString().split('T')[0];
+
+      await expect(
+        service.saveDemographics(DEMO_USER_ID, {
+          nickname: 'Youngster',
+          date_of_birth: dobStr,
+          gender: 'male',
+          sexual_orientations: ['straight'],
+          interests: ['gaming'],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

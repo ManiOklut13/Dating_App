@@ -160,7 +160,7 @@ export interface ChatRoom {
   match_id?: string;
   request_sender_id?: string;
   request_receiver_id?: string;
-  request_status?: 'pending' | 'accepted' | 'declined';
+  request_status?: 'pending' | 'accepted' | 'declined' | 'restricted';
   contact_share_unlocked: boolean;
   last_message_at?: string;
   created_at: string;
@@ -246,6 +246,21 @@ export interface WalletTransaction {
 }
 
 // ==========================================
+// 8b. user_blocks_reports
+// ==========================================
+export interface UserBlockReport {
+  id: string;
+  actor_user_id: string;
+  target_user_id: string;
+  action_type: 'block' | 'report' | 'restrict';
+  action_location: string;
+  reason_category?: string;
+  description?: string;
+  status: 'open' | 'actioned' | 'dismissed';
+  created_at: string;
+}
+
+// ==========================================
 // 9. Discovery candidate card (projected from user_profiles + user_photos)
 // ==========================================
 export interface CandidateCard {
@@ -327,6 +342,7 @@ class DatabaseStore {
   public wallets: Map<string, UserWallet> = new Map();
   public transactions: WalletTransaction[] = [];
   public calls: Map<string, CallSessionRecord> = new Map();
+  public blocksReports: UserBlockReport[] = [];
 
   constructor() {
     this.seedDefaults();
@@ -919,6 +935,29 @@ class DatabaseStore {
       }
     }
     return { success: false };
+  }
+
+  public isUserBlocked(userA: string, userB: string): boolean {
+    return this.blocksReports.some(
+      (b) =>
+        ((b.actor_user_id === userA && b.target_user_id === userB) ||
+          (b.actor_user_id === userB && b.target_user_id === userA)) &&
+        b.action_type === 'block' &&
+        b.status === 'open',
+    );
+  }
+
+  public getActiveMatch(userA: string, userB: string): Match | undefined {
+    for (const match of this.matches.values()) {
+      if (
+        ((match.user_a_id === userA && match.user_b_id === userB) ||
+          (match.user_a_id === userB && match.user_b_id === userA)) &&
+        match.status === 'active'
+      ) {
+        return match;
+      }
+    }
+    return undefined;
   }
 }
 

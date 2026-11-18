@@ -3,7 +3,7 @@
  * Handles business logic, 8-step completion scoring, and Blue Tick auto-awarding rules.
  */
 
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import {
   IOnboardingRepository,
   IProfileState,
@@ -13,6 +13,7 @@ import {
   Gender,
 } from './interfaces/onboarding.interface.js';
 import { OnboardingWizardDto } from './dto/onboarding-wizard.dto.js';
+import { DemographicsDto } from './dto/demographics.dto.js';
 import { ONBOARDING_REPOSITORY_TOKEN } from './onboarding.repository.js';
 
 export const DEFAULT_DEMO_USER_ID = '11111111-1111-1111-1111-111111111111';
@@ -192,6 +193,93 @@ export class OnboardingService {
       profile: savedProfile,
       user: user || undefined,
       breakdown,
+    };
+  }
+
+  /**
+   * POST /v1/onboarding/demographics
+   * Saves name, nickname, DOB (validates >18 yrs), gender, orientation, and interests.
+   */
+  public async saveDemographics(
+    userId: string,
+    dto: DemographicsDto,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    profile_progress: number;
+    breakdown: IProgressBreakdown;
+    profile: IProfileState;
+  }> {
+    const targetUserId = userId || DEFAULT_DEMO_USER_ID;
+    const dobStr = dto.date_of_birth || dto.dob;
+
+    if (!dobStr) {
+      throw new BadRequestException('date_of_birth is required');
+    }
+
+    // Validate DOB (> 18 years)
+    const dob = new Date(dobStr);
+    if (isNaN(dob.getTime())) {
+      throw new BadRequestException(
+        'Invalid date_of_birth format. Expected ISO-8601 (YYYY-MM-DD)',
+      );
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    if (age < 18) {
+      throw new BadRequestException('User must be at least 18 years of age');
+    }
+
+    const orientations: string[] = Array.isArray(dto.sexual_orientations)
+      ? dto.sexual_orientations
+      : dto.orientation
+        ? Array.isArray(dto.orientation)
+          ? dto.orientation
+          : [dto.orientation]
+        : [];
+
+    const existingProfile = await this.repository.findProfileByUserId(targetUserId);
+
+    const profileUpdate: Partial<IProfileState> = {
+      user_id: targetUserId,
+      nickname: dto.nickname,
+      first_name: dto.first_name || dto.name || existingProfile?.first_name,
+      date_of_birth: dobStr,
+      gender: dto.gender as Gender,
+      sexual_orientations: orientations,
+      interests: dto.interests || [],
+    };
+
+    const photoCount = await this.repository.countPhotos(targetUserId);
+    const mergedForScoring: Partial<IProfileState> = {
+      ...(existingProfile || {}),
+      ...profileUpdate,
+    };
+
+    const { total: progress, breakdown } = this.calculateProgress(
+      mergedForScoring,
+      photoCount,
+    );
+
+    profileUpdate.profile_progress = progress;
+
+    const savedProfile = await this.repository.upsertProfile(
+      targetUserId,
+      profileUpdate,
+    );
+
+    return {
+      success: true,
+      message: 'Demographics saved successfully',
+      profile_progress: progress,
+      breakdown,
+      profile: savedProfile,
     };
   }
 

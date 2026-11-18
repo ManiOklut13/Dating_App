@@ -8,8 +8,12 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { SupabaseAuthGuard } from './guards/supabase-auth.guard.js';
+import { SupabaseModule } from '../supabase/supabase.module.js';
+import { DatabaseModule } from '../modules/database/database.module.js';
+import { RedisModule } from '../modules/redis/redis.module.js';
 
 @Module({
+  imports: [SupabaseModule, DatabaseModule, RedisModule],
   controllers: [AuthController],
   providers: [AuthService, SupabaseAuthGuard],
   exports: [AuthService, SupabaseAuthGuard],
