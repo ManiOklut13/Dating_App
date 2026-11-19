@@ -165,8 +165,8 @@ func (h *Hub) deliverPendingMessages(c *Client) error {
 	// Send each pending message to the client
 	for _, msg := range toDeliver {
 		outbound := OutboundMessage{
-			Event:     EventChatMessage,
-			FromUID:   msg.SenderID,
+			Event:   EventChatMessage,
+			FromUID: msg.SenderID,
 			Payload: map[string]interface{}{
 				"body":       msg.RawContent,
 				"conv_id":    msg.RoomID,
@@ -559,35 +559,35 @@ func (h *Hub) HandleInbound(c *Client, inbound InboundMessage) {
 		// Deliver date invitation to recipient if online
 		if h.IsUserOnline(invite.RecipientID) {
 			inviteOutbound := OutboundMessage{
-				Event:   EventDateInvitation,
-				FromUID: invite.ProposerID,
-				Payload: invite,
+				Event:     EventDateInvitation,
+				FromUID:   invite.ProposerID,
+				Payload:   invite,
 				Timestamp: now,
 			}
 			_ = h.SendToUser(invite.RecipientID, inviteOutbound)
 			_ = c.SendJSON(OutboundMessage{
-					Event: EventDeliveryAck,
-					Payload: map[string]interface{}{
-						"recipient_id": invite.RecipientID,
-						"invitation_id": invite.InvitationID,
-						"status":       "sent",
-					},
-					Timestamp: now,
-				})
+				Event: EventDeliveryAck,
+				Payload: map[string]interface{}{
+					"recipient_id":  invite.RecipientID,
+					"invitation_id": invite.InvitationID,
+					"status":        "sent",
+				},
+				Timestamp: now,
+			})
 		} else {
 			// Recipient is offline - message is persisted and will be delivered on reconnect
 			_ = c.SendJSON(OutboundMessage{
-					Event: EventUndelivered,
-					Payload: map[string]interface{}{
-						"recipient_id": invite.RecipientID,
-						"invitation_id": invite.InvitationID,
-						"reason":       "user_offline",
-					},
-					Timestamp: now,
-				})
+				Event: EventUndelivered,
+				Payload: map[string]interface{}{
+					"recipient_id":  invite.RecipientID,
+					"invitation_id": invite.InvitationID,
+					"reason":        "user_offline",
+				},
+				Timestamp: now,
+			})
 		}
 
-	case EventCallSignal, EventCallGameMove:
+	case EventCallSignal, EventCallGameMove, EventCallAccepted, EventCallRejected, EventCallEnded:
 		outbound := OutboundMessage{
 			Channel:   inbound.Channel,
 			Event:     inbound.Event,

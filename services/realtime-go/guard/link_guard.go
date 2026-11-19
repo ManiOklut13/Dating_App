@@ -28,16 +28,16 @@ var homoglyphs = map[rune]rune{
 
 // numberWords maps English number words (zero through nine) to true for detection.
 var numberWords = map[string]bool{
-	"zero": true,
-	"one":  true,
-	"two":  true,
+	"zero":  true,
+	"one":   true,
+	"two":   true,
 	"three": true,
-	"four": true,
-	"five": true,
-	"six":  true,
+	"four":  true,
+	"five":  true,
+	"six":   true,
 	"seven": true,
 	"eight": true,
-	"nine": true,
+	"nine":  true,
 }
 
 // Normalizes text by mapping homoglyphs and stripping non-alphanumeric separators

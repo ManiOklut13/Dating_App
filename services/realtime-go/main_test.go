@@ -3,13 +3,17 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/livekit/protocol/livekit"
 	"younme/realtime/auth"
+	"younme/realtime/calling"
 	"younme/realtime/config"
 	"younme/realtime/db"
 	"younme/realtime/hub"
@@ -296,5 +300,142 @@ func TestCORS_PreflightAndHeaders(t *testing.T) {
 	}
 	if got := getRec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
 		t.Errorf("expected Access-Control-Allow-Origin 'http://localhost:5173', got %q", got)
+	}
+}
+
+// mockLKForMainTest implements calling.LiveKitClient for HTTP router tests.
+type mockLKForMainTest struct{}
+
+func (m *mockLKForMainTest) CreateToken(roomName, identity, name string, canPublish, canSubscribe bool, ttl time.Duration) (string, error) {
+	return "mock.livekit.jwt.token", nil
+}
+func (m *mockLKForMainTest) CreateRoom(_ context.Context, _ string, _, _ uint32) (*livekit.Room, error) {
+	return &livekit.Room{Name: "test-room"}, nil
+}
+func (m *mockLKForMainTest) DeleteRoom(_ context.Context, _ string) error {
+	return nil
+}
+func (m *mockLKForMainTest) RemoveParticipant(_ context.Context, _, _ string) error {
+	return nil
+}
+func (m *mockLKForMainTest) ListParticipants(_ context.Context, _ string) ([]*livekit.ParticipantInfo, error) {
+	return nil, nil
+}
+func (m *mockLKForMainTest) ReceiveWebhook(r *http.Request) (*livekit.WebhookEvent, error) {
+	if r.Header.Get("Authorization") == "bad-sig" {
+		return nil, errors.New("invalid signature")
+	}
+	return &livekit.WebhookEvent{Event: "room_finished"}, nil
+}
+
+func TestCallsAPI_InitiateTokenEnd(t *testing.T) {
+	cfg := &config.Config{
+		Port:         "8081",
+		LiveKitWSURL: "wss://test.livekit.cloud",
+	}
+	mockVerifier := auth.NewMockVerifier(map[string]*auth.UserInfo{
+		"token-alice": {
+			ID:   "user-alice",
+			Role: "authenticated",
+		},
+		"token-bob": {
+			ID:   "user-bob",
+			Role: "authenticated",
+		},
+		"token-eve": {
+			ID:   "user-eve",
+			Role: "authenticated",
+		},
+	})
+	h := hub.NewHub(nil, &inMemoryMessageStore{})
+	callStore := calling.NewMemoryCallStore()
+	callSvc := calling.NewCallService(&mockLKForMainTest{}, callStore, h, cfg.LiveKitWSURL)
+	handler := SetupRouterWithCalling(cfg, mockVerifier, h, callSvc)
+
+	// 1. Missing Auth Token -> 401
+	initReq := httptest.NewRequest(http.MethodPost, "/v1/calls/initiate", strings.NewReader(`{"callee_id":"user-bob"}`))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, initReq)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for unauthenticated request, got %d", rec.Code)
+	}
+
+	// 2. Caller calling self -> 400
+	selfReq := httptest.NewRequest(http.MethodPost, "/v1/calls/initiate", strings.NewReader(`{"callee_id":"user-alice"}`))
+	selfReq.Header.Set("Authorization", "Bearer token-alice")
+	selfRec := httptest.NewRecorder()
+	handler.ServeHTTP(selfRec, selfReq)
+	if selfRec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for self-call, got %d", selfRec.Code)
+	}
+
+	// 3. Successful Initiate -> 200
+	successReq := httptest.NewRequest(http.MethodPost, "/v1/calls/initiate", strings.NewReader(`{"callee_id":"user-bob","call_type":"video"}`))
+	successReq.Header.Set("Authorization", "Bearer token-alice")
+	successRec := httptest.NewRecorder()
+	handler.ServeHTTP(successRec, successReq)
+	if successRec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for initiate call, got %d: %s", successRec.Code, successRec.Body.String())
+	}
+
+	var initResp calling.InitiateCallResponse
+	if err := json.NewDecoder(successRec.Body).Decode(&initResp); err != nil {
+		t.Fatalf("failed to decode initiate response: %v", err)
+	}
+	if initResp.CallID == "" || initResp.LiveKitToken == "" {
+		t.Fatalf("expected non-empty CallID and LiveKitToken, got %+v", initResp)
+	}
+
+	// 4. Unauthorized User (Eve) requests token -> 403 Forbidden
+	eveReq := httptest.NewRequest(http.MethodPost, "/v1/calls/token", strings.NewReader(fmt.Sprintf(`{"call_id":"%s"}`, initResp.CallID)))
+	eveReq.Header.Set("Authorization", "Bearer token-eve")
+	eveRec := httptest.NewRecorder()
+	handler.ServeHTTP(eveRec, eveReq)
+	if eveRec.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for unauthorized user token request, got %d", eveRec.Code)
+	}
+
+	// 5. Authorized Callee (Bob) requests token -> 200 OK
+	bobReq := httptest.NewRequest(http.MethodPost, "/v1/calls/token", strings.NewReader(fmt.Sprintf(`{"call_id":"%s"}`, initResp.CallID)))
+	bobReq.Header.Set("Authorization", "Bearer token-bob")
+	bobRec := httptest.NewRecorder()
+	handler.ServeHTTP(bobRec, bobReq)
+	if bobRec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for authorized callee, got %d: %s", bobRec.Code, bobRec.Body.String())
+	}
+
+	// 6. Authorized Caller (Alice) ends call -> 200 OK
+	endReq := httptest.NewRequest(http.MethodPost, "/v1/calls/end", strings.NewReader(fmt.Sprintf(`{"call_id":"%s","reason":"hangup"}`, initResp.CallID)))
+	endReq.Header.Set("Authorization", "Bearer token-alice")
+	endRec := httptest.NewRecorder()
+	handler.ServeHTTP(endRec, endReq)
+	if endRec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for end call, got %d: %s", endRec.Code, endRec.Body.String())
+	}
+}
+
+func TestCallsAPI_Webhook(t *testing.T) {
+	cfg := &config.Config{Port: "8081"}
+	h := hub.NewHub(nil, &inMemoryMessageStore{})
+	callStore := calling.NewMemoryCallStore()
+	callSvc := calling.NewCallService(&mockLKForMainTest{}, callStore, h, "wss://test.livekit.cloud")
+	handler := SetupRouterWithCalling(cfg, nil, h, callSvc)
+
+	// 1. Invalid webhook signature -> 401
+	badReq := httptest.NewRequest(http.MethodPost, "/v1/calls/webhook", strings.NewReader(`{}`))
+	badReq.Header.Set("Authorization", "bad-sig")
+	badRec := httptest.NewRecorder()
+	handler.ServeHTTP(badRec, badReq)
+	if badRec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for invalid webhook signature, got %d", badRec.Code)
+	}
+
+	// 2. Valid webhook signature -> 200
+	goodReq := httptest.NewRequest(http.MethodPost, "/v1/calls/webhook", strings.NewReader(`{}`))
+	goodReq.Header.Set("Authorization", "valid-sig")
+	goodRec := httptest.NewRecorder()
+	handler.ServeHTTP(goodRec, goodReq)
+	if goodRec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for valid webhook, got %d", goodRec.Code)
 	}
 }

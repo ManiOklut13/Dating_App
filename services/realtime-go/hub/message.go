@@ -8,24 +8,28 @@ import (
 
 // Supported real-time event types
 const (
-	EventChatMessage      = "chat:message"
-	EventDirectMessage    = "direct:message"
-	EventSubscribe        = "subscribe"
-	EventUnsubscribe      = "unsubscribe"
-	EventTyping           = "typing"
-	EventPresenceOnline   = "presence:online"
-	EventPresenceOffline  = "presence:offline"
-	EventGuardBlocked     = "guard:blocked"
-	EventError            = "error"
-	EventDeliveryAck      = "chat:delivered"
-	EventUndelivered      = "chat:undelivered"
-	EventCallSignal       = "call:signal"
-	EventCallGameMove     = "call:game_move"
-	EventPendingMessages  = "pending:messages"
-	EventMessageAck       = "message:ack"
-	EventDateInvitation   = "date:invitation"
+	EventChatMessage     = "chat:message"
+	EventDirectMessage   = "direct:message"
+	EventSubscribe       = "subscribe"
+	EventUnsubscribe     = "unsubscribe"
+	EventTyping          = "typing"
+	EventPresenceOnline  = "presence:online"
+	EventPresenceOffline = "presence:offline"
+	EventGuardBlocked    = "guard:blocked"
+	EventError           = "error"
+	EventDeliveryAck     = "chat:delivered"
+	EventUndelivered     = "chat:undelivered"
+	EventCallSignal      = "call:signal"
+	EventCallGameMove    = "call:game_move"
+	EventCallIncoming    = "call:incoming"
+	EventCallAccepted    = "call:accepted"
+	EventCallRejected    = "call:rejected"
+	EventCallEnded       = "call:ended"
+	EventCallMissed      = "call:missed"
+	EventPendingMessages = "pending:messages"
+	EventMessageAck      = "message:ack"
+	EventDateInvitation  = "date:invitation"
 )
-
 
 // InboundMessage represents a validated client-sent WebSocket frame.
 type InboundMessage struct {
@@ -60,6 +64,28 @@ type DateInvitePayload struct {
 	DateType     string `json:"date_type"`
 	ScheduledAt  string `json:"scheduled_at"`
 	Message      string `json:"message"`
+}
+
+// CallIncomingPayload represents an incoming call notification pushed to callee.
+type CallIncomingPayload struct {
+	CallID       string `json:"call_id"`
+	CallerID     string `json:"caller_id"`
+	CallerName   string `json:"caller_name,omitempty"`
+	CallerAvatar string `json:"caller_avatar,omitempty"`
+	RoomName     string `json:"room_name"`
+	CallType     string `json:"call_type"` // "audio" or "video"
+	MatchID      string `json:"match_id,omitempty"`
+	CreatedAt    int64  `json:"created_at"`
+}
+
+// CallStatusPayload represents status updates (accepted, rejected, ended, missed).
+type CallStatusPayload struct {
+	CallID    string `json:"call_id"`
+	RoomName  string `json:"room_name,omitempty"`
+	UserID    string `json:"user_id,omitempty"`
+	Reason    string `json:"reason,omitempty"`
+	Duration  int    `json:"duration_seconds,omitempty"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 // OutboundMessage represents an envelope pushed to connected clients.

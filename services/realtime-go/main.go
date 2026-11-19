@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"younme/realtime/auth"
+	"younme/realtime/calling"
 	"younme/realtime/config"
 	"younme/realtime/db"
 	"younme/realtime/hub"
@@ -71,8 +73,60 @@ func ExtractToken(r *http.Request) string {
 	return ""
 }
 
-// SetupRouter constructs the HTTP handler for health checks and authenticated WebSockets.
+func writeJSONResponse(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(data)
+}
+
+func writeJSONError(w http.ResponseWriter, status int, message string) {
+	writeJSONResponse(w, status, map[string]string{
+		"error":   http.StatusText(status),
+		"message": message,
+	})
+}
+
+func authenticateRequest(r *http.Request, verifier auth.TokenVerifier) (*auth.UserInfo, error) {
+	token := ExtractToken(r)
+	if token == "" {
+		return nil, auth.ErrMissingToken
+	}
+	if verifier == nil {
+		return nil, auth.ErrNotConfigured
+	}
+	userInfo, err := verifier.VerifyToken(r.Context(), token)
+	if err != nil {
+		return nil, err
+	}
+	if userInfo.Role != "authenticated" {
+		return nil, auth.ErrInvalidRole
+	}
+	return userInfo, nil
+}
+
+func writeAuthError(w http.ResponseWriter, err error) {
+	status := http.StatusUnauthorized
+	if errors.Is(err, auth.ErrInvalidRole) {
+		status = http.StatusForbidden
+	}
+	writeJSONError(w, status, err.Error())
+}
+
+// SetupRouter constructs the default HTTP handler for health checks, calling, and WebSockets.
 func SetupRouter(cfg *config.Config, verifier auth.TokenVerifier, h *hub.Hub) http.Handler {
+	var callSvc *calling.CallService
+	if cfg != nil && cfg.LiveKitAPIKey != "" && cfg.LiveKitAPISecret != "" {
+		lkClient, err := calling.NewLiveKitClient(cfg.LiveKitURL, cfg.LiveKitAPIKey, cfg.LiveKitAPISecret)
+		if err == nil {
+			callStore := calling.NewCallStore(nil)
+			callSvc = calling.NewCallService(lkClient, callStore, h, cfg.LiveKitWSURL)
+		}
+	}
+	return SetupRouterWithCalling(cfg, verifier, h, callSvc)
+}
+
+// SetupRouterWithCalling constructs the HTTP handler with an explicit CallService.
+func SetupRouterWithCalling(cfg *config.Config, verifier auth.TokenVerifier, h *hub.Hub, callSvc *calling.CallService) http.Handler {
 	upgrader := BuildUpgrader(cfg.AllowedOrigins)
 	mux := http.NewServeMux()
 
@@ -92,11 +146,156 @@ func SetupRouter(cfg *config.Config, verifier auth.TokenVerifier, h *hub.Hub) ht
 			"uptime_seconds":     uptimeSecs,
 			"active_connections": activeConns,
 			"active_users":       activeUsers,
+			"livekit_configured": callSvc != nil,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
+	})
+
+	// POST /v1/calls/initiate - Starts a LiveKit room, generates caller token, notifies callee via WS
+	mux.HandleFunc("/v1/calls/initiate", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, `{"error":"Method Not Allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+
+		if callSvc == nil {
+			writeJSONError(w, http.StatusServiceUnavailable, "LiveKit calling service is not configured")
+			return
+		}
+
+		user, err := authenticateRequest(r, verifier)
+		if err != nil {
+			writeAuthError(w, err)
+			return
+		}
+
+		var req calling.InitiateCallRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSONError(w, http.StatusBadRequest, "Invalid request body format")
+			return
+		}
+
+		resp, err := callSvc.InitiateCall(r.Context(), user.ID, &req)
+		if err != nil {
+			if errors.Is(err, calling.ErrSelfCall) || errors.Is(err, calling.ErrInvalidCallType) || errors.Is(err, calling.ErrMissingRecipient) {
+				writeJSONError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			writeJSONError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		writeJSONResponse(w, http.StatusOK, resp)
+	})
+
+	// POST /v1/calls/token - Generates a LiveKit join token for authorized participant (caller or callee)
+	mux.HandleFunc("/v1/calls/token", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, `{"error":"Method Not Allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+
+		if callSvc == nil {
+			writeJSONError(w, http.StatusServiceUnavailable, "LiveKit calling service is not configured")
+			return
+		}
+
+		user, err := authenticateRequest(r, verifier)
+		if err != nil {
+			writeAuthError(w, err)
+			return
+		}
+
+		var req calling.GetTokenRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSONError(w, http.StatusBadRequest, "Invalid request body format")
+			return
+		}
+
+		resp, err := callSvc.GetParticipantToken(r.Context(), user.ID, &req)
+		if err != nil {
+			if errors.Is(err, calling.ErrUnauthorizedCall) {
+				writeJSONError(w, http.StatusForbidden, err.Error())
+				return
+			}
+			if errors.Is(err, calling.ErrCallNotFound) {
+				writeJSONError(w, http.StatusNotFound, err.Error())
+				return
+			}
+			writeJSONError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		writeJSONResponse(w, http.StatusOK, resp)
+	})
+
+	// POST /v1/calls/end - Terminates room on LiveKit and notifies the other participant
+	mux.HandleFunc("/v1/calls/end", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, `{"error":"Method Not Allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+
+		if callSvc == nil {
+			writeJSONError(w, http.StatusServiceUnavailable, "LiveKit calling service is not configured")
+			return
+		}
+
+		user, err := authenticateRequest(r, verifier)
+		if err != nil {
+			writeAuthError(w, err)
+			return
+		}
+
+		var req calling.EndCallRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSONError(w, http.StatusBadRequest, "Invalid request body format")
+			return
+		}
+
+		resp, err := callSvc.EndCall(r.Context(), user.ID, &req)
+		if err != nil {
+			if errors.Is(err, calling.ErrUnauthorizedCall) {
+				writeJSONError(w, http.StatusForbidden, err.Error())
+				return
+			}
+			if errors.Is(err, calling.ErrCallNotFound) {
+				writeJSONError(w, http.StatusNotFound, err.Error())
+				return
+			}
+			writeJSONError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		writeJSONResponse(w, http.StatusOK, resp)
+	})
+
+	// POST /v1/calls/webhook - LiveKit Cloud Webhook Handler with cryptographic signature verification
+	mux.HandleFunc("/v1/calls/webhook", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, `{"error":"Method Not Allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+
+		if callSvc == nil {
+			writeJSONError(w, http.StatusServiceUnavailable, "LiveKit calling service is not configured")
+			return
+		}
+
+		event, err := callSvc.HandleWebhook(r.Context(), r)
+		if err != nil {
+			log.Printf("[LiveKit Webhook] Signature verification or parsing failed: %v", err)
+			writeJSONError(w, http.StatusUnauthorized, "Webhook signature verification failed")
+			return
+		}
+
+		writeJSONResponse(w, http.StatusOK, map[string]interface{}{
+			"status": "ok",
+			"event":  event.Event,
+		})
 	})
 
 	// POST /v1/date-invitation - NestJS notifies Go of date invitation creation/status
@@ -155,16 +354,16 @@ func SetupRouter(cfg *config.Config, verifier auth.TokenVerifier, h *hub.Hub) ht
 
 		// Parse the invitation event payload
 		var dateInvite struct {
-			Event         string `json:"event"`
-			InvitationID  string `json:"invitation_id"`
-			MatchID       string `json:"match_id"`
-			ProposerID    string `json:"proposer_id"`
-			RecipientID   string `json:"recipient_id"`
-			Status        string `json:"status"`
-			DateMode      string `json:"date_mode"`
-			DateType      string `json:"date_type"`
-			ScheduledAt   string `json:"scheduled_at"`
-			Message       string `json:"message"`
+			Event        string `json:"event"`
+			InvitationID string `json:"invitation_id"`
+			MatchID      string `json:"match_id"`
+			ProposerID   string `json:"proposer_id"`
+			RecipientID  string `json:"recipient_id"`
+			Status       string `json:"status"`
+			DateMode     string `json:"date_mode"`
+			DateType     string `json:"date_type"`
+			ScheduledAt  string `json:"scheduled_at"`
+			Message      string `json:"message"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&dateInvite); err != nil {
@@ -211,7 +410,7 @@ func SetupRouter(cfg *config.Config, verifier auth.TokenVerifier, h *hub.Hub) ht
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(map[string]string{
-				"status": "ok",
+				"status":  "ok",
 				"message": "Date invitation accepted",
 			})
 		case "declined":
@@ -219,7 +418,7 @@ func SetupRouter(cfg *config.Config, verifier auth.TokenVerifier, h *hub.Hub) ht
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(map[string]string{
-				"status": "ok",
+				"status":  "ok",
 				"message": "Date invitation declined",
 			})
 		default:
@@ -235,7 +434,7 @@ func SetupRouter(cfg *config.Config, verifier auth.TokenVerifier, h *hub.Hub) ht
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"status": "ok",
+			"status":  "ok",
 			"message": "Date invitation processed",
 		})
 	})
@@ -364,7 +563,23 @@ func main() {
 	dbRepo := db.NewMessageStore(pool)
 
 	h := hub.NewHub(pool, dbRepo)
-	router := SetupRouter(cfg, verifier, h)
+
+	// Initialize LiveKit Calling Service
+	callStore := calling.NewCallStore(pool)
+	var callService *calling.CallService
+	if cfg.LiveKitAPIKey != "" && cfg.LiveKitAPISecret != "" {
+		lkClient, err := calling.NewLiveKitClient(cfg.LiveKitURL, cfg.LiveKitAPIKey, cfg.LiveKitAPISecret)
+		if err != nil {
+			log.Printf("[LiveKit Calling] WARNING: Failed to initialize LiveKit client: %v", err)
+		} else {
+			callService = calling.NewCallService(lkClient, callStore, h, cfg.LiveKitWSURL)
+			log.Printf("[LiveKit Calling] LiveKit Calling Service initialized successfully (URL: %s)", cfg.LiveKitWSURL)
+		}
+	} else {
+		log.Println("[LiveKit Calling] NOTICE: LIVEKIT_API_KEY/SECRET not set; calling endpoints will return 503 Service Unavailable.")
+	}
+
+	router := SetupRouterWithCalling(cfg, verifier, h, callService)
 
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,

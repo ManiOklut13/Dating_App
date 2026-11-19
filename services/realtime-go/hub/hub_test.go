@@ -11,8 +11,8 @@ import (
 )
 
 type inMemoryMessageStore struct {
-	mu        sync.Mutex
-	pendingMsgs map[string]db.ChatMessage // message_id -> chat message
+	mu            sync.Mutex
+	pendingMsgs   map[string]db.ChatMessage // message_id -> chat message
 	savedMessages map[string]db.ChatMessage // message_id -> chat message (persisted)
 }
 
@@ -466,7 +466,7 @@ func TestHub_MessageAck_DeliveryMarked(t *testing.T) {
 	// Use a dummy message ID - the ack handler will try to mark it delivered
 	// but since the store is mock, it will just return nil without error
 	ackInbound := InboundMessage{
-		Event: EventMessageAck,
+		Event:   EventMessageAck,
 		Payload: json.RawMessage(`{"message_id":"test-message-id-12345"}`),
 	}
 	// This should not panic or return an error
@@ -505,11 +505,11 @@ func TestHub_DeliveryAck_PreventsDuplicate(t *testing.T) {
 	// User B acknowledges the message twice with the same message ID
 	ackID := "test-message-id-once-only"
 	ack1 := InboundMessage{
-		Event: EventMessageAck,
+		Event:   EventMessageAck,
 		Payload: json.RawMessage(`{"message_id":"` + ackID + `"}`),
 	}
 	ack2 := InboundMessage{
-		Event: EventMessageAck,
+		Event:   EventMessageAck,
 		Payload: json.RawMessage(`{"message_id":"` + ackID + `"}`),
 	}
 

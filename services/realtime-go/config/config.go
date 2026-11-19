@@ -27,6 +27,10 @@ type Config struct {
 	SupabaseRequiredRole     string
 	SupabaseAllowLegacyHS256 bool
 	DatabaseURL              string
+	LiveKitURL               string
+	LiveKitWSURL             string
+	LiveKitAPIKey            string
+	LiveKitAPISecret         string
 }
 
 // Load reads configuration from environment variables with sensible defaults.
@@ -53,6 +57,27 @@ func Load() *Config {
 		allowLegacyHS256 = true
 	}
 
+	livekitURL := os.Getenv("LIVEKIT_URL")
+	livekitWSURL := os.Getenv("LIVEKIT_WS_URL")
+	if livekitWSURL == "" && livekitURL != "" {
+		if strings.HasPrefix(livekitURL, "https://") {
+			livekitWSURL = "wss://" + strings.TrimPrefix(livekitURL, "https://")
+		} else if strings.HasPrefix(livekitURL, "http://") {
+			livekitWSURL = "ws://" + strings.TrimPrefix(livekitURL, "http://")
+		} else {
+			livekitWSURL = livekitURL
+		}
+	}
+	if livekitURL == "" && livekitWSURL != "" {
+		if strings.HasPrefix(livekitWSURL, "wss://") {
+			livekitURL = "https://" + strings.TrimPrefix(livekitWSURL, "wss://")
+		} else if strings.HasPrefix(livekitWSURL, "ws://") {
+			livekitURL = "http://" + strings.TrimPrefix(livekitWSURL, "ws://")
+		} else {
+			livekitURL = livekitWSURL
+		}
+	}
+
 	return &Config{
 		Port:                     port,
 		AllowedOrigins:           allowedOrigins,
@@ -64,5 +89,9 @@ func Load() *Config {
 		SupabaseRequiredRole:     os.Getenv("SUPABASE_REQUIRED_ROLE"),
 		SupabaseAllowLegacyHS256: allowLegacyHS256,
 		DatabaseURL:              os.Getenv("DATABASE_URL"),
+		LiveKitURL:               livekitURL,
+		LiveKitWSURL:             livekitWSURL,
+		LiveKitAPIKey:            os.Getenv("LIVEKIT_API_KEY"),
+		LiveKitAPISecret:         os.Getenv("LIVEKIT_API_SECRET"),
 	}
 }
