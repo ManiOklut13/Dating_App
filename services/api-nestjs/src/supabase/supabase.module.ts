@@ -1,10 +1,13 @@
+/**
+ * YoUnMe Dating App — Global Supabase NestJS Module
+ * Provides SupabaseService across all NestJS modules and guards.
+ */
+
 import { Global, Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { SupabaseService } from './supabase.service.js';
 
 @Global()
 @Module({
-  imports: [ConfigModule],
   providers: [SupabaseService],
   exports: [SupabaseService],
 })

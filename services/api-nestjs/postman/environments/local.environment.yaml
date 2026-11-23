@@ -1,6 +1,0 @@
-name: local
-values:
-  - key: baseUrl
-    value: ''
-  - key: accessToken
-    secret: true

@@ -1,106 +1,304 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'screens/chat/chat_tab_screen.dart';
+import 'screens/profile/profile_tab_screen.dart';
+import 'screens/home/discovery_tab_screen.dart';
+import 'screens/connect/connect_tab_screen.dart';
+import 'screens/auth/splash_landing_screen.dart';
+import 'screens/auth/sign_in_screen.dart';
+import 'screens/auth/basic_profile_page.dart';
+import 'screens/auth/onboarding_wizard_screen.dart';
+import 'services/theme_service.dart';
+import 'services/theme_provider.dart';
+import 'services/app_state_provider.dart';
 
 void main() {
-  runApp(const YoUnMeApp());
+  runApp(const ProviderScope(child: YoUnMeApp()));
 }
 
-class YoUnMeApp extends StatelessWidget {
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
+}
+
+class YoUnMeApp extends StatefulWidget {
   const YoUnMeApp({super.key});
 
   @override
+  State<YoUnMeApp> createState() => _YoUnMeAppState();
+}
+
+class _YoUnMeAppState extends State<YoUnMeApp> {
+  final ThemeProvider _themeProvider = ThemeProvider();
+
+  @override
+  void dispose() {
+    _themeProvider.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'YoUnMe Dating App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF080A10),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFF2D55),
-          secondary: Color(0xFF00E5FF),
-          surface: Color(0xFF0F121D),
-          tertiary: Color(0xFFFFD700),
-        ),
+    return YoUnMeThemeScope(
+      notifier: _themeProvider,
+      child: AnimatedBuilder(
+        animation: _themeProvider,
+        builder: (context, _) {
+          return MaterialApp(
+            title: 'YoUnMe Dating App',
+            debugShowCheckedModeBanner: false,
+            scrollBehavior: const AppScrollBehavior(),
+            themeMode: _themeProvider.themeMode,
+            // ─── Light Mode ThemeData ───
+            theme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: AppColors.lightBackground,
+              cardColor: AppColors.lightCard,
+              dividerColor: AppColors.lightBorder,
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.flamePink,
+                secondary: AppColors.cyanAccent,
+                surface: AppColors.lightSurface,
+                tertiary: AppColors.goldAccent,
+                onSurface: AppColors.lightTextPrimary,
+                outline: AppColors.lightBorder,
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: AppColors.lightSurface,
+                foregroundColor: AppColors.lightTextPrimary,
+                elevation: 0,
+              ),
+              bottomSheetTheme: const BottomSheetThemeData(
+                backgroundColor: AppColors.lightSurface,
+                surfaceTintColor: Colors.transparent,
+              ),
+              dividerTheme: const DividerThemeData(
+                color: AppColors.lightBorder,
+                thickness: 1,
+              ),
+              extensions: const [YoUnMeThemeExtension.light],
+            ),
+            // ─── Dark Mode ThemeData ───
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: AppColors.darkBackground,
+              cardColor: AppColors.darkCard,
+              dividerColor: AppColors.darkBorder,
+              colorScheme: const ColorScheme.dark(
+                primary: AppColors.flamePink,
+                secondary: AppColors.cyanAccent,
+                surface: AppColors.darkSurface,
+                tertiary: AppColors.goldAccent,
+                onSurface: AppColors.darkTextPrimary,
+                outline: AppColors.darkBorder,
+              ),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: AppColors.darkSurface,
+                foregroundColor: AppColors.darkTextPrimary,
+                elevation: 0,
+              ),
+              bottomSheetTheme: const BottomSheetThemeData(
+                backgroundColor: AppColors.darkSurface,
+                surfaceTintColor: Colors.transparent,
+              ),
+              dividerTheme: const DividerThemeData(
+                color: AppColors.darkBorder,
+                thickness: 1,
+              ),
+              extensions: const [YoUnMeThemeExtension.dark],
+            ),
+            routes: {
+              '/home': (_) => const MainShellScreen(),
+              '/profile-setup': (_) => const BasicProfilePage(),
+            },
+            home: ProviderScope(child: const AuthGate()),
+          );
+        },
       ),
-      home: const MainShellScreen(),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab labels & icons
+// ─────────────────────────────────────────────────────────────────────────────
+const _kTabLabels = [
+  'Home',
+  'Connect',
+  'Chat',
+  'Profile',
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main App Shell
+// ─────────────────────────────────────────────────────────────────────────────
 class MainShellScreen extends StatefulWidget {
-  const MainShellScreen({super.key});
+  final bool showStreakOnEntry;
+
+  const MainShellScreen({super.key, this.showStreakOnEntry = false});
 
   @override
   State<MainShellScreen> createState() => _MainShellScreenState();
 }
 
 class _MainShellScreenState extends State<MainShellScreen> {
-  int _currentIndex = 0;
+  int _currentIndex = 0; // Default to Home tab per spec
 
-  final List<Widget> _screens = const [
-    Center(child: Text("🔥 Discovery Deck & PostGIS Radar", style: TextStyle(fontSize: 18))),
-    Center(child: Text("❤️ Connect & 'Likes You' Stack", style: TextStyle(fontSize: 18))),
-    Center(child: Text("💬 Chat & Contact Guard Filter", style: TextStyle(fontSize: 18))),
-    Center(child: Text("📞 LiveKit Cloud SFU WebRTC Calls", style: TextStyle(fontSize: 18))),
-    Center(child: Text("🪙 Profile, Blue Tick & Double-Entry Ledger", style: TextStyle(fontSize: 18))),
-  ];
+  Widget _buildBody(YoUnMeThemeExtension theme) {
+    switch (_currentIndex) {
+      case 0:
+        return DiscoveryTabScreen(showStreakOnEntry: widget.showStreakOnEntry);
+      case 1:
+        return const ConnectTabScreen();
+      case 2:
+        return const ChatTabScreen();
+      case 3:
+        return const ProfileTabScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.appTheme;
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF080A10).withOpacity(0.9),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFFFF2D55), Color(0xFF9B51E0)]),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.local_fire_department, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              "YoUnMe",
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20, letterSpacing: -0.5),
+      backgroundColor: const Color(0xFF0D070C),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        child: KeyedSubtree(
+          key: ValueKey(_currentIndex),
+          child: _buildBody(theme),
+        ),
+      ),
+      bottomNavigationBar: _buildFloatingNavBar(theme),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Persistent Bottom Navigation Bar (4 Tabs): Home (flame), Connect (heart),
+  // Chat (speech bubble), Profile (user). Active tab highlighted in #EC4899.
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildFloatingNavBar(YoUnMeThemeExtension theme) {
+    final icons = <IconData, IconData>{
+      Icons.local_fire_department_outlined: Icons.local_fire_department,
+      Icons.favorite_border: Icons.favorite,
+      Icons.chat_bubble_outline: Icons.chat_bubble,
+      Icons.person_outline: Icons.person,
+    };
+    final iconEntries = icons.entries.toList();
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B1119),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: const Color(0xFF2E1E2B),
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33EC4899),
+              blurRadius: 24,
+              offset: Offset(0, 8),
             ),
           ],
         ),
-        actions: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.amber.withOpacity(0.4)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.monetization_on, color: Colors.amber, size: 16),
-                SizedBox(width: 4),
-                Text("250", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
-        ],
-      ),
-      body: _screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        backgroundColor: const Color(0xFF0F121D),
-        indicatorColor: const Color(0xFFFF2D55).withOpacity(0.25),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'Discovery'),
-          NavigationDestination(icon: Icon(Icons.favorite_border), selectedIcon: Icon(Icons.favorite), label: 'Connect'),
-          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), selectedIcon: Icon(Icons.chat_bubble), label: 'Chat'),
-          NavigationDestination(icon: Icon(Icons.phone_outlined), selectedIcon: Icon(Icons.phone), label: 'Calls'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
-        ],
+        child: Row(
+          children: List.generate(4, (i) {
+            final active = _currentIndex == i;
+            return Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _currentIndex = i),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      active ? iconEntries[i].value : iconEntries[i].key,
+                      size: 22,
+                      color: active
+                          ? const Color(0xFFEC4899)
+                          : const Color(0xFF9CA3AF),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _kTabLabels[i],
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: active ? FontWeight.w800 : FontWeight.w500,
+                        color: active
+                            ? const Color(0xFFEC4899)
+                            : const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: 3,
+                      width: active ? 30 : 0,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE11D48), Color(0xFFEC4899)],
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ),
       ),
     );
+  }
+}
+
+class AuthGate extends ConsumerWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appState = ref.watch(appStateProvider);
+    final notifier = ref.read(appStateProvider.notifier);
+    if (!appState.isAuthenticated) {
+      switch (appState.authScreen) {
+        case AuthScreen.splash:
+          return SplashLandingScreen(
+            onCreateAccount: () =>
+                notifier.setAuthScreen(AuthScreen.onboarding),
+            onSignIn: () => notifier.setAuthScreen(AuthScreen.signin),
+            onComplete: (data) => notifier.setAuthenticated(true),
+          );
+        case AuthScreen.signin:
+          return SignInScreen(
+            onBack: () => notifier.setAuthScreen(AuthScreen.splash),
+            onLogin: (id, pw) => notifier.setAuthenticated(true),
+            onGoToSignUp: () => notifier.setAuthScreen(AuthScreen.onboarding),
+          );
+        case AuthScreen.onboarding:
+          return OnboardingWizardScreen(
+            onBack: () => notifier.setAuthScreen(AuthScreen.splash),
+            onGoToSignIn: () => notifier.setAuthScreen(AuthScreen.signin),
+            onComplete: (data) => notifier.setAuthenticated(true),
+          );
+      }
+    }
+    return const MainShellScreen();
   }
 }

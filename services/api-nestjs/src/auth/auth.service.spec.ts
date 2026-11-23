@@ -18,9 +18,10 @@ describe('AuthService', () => {
     it('should return valid user data when user object is provided', () => {
       const mockUser: AuthenticatedUser = {
         id: '11111111-1111-1111-1111-111111111111',
+        authentication_uid: 'supabase-user-123',
+        uid: '11111111-1111-1111-1111-111111111111',
         email: 'dinesh@younme.app',
-        phone: '+919820011111',
-        role: 'authenticated',
+        email_verified: true,
       };
 
       const result = authService.signIn(mockUser);
@@ -29,15 +30,14 @@ describe('AuthService', () => {
         success: true,
         message: 'Sign in successful',
         user: {
-          id: '11111111-1111-1111-1111-111111111111',
+          uid: '11111111-1111-1111-1111-111111111111',
           email: 'dinesh@younme.app',
-          phone: '+919820011111',
         },
       });
     });
 
-    it('should throw UnauthorizedException if user is missing an id', () => {
-      const invalidUser = { id: '', email: 'dinesh@younme.app' } as AuthenticatedUser;
+    it('should throw UnauthorizedException if user is missing uid', () => {
+      const invalidUser = { uid: '', id: '', authentication_uid: '', email: 'dinesh@younme.app' } as AuthenticatedUser;
       expect(() => authService.signIn(invalidUser)).toThrow(UnauthorizedException);
     });
   });
@@ -46,6 +46,8 @@ describe('AuthService', () => {
     it('should return current user information', () => {
       const mockUser: AuthenticatedUser = {
         id: '11111111-1111-1111-1111-111111111111',
+        authentication_uid: 'supabase-user-123',
+        uid: '11111111-1111-1111-1111-111111111111',
         email: 'dinesh@younme.app',
       };
 
@@ -54,9 +56,8 @@ describe('AuthService', () => {
       expect(result).toEqual({
         success: true,
         user: {
-          id: '11111111-1111-1111-1111-111111111111',
+          uid: '11111111-1111-1111-1111-111111111111',
           email: 'dinesh@younme.app',
-          phone: undefined,
         },
       });
     });

@@ -1,0 +1,2431 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/
+  __tests__/
+    contact-guard.processor.test.ts
+    notification.processor.test.ts
+    push-delivery.processor.test.ts
+    vision.processor.test.ts
+  processors/
+    contact-guard.processor.ts
+    notification.processor.ts
+    push-delivery.processor.ts
+    vision.processor.ts
+  config.ts
+  fcm.ts
+  index.ts
+  queue-producer.ts
+  supabase.ts
+  types-compat.ts
+  types.ts
+  worker.ts
+.env.example
+Dockerfile
+jest.resolver.cjs
+package.json
+tsconfig.json
+UNRESOLVED_DECISIONS.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/__tests__/contact-guard.processor.test.ts">
+/**
+ * YoUnMe Worker — Contact Guard Audit Processor Tests
+ *
+ * Uses jest.unstable_mockModule for proper ESM mocking.
+ */
+
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+
+// ─── Mock Supabase (must be before import of the processor) ──────────────────
+
+const mockMaybeSingle = jest.fn<() => Promise<any>>();
+const mockEq = jest.fn(() => ({ maybeSingle: mockMaybeSingle }));
+const mockSelectChain = jest.fn(() => ({ eq: mockEq }));
+const mockInsert = jest.fn<() => Promise<any>>();
+
+const mockSupabaseFrom = jest.fn(() => ({
+  select: mockSelectChain,
+  insert: mockInsert,
+}));
+
+jest.unstable_mockModule('../supabase.js', () => ({
+  getSupabaseClient: () => ({ from: mockSupabaseFrom }),
+}));
+
+// ─── Import after mocks ───────────────────────────────────────────────────────
+
+const { processContactGuardAudit } = await import('../processors/contact-guard.processor.js');
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const VALID_JOB = {
+  user_id: '00000000-0000-0000-0000-000000000001',
+  conversation_id: '00000000-0000-0000-0000-000000000002',
+  detected_type: 'phone_number' as const,
+  normalised_excerpt: 'call me on',
+  idempotency_key: 'guard_evt_abc123',
+};
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+describe('processContactGuardAudit', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSupabaseFrom.mockReturnValue({
+      select: mockSelectChain,
+      insert: mockInsert,
+    });
+    mockSelectChain.mockReturnValue({ eq: mockEq });
+    mockEq.mockReturnValue({ maybeSingle: mockMaybeSingle });
+  });
+
+  it('persists a new audit record and returns persisted=true', async () => {
+    mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    mockInsert.mockResolvedValueOnce({ error: null });
+
+    const result = await processContactGuardAudit(VALID_JOB);
+    expect(result.persisted).toBe(true);
+    expect(result.duplicate).toBe(false);
+    expect(mockInsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('detects duplicate by idempotency_key and returns duplicate=true without inserting', async () => {
+    mockMaybeSingle.mockResolvedValueOnce({
+      data: { idempotency_key: VALID_JOB.idempotency_key },
+      error: null,
+    });
+
+    const result = await processContactGuardAudit(VALID_JOB);
+    expect(result.duplicate).toBe(true);
+    expect(result.persisted).toBe(false);
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('handles Postgres unique constraint race (23505) as a duplicate', async () => {
+    mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    mockInsert.mockResolvedValueOnce({ error: { code: '23505', message: 'unique violation' } });
+
+    const result = await processContactGuardAudit(VALID_JOB);
+    expect(result.duplicate).toBe(true);
+    expect(result.persisted).toBe(false);
+  });
+
+  it('throws on non-unique DB insert error so BullMQ can retry', async () => {
+    mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    mockInsert.mockResolvedValueOnce({ error: { code: '08006', message: 'connection failure' } });
+
+    await expect(processContactGuardAudit(VALID_JOB)).rejects.toThrow(/DB insert error/);
+  });
+
+  it('rejects invalid payload', async () => {
+    await expect(processContactGuardAudit({ user_id: 'bad-uuid' })).rejects.toThrow(
+      /Invalid job payload/,
+    );
+  });
+
+  it('rejects normalised_excerpt longer than 200 chars', async () => {
+    await expect(
+      processContactGuardAudit({ ...VALID_JOB, normalised_excerpt: 'x'.repeat(201) }),
+    ).rejects.toThrow(/Invalid job payload/);
+  });
+});
+</file>
+
+<file path="src/__tests__/notification.processor.test.ts">
+/**
+ * YoUnMe Worker — Notification Processor Tests
+ *
+ * Uses jest.unstable_mockModule for proper ESM mocking.
+ */
+
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+
+// ─── Mock Supabase (must be before import of the processor) ──────────────────
+
+const mockSingle = jest.fn<() => Promise<any>>();
+const mockSelectChain = jest.fn(() => ({ single: mockSingle }));
+const mockInsert = jest.fn(() => ({ select: mockSelectChain }));
+
+const mockSupabaseFrom = jest.fn(() => ({ insert: mockInsert }));
+
+jest.unstable_mockModule('../supabase.js', () => ({
+  getSupabaseClient: () => ({ from: mockSupabaseFrom }),
+}));
+
+// ─── Mock Queue Producer ──────────────────────────────────────────────────────
+
+const mockEnqueuePushDelivery = jest.fn<() => Promise<any>>();
+
+jest.unstable_mockModule('../queue-producer.js', () => ({
+  enqueuePushDelivery: mockEnqueuePushDelivery,
+}));
+
+// ─── Import after mocks ───────────────────────────────────────────────────────
+
+const { processNotification } = await import('../processors/notification.processor.js');
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const VALID_JOB = {
+  recipient_id: '00000000-0000-0000-0000-000000000001',
+  category: 'match' as const,
+  title: 'You have a new match! 🔥',
+  body: 'Start a conversation now.',
+  data: { match_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' },
+};
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+describe('processNotification', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSupabaseFrom.mockReturnValue({ insert: mockInsert });
+    mockInsert.mockReturnValue({ select: mockSelectChain });
+    mockSelectChain.mockReturnValue({ single: mockSingle });
+    mockEnqueuePushDelivery.mockResolvedValue('push-job-123');
+  });
+
+  it('persists notification and enqueues native push delivery', async () => {
+    mockSingle.mockResolvedValueOnce({ data: { id: 'notif-uuid-001' }, error: null });
+
+    const result = await processNotification(VALID_JOB);
+    expect(result.in_app_delivered).toBe(true);
+    expect(result.notification_id).toBe('notif-uuid-001');
+    expect(result.push_enqueued).toBe(true);
+    expect(mockInsert).toHaveBeenCalledTimes(1);
+    expect(mockEnqueuePushDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipient_id: VALID_JOB.recipient_id,
+        category: 'match',
+        title: VALID_JOB.title,
+        body: VALID_JOB.body,
+        notification_id: 'notif-uuid-001',
+      }),
+    );
+  });
+
+  it('preserves in-app persistence even if push enqueue fails', async () => {
+    mockSingle.mockResolvedValueOnce({ data: { id: 'notif-uuid-002' }, error: null });
+    mockEnqueuePushDelivery.mockRejectedValueOnce(new Error('Redis connection refused'));
+
+    const result = await processNotification(VALID_JOB);
+    expect(result.in_app_delivered).toBe(true);
+    expect(result.notification_id).toBe('notif-uuid-002');
+    expect(result.push_enqueued).toBe(false);
+  });
+
+  it('throws on DB error so BullMQ can retry', async () => {
+    mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'db error' } });
+
+    await expect(processNotification(VALID_JOB)).rejects.toThrow(/DB insert error/);
+    expect(mockEnqueuePushDelivery).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid payload — bad UUID', async () => {
+    await expect(processNotification({ recipient_id: 'bad-uuid' })).rejects.toThrow(
+      /Invalid job payload/,
+    );
+  });
+
+  it('rejects title longer than 128 chars', async () => {
+    await expect(
+      processNotification({ ...VALID_JOB, title: 'x'.repeat(129) }),
+    ).rejects.toThrow(/Invalid job payload/);
+  });
+
+  it('does not log body content (privacy)', async () => {
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    mockSingle.mockResolvedValueOnce({ data: { id: 'n1' }, error: null });
+
+    await processNotification({ ...VALID_JOB, body: 'SECRET_BODY_CONTENT' });
+
+    const logged = logSpy.mock.calls.map((args) => String(args[0])).join(' ');
+    expect(logged).not.toContain('SECRET_BODY_CONTENT');
+    logSpy.mockRestore();
+  });
+});
+</file>
+
+<file path="src/__tests__/push-delivery.processor.test.ts">
+/**
+ * YoUnMe Worker — FCM Push Delivery Processor Tests
+ *
+ * Uses jest.unstable_mockModule for proper ESM mocking.
+ */
+
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+
+// ─── Mock Supabase (must be before import of the processor) ──────────────────
+
+const mockDeleteIn = jest.fn();
+const mockDeleteChain = jest.fn(() => ({ in: mockDeleteIn }));
+const mockDelete = jest.fn(() => mockDeleteChain());
+
+const mockEq = jest.fn();
+const mockSelect = jest.fn(() => ({ eq: mockEq }));
+
+const mockSupabaseFrom = jest.fn((table: string) => {
+  if (table === 'device_tokens') {
+    return {
+      select: mockSelect,
+      delete: mockDelete,
+    };
+  }
+  return {};
+});
+
+let mockSupabaseClient: any = { from: mockSupabaseFrom };
+
+jest.unstable_mockModule('../supabase.js', () => ({
+  getSupabaseClient: () => mockSupabaseClient,
+}));
+
+// ─── Mock FCM ─────────────────────────────────────────────────────────────────
+
+const mockSendEachForMulticast = jest.fn();
+let mockMessagingClient: any = {
+  sendEachForMulticast: mockSendEachForMulticast,
+};
+
+jest.unstable_mockModule('../fcm.js', () => ({
+  getMessagingClient: () => mockMessagingClient,
+}));
+
+// ─── Import after mocks ───────────────────────────────────────────────────────
+
+const { processPushDelivery } = await import('../processors/push-delivery.processor.js');
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const VALID_PUSH_JOB = {
+  recipient_id: '00000000-0000-0000-0000-000000000001',
+  category: 'match' as const,
+  title: 'New Match! 🔥',
+  body: 'You and Priya liked each other!',
+  data: { match_id: 'm123' },
+  notification_id: '00000000-0000-0000-0000-000000000099',
+};
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+describe('processPushDelivery', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSupabaseClient = { from: mockSupabaseFrom };
+    mockMessagingClient = { sendEachForMulticast: mockSendEachForMulticast };
+
+    mockSupabaseFrom.mockReturnValue({
+      select: mockSelect,
+      delete: mockDelete,
+    });
+    mockSelect.mockReturnValue({ eq: mockEq });
+    mockDelete.mockReturnValue({ in: mockDeleteIn });
+    mockDeleteIn.mockResolvedValue({ error: null });
+  });
+
+  it('delivers push notification successfully to registered device tokens', async () => {
+    mockEq.mockResolvedValueOnce({
+      data: [
+        { token: 'fcm_tok_111', platform: 'android' },
+        { token: 'fcm_tok_222', platform: 'ios' },
+      ],
+      error: null,
+    });
+
+    mockSendEachForMulticast.mockResolvedValueOnce({
+      successCount: 2,
+      failureCount: 0,
+      responses: [
+        { success: true, messageId: 'msg_1' },
+        { success: true, messageId: 'msg_2' },
+      ],
+    });
+
+    const result = await processPushDelivery(VALID_PUSH_JOB);
+    expect(result.delivered_count).toBe(2);
+    expect(result.failed_count).toBe(0);
+    expect(result.pruned_tokens).toBe(0);
+
+    expect(mockSendEachForMulticast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokens: ['fcm_tok_111', 'fcm_tok_222'],
+        notification: {
+          title: VALID_PUSH_JOB.title,
+          body: VALID_PUSH_JOB.body,
+        },
+        data: expect.objectContaining({
+          category: 'match',
+          notification_id: VALID_PUSH_JOB.notification_id,
+        }),
+      }),
+    );
+  });
+
+  it('skips FCM dispatch if recipient has no registered tokens', async () => {
+    mockEq.mockResolvedValueOnce({ data: [], error: null });
+
+    const result = await processPushDelivery(VALID_PUSH_JOB);
+    expect(result.delivered_count).toBe(0);
+    expect(result.reason).toBe('no_tokens');
+    expect(mockSendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it('prunes stale or unregistered device tokens from Supabase', async () => {
+    mockEq.mockResolvedValueOnce({
+      data: [
+        { token: 'valid_tok', platform: 'android' },
+        { token: 'stale_tok', platform: 'ios' },
+      ],
+      error: null,
+    });
+
+    mockSendEachForMulticast.mockResolvedValueOnce({
+      successCount: 1,
+      failureCount: 1,
+      responses: [
+        { success: true, messageId: 'msg_valid' },
+        {
+          success: false,
+          error: { code: 'messaging/registration-token-not-registered' },
+        },
+      ],
+    });
+
+    const result = await processPushDelivery(VALID_PUSH_JOB);
+    expect(result.delivered_count).toBe(1);
+    expect(result.failed_count).toBe(1);
+    expect(result.pruned_tokens).toBe(1);
+    expect(mockDeleteIn).toHaveBeenCalledWith('token', ['stale_tok']);
+  });
+
+  it('throws for retry if all targets experienced retryable FCM server errors', async () => {
+    mockEq.mockResolvedValueOnce({
+      data: [{ token: 'tok_server_err', platform: 'android' }],
+      error: null,
+    });
+
+    mockSendEachForMulticast.mockResolvedValueOnce({
+      successCount: 0,
+      failureCount: 1,
+      responses: [
+        {
+          success: false,
+          error: { code: 'messaging/server-unavailable' },
+        },
+      ],
+    });
+
+    await expect(processPushDelivery(VALID_PUSH_JOB)).rejects.toThrow(
+      /All FCM targets experienced retryable provider errors/,
+    );
+  });
+
+  it('rethrows FCM multicast transport exceptions for retry', async () => {
+    mockEq.mockResolvedValueOnce({
+      data: [{ token: 'tok_conn', platform: 'android' }],
+      error: null,
+    });
+
+    mockSendEachForMulticast.mockRejectedValueOnce(new Error('ECONNRESET: socket closed'));
+
+    await expect(processPushDelivery(VALID_PUSH_JOB)).rejects.toThrow(
+      /FCM multicast transport error/,
+    );
+  });
+
+  it('handles unconfigured FCM safely without throwing', async () => {
+    mockEq.mockResolvedValueOnce({
+      data: [{ token: 'tok_1', platform: 'android' }],
+      error: null,
+    });
+    mockMessagingClient = null;
+
+    const result = await processPushDelivery(VALID_PUSH_JOB);
+    expect(result.delivered_count).toBe(0);
+    expect(result.reason).toBe('fcm_not_configured');
+  });
+
+  it('handles unconfigured Supabase safely without throwing', async () => {
+    mockSupabaseClient = null;
+
+    const result = await processPushDelivery(VALID_PUSH_JOB);
+    expect(result.delivered_count).toBe(0);
+    expect(result.reason).toBe('supabase_not_configured');
+  });
+
+  it('rejects invalid job payload with invalid UUID', async () => {
+    await expect(
+      processPushDelivery({ ...VALID_PUSH_JOB, recipient_id: 'not-a-uuid' }),
+    ).rejects.toThrow(/Invalid job payload/);
+  });
+
+  it('does not log device registration tokens (privacy)', async () => {
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    mockEq.mockResolvedValueOnce({
+      data: [{ token: 'SUPER_SECRET_FCM_REGISTRATION_TOKEN_XYZ', platform: 'android' }],
+      error: null,
+    });
+    mockSendEachForMulticast.mockResolvedValueOnce({
+      successCount: 1,
+      failureCount: 0,
+      responses: [{ success: true, messageId: 'm1' }],
+    });
+
+    await processPushDelivery(VALID_PUSH_JOB);
+
+    const logged = logSpy.mock.calls.map((args) => String(args[0])).join(' ');
+    expect(logged).not.toContain('SUPER_SECRET_FCM_REGISTRATION_TOKEN_XYZ');
+    logSpy.mockRestore();
+  });
+});
+</file>
+
+<file path="src/__tests__/vision.processor.test.ts">
+/**
+ * YoUnMe Worker — Vision Processor Tests
+ *
+ * Uses jest.unstable_mockModule with the EXACT specifier strings as written
+ * in the processor source file (relative to the processor, not the test file).
+ * This is the correct pattern for ESM mocking with jest.
+ */
+
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+
+// ─── Mock @google-cloud/vision ────────────────────────────────────────────────
+
+const mockAnnotateImage = jest.fn<() => Promise<any>>();
+
+jest.unstable_mockModule('@google-cloud/vision', () => ({
+  default: {
+    ImageAnnotatorClient: jest.fn().mockImplementation(() => ({
+      annotateImage: mockAnnotateImage,
+    })),
+  },
+}));
+
+// ─── Mock ../config.js (as seen from src/processors/vision.processor.ts) ──────
+
+jest.unstable_mockModule('../config.js', () => ({
+  env: {
+    REDIS_URL: 'redis://localhost:6379',
+    SUPABASE_STORAGE_BUCKET_PREFIX: 'https://storage.supabase.co/younme/',
+    WORKER_CONCURRENCY: 3,
+    VISION_MAX_RETRIES: 3,
+    NODE_ENV: 'test',
+  },
+  supabaseConfigured: true,
+  visionConfigured: true,
+}));
+
+// ─── Mock ../supabase.js (as seen from src/processors/vision.processor.ts) ───
+
+const mockUpsert = jest.fn<() => Promise<any>>();
+
+jest.unstable_mockModule('../supabase.js', () => ({
+  getSupabaseClient: () => ({
+    from: () => ({ upsert: mockUpsert }),
+  }),
+}));
+
+// ─── Dynamic import AFTER all mocks are registered ───────────────────────────
+
+const { processVisionScan } = await import('../processors/vision.processor.js');
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const VALID_JOB = {
+  asset_id: '00000000-0000-0000-0000-000000000001',
+  user_id: '00000000-0000-0000-0000-000000000002',
+  image_url: 'https://storage.supabase.co/younme/profiles/photo.jpg',
+  type: 'profile_photo' as const,
+};
+
+function mockVisionResponse(adult: string, racy: string, violence: string, ocrText = '') {
+  mockAnnotateImage.mockResolvedValueOnce([
+    {
+      safeSearchAnnotation: { adult, racy, violence },
+      textAnnotations: ocrText ? [{ description: ocrText }] : [],
+    },
+  ]);
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+describe('processVisionScan', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUpsert.mockResolvedValue({ error: null });
+  });
+
+  it('approves a clean image', async () => {
+    mockVisionResponse('VERY_UNLIKELY', 'VERY_UNLIKELY', 'VERY_UNLIKELY');
+    const result = await processVisionScan(VALID_JOB);
+    expect(result.status).toBe('approved');
+    expect(result.action_taken).toBe('APPROVED');
+    expect(result.contact_detected).toBe(false);
+    expect(mockUpsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks an explicit image (adult VERY_LIKELY)', async () => {
+    mockVisionResponse('VERY_LIKELY', 'UNLIKELY', 'VERY_UNLIKELY');
+    const result = await processVisionScan(VALID_JOB);
+    expect(result.status).toBe('blocked');
+    expect(result.action_taken).toBe('BLOCKED_EXPLICIT_CONTENT');
+  });
+
+  it('blocks an image with racy VERY_LIKELY', async () => {
+    mockVisionResponse('VERY_UNLIKELY', 'VERY_LIKELY', 'VERY_UNLIKELY');
+    const result = await processVisionScan(VALID_JOB);
+    expect(result.status).toBe('blocked');
+    expect(result.action_taken).toBe('BLOCKED_EXPLICIT_CONTENT');
+  });
+
+  it('blocks when OCR detects a 10-digit phone number', async () => {
+    mockVisionResponse('VERY_UNLIKELY', 'VERY_UNLIKELY', 'VERY_UNLIKELY', '9820012345');
+    const result = await processVisionScan(VALID_JOB);
+    expect(result.status).toBe('blocked');
+    expect(result.action_taken).toBe('BLOCKED_OCR_CONTACT_DETECTED');
+    expect(result.contact_detected).toBe(true);
+  });
+
+  it('blocks when OCR detects an Instagram handle reference', async () => {
+    mockVisionResponse('VERY_UNLIKELY', 'VERY_UNLIKELY', 'VERY_UNLIKELY', 'insta: @cooluser123');
+    const result = await processVisionScan(VALID_JOB);
+    expect(result.status).toBe('blocked');
+    expect(result.contact_detected).toBe(true);
+  });
+
+  it('rejects a disallowed image URL without calling Vision API', async () => {
+    const result = await processVisionScan({
+      ...VALID_JOB,
+      image_url: 'https://evil.attacker.com/ssrf.jpg',
+    });
+    expect(result.status).toBe('blocked');
+    expect(result.action_taken).toBe('REJECTED_DISALLOWED_URL');
+    expect(mockAnnotateImage).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid job payload', async () => {
+    await expect(processVisionScan({ asset_id: 'not-a-uuid' })).rejects.toThrow(
+      /Invalid job payload/,
+    );
+  });
+
+  it('rethrows transient Vision API errors so BullMQ retries', async () => {
+    mockAnnotateImage.mockRejectedValueOnce(new Error('UNAVAILABLE: upstream timeout'));
+    await expect(processVisionScan(VALID_JOB)).rejects.toThrow(/Transient Vision API error/);
+  });
+
+  it('calls Supabase upsert with the correct asset_id', async () => {
+    mockVisionResponse('VERY_UNLIKELY', 'VERY_UNLIKELY', 'VERY_UNLIKELY');
+    await processVisionScan(VALID_JOB);
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({ asset_id: VALID_JOB.asset_id }),
+      { onConflict: 'asset_id' },
+    );
+  });
+});
+</file>
+
+<file path="src/processors/contact-guard.processor.ts">
+/**
+ * YoUnMe Worker — Contact Guard Audit Processor
+ *
+ * Responsibility: Write an immutable, deduplicated audit record for every
+ * Contact Guard violation that was blocked in the NestJS REST layer or the
+ * Go real-time layer.
+ *
+ * This worker does NOT perform contact detection — that is the responsibility
+ * of the NestJS chat.controller.ts and Go guard/link_guard.go which act
+ * in-flight before message delivery. This processor only persists the audit
+ * trail so violations survive process restarts and are queryable.
+ *
+ * Strike accumulation logic (suspension thresholds, cooldowns) lives in
+ * the NestJS API layer where it is authoritative. This processor only writes
+ * to the audit table.
+ *
+ * Idempotency: The `idempotency_key` field maps to a UNIQUE constraint on
+ * `contact_guard_audits.idempotency_key`. A duplicate enqueue is silently
+ * ignored (no double-strike).
+ */
+
+import { z } from 'zod';
+import { getSupabaseClient } from '../supabase.js';
+
+// ─── Payload Validation ──────────────────────────────────────────────────────
+
+export const ContactGuardAuditJobSchema = z.object({
+  user_id: z.string().uuid('user_id must be a valid UUID'),
+  conversation_id: z.string().uuid('conversation_id must be a valid UUID'),
+  detected_type: z.enum(['phone_number', 'social_handle', 'external_url']),
+  /**
+   * Normalised excerpt from the NestJS producer.
+   * Must NOT contain raw phone numbers or personal data.
+   * Max 200 chars enforced here as a safety net.
+   */
+  normalised_excerpt: z.string().max(200),
+  idempotency_key: z.string().min(1).max(128),
+});
+
+export type ContactGuardAuditJob = z.infer<typeof ContactGuardAuditJobSchema>;
+
+// ─── Result ──────────────────────────────────────────────────────────────────
+
+export interface AuditResult {
+  idempotency_key: string;
+  duplicate: boolean;
+  persisted: boolean;
+}
+
+// ─── Main Processor ──────────────────────────────────────────────────────────
+
+export async function processContactGuardAudit(rawJob: unknown): Promise<AuditResult> {
+  // 1. Validate payload
+  const parseResult = ContactGuardAuditJobSchema.safeParse(rawJob);
+  if (!parseResult.success) {
+    const issues = parseResult.error.issues.map((i) => i.message).join('; ');
+    throw new Error(`[ContactGuard] Invalid job payload: ${issues}`);
+  }
+  const job: ContactGuardAuditJob = parseResult.data;
+
+  console.log(
+    `[ContactGuard] Audit — user=${job.user_id} conv=${job.conversation_id} ` +
+      `type=${job.detected_type} key=${job.idempotency_key}`,
+  );
+
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    // No Supabase in dev/test — log only
+    console.log(
+      `[ContactGuard] Supabase not configured. Audit record NOT persisted. ` +
+        `key=${job.idempotency_key}`,
+    );
+    return { idempotency_key: job.idempotency_key, duplicate: false, persisted: false };
+  }
+
+  // 2. Check for existing record (idempotency)
+  const { data: existing, error: selectError } = await supabase
+    .from('contact_guard_audits')
+    .select('idempotency_key')
+    .eq('idempotency_key', job.idempotency_key)
+    .maybeSingle();
+
+  if (selectError) {
+    throw new Error(`[ContactGuard] DB read error: ${selectError.message}`);
+  }
+
+  if (existing) {
+    console.log(`[ContactGuard] Duplicate audit — key=${job.idempotency_key} ignored.`);
+    return { idempotency_key: job.idempotency_key, duplicate: true, persisted: false };
+  }
+
+  // 3. Insert audit record
+  const { error: insertError } = await supabase.from('contact_guard_audits').insert({
+    user_id: job.user_id,
+    conversation_id: job.conversation_id,
+    detected_type: job.detected_type,
+    normalised_excerpt: job.normalised_excerpt,
+    idempotency_key: job.idempotency_key,
+    created_at: new Date().toISOString(),
+  });
+
+  if (insertError) {
+    // Unique constraint violation = race-condition duplicate → treat as idempotent
+    if (insertError.code === '23505') {
+      return { idempotency_key: job.idempotency_key, duplicate: true, persisted: false };
+    }
+    throw new Error(`[ContactGuard] DB insert error: ${insertError.message}`);
+  }
+
+  console.log(`[ContactGuard] Audit persisted — key=${job.idempotency_key}`);
+  return { idempotency_key: job.idempotency_key, duplicate: false, persisted: true };
+}
+</file>
+
+<file path="src/processors/notification.processor.ts">
+/**
+ * YoUnMe Worker — Notification Processor
+ *
+ * Handles NotificationJob:
+ *  1. Persists an in-app notification record to Supabase `notifications` table
+ *     (which Supabase Realtime broadcasts to connected Flutter clients).
+ *  2. Enqueues native mobile push delivery to the `younme:push-delivery` queue
+ *     via Firebase Cloud Messaging (FCM).
+ *
+ * Decoupled Architecture:
+ *  - Failure isolation: In-app persistence is guaranteed even if Redis or FCM
+ *    has transient delivery issues.
+ *  - Independent retries: Push delivery retries in its own queue without
+ *    re-inserting duplicate database rows.
+ */
+
+import { z } from 'zod';
+import { getSupabaseClient } from '../supabase.js';
+import { enqueuePushDelivery } from '../queue-producer.js';
+import type { NotificationResult } from '../types.js';
+
+// ─── Payload Validation ──────────────────────────────────────────────────────
+
+export const NotificationJobSchema = z.object({
+  recipient_id: z.string().uuid('recipient_id must be a valid UUID'),
+  category: z.enum(['match', 'message', 'call', 'system']),
+  title: z.string().min(1).max(128),
+  body: z.string().min(1).max(512),
+  data: z.record(z.string()).default({}),
+});
+
+export type NotificationJob = z.infer<typeof NotificationJobSchema>;
+
+// ─── Main Processor ──────────────────────────────────────────────────────────
+
+export async function processNotification(rawJob: unknown): Promise<NotificationResult> {
+  // 1. Validate payload
+  const parseResult = NotificationJobSchema.safeParse(rawJob);
+  if (!parseResult.success) {
+    const issues = parseResult.error.issues.map((i) => i.message).join('; ');
+    throw new Error(`[Notification] Invalid job payload: ${issues}`);
+  }
+  const job: NotificationJob = parseResult.data;
+
+  // Log category and recipient only — do NOT log body content (privacy)
+  console.log(
+    `[Notification] Processing — recipient=${job.recipient_id} category=${job.category}`,
+  );
+
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    console.log(
+      `[Notification] Supabase not configured. Notification NOT persisted. ` +
+        `recipient=${job.recipient_id}`,
+    );
+    return {
+      recipient_id: job.recipient_id,
+      notification_id: null,
+      in_app_delivered: false,
+      push_enqueued: false,
+    };
+  }
+
+  // 2. Persist in-app notification (Realtime will broadcast to connected client)
+  const { data, error } = await supabase
+    .from('notifications')
+    .insert({
+      recipient_id: job.recipient_id,
+      category: job.category,
+      title: job.title,
+      body: job.body,
+      data: job.data,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    throw new Error(`[Notification] DB insert error: ${error.message}`);
+  }
+
+  const notificationId: string = data?.id ?? null;
+
+  console.log(
+    `[Notification] Persisted — id=${notificationId} recipient=${job.recipient_id} ` +
+      `category=${job.category}`,
+  );
+
+  // 3. Enqueue native push delivery to the push-delivery queue
+  let pushEnqueued = false;
+  try {
+    await enqueuePushDelivery({
+      recipient_id: job.recipient_id,
+      category: job.category,
+      title: job.title,
+      body: job.body,
+      data: job.data,
+      notification_id: notificationId,
+    });
+    pushEnqueued = true;
+    console.log(
+      `[Notification] Enqueued push delivery — recipient=${job.recipient_id} notif_id=${notificationId}`,
+    );
+  } catch (pushErr: unknown) {
+    const msg = pushErr instanceof Error ? pushErr.message : String(pushErr);
+    console.warn(
+      `[Notification] Failed to enqueue push delivery for recipient=${job.recipient_id}: ${msg}`,
+    );
+  }
+
+  return {
+    recipient_id: job.recipient_id,
+    notification_id: notificationId,
+    in_app_delivered: true,
+    push_enqueued: pushEnqueued,
+  };
+}
+</file>
+
+<file path="src/processors/push-delivery.processor.ts">
+/**
+ * YoUnMe Worker — Firebase Cloud Messaging (FCM) Push Delivery Processor
+ *
+ * Responsibilities:
+ *  1. Validates PushDeliveryJob payload.
+ *  2. Looks up recipient's active device tokens from Supabase `device_tokens` table.
+ *  3. Constructs privacy-preserving, categorized FCM push payloads.
+ *  4. Dispatches multicast notifications using Firebase Admin SDK `sendEachForMulticast`.
+ *  5. Automatically prunes unregistered or invalid tokens from Supabase.
+ *  6. Distinguishes permanent errors from transient FCM server errors (for BullMQ retries).
+ *
+ * Security & Privacy:
+ *  - Device registration tokens and private message bodies are NEVER logged.
+ *  - Service account credentials remain strictly server-side.
+ */
+
+import { z } from 'zod';
+import { getMessagingClient } from '../fcm.js';
+import { getSupabaseClient } from '../supabase.js';
+import type { PushDeliveryJob, PushDeliveryResult } from '../types.js';
+
+// ─── Payload Validation ──────────────────────────────────────────────────────
+
+export const PushDeliveryJobSchema = z.object({
+  recipient_id: z.string().uuid('recipient_id must be a valid UUID'),
+  category: z.enum(['match', 'message', 'call', 'system']),
+  title: z.string().min(1).max(128),
+  body: z.string().min(1).max(512),
+  data: z.record(z.string()).default({}),
+  notification_id: z.string().uuid().optional(),
+});
+
+// Stale token error codes defined by Firebase Cloud Messaging
+const STALE_TOKEN_CODES = new Set([
+  'messaging/registration-token-not-registered',
+  'messaging/invalid-registration-token',
+]);
+
+// Transient error codes that warrant BullMQ backoff retry
+const RETRYABLE_FCM_CODES = new Set([
+  'messaging/server-unavailable',
+  'messaging/internal-error',
+  'messaging/quota-exceeded',
+  'messaging/device-message-rate-exceeded',
+]);
+
+// ─── Main Processor ──────────────────────────────────────────────────────────
+
+export async function processPushDelivery(rawJob: unknown): Promise<PushDeliveryResult> {
+  // 1. Validate payload
+  const parseResult = PushDeliveryJobSchema.safeParse(rawJob);
+  if (!parseResult.success) {
+    const issues = parseResult.error.issues.map((i) => i.message).join('; ');
+    throw new Error(`[PushDelivery] Invalid job payload: ${issues}`);
+  }
+  const job: PushDeliveryJob = parseResult.data;
+
+  console.log(
+    `[PushDelivery] Processing — recipient=${job.recipient_id} category=${job.category}` +
+      (job.notification_id ? ` notif_id=${job.notification_id}` : ''),
+  );
+
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    console.log(
+      `[PushDelivery] Supabase not configured. Push delivery skipped. recipient=${job.recipient_id}`,
+    );
+    return {
+      recipient_id: job.recipient_id,
+      delivered_count: 0,
+      failed_count: 0,
+      pruned_tokens: 0,
+      reason: 'supabase_not_configured',
+    };
+  }
+
+  // 2. Query active device tokens for the recipient
+  const { data: tokenRows, error: tokenError } = await supabase
+    .from('device_tokens')
+    .select('token, platform')
+    .eq('user_id', job.recipient_id);
+
+  if (tokenError) {
+    throw new Error(`[PushDelivery] Failed to query device tokens: ${tokenError.message}`);
+  }
+
+  if (!tokenRows || tokenRows.length === 0) {
+    console.log(
+      `[PushDelivery] No registered device tokens for recipient=${job.recipient_id}. Skipping FCM dispatch.`,
+    );
+    return {
+      recipient_id: job.recipient_id,
+      delivered_count: 0,
+      failed_count: 0,
+      pruned_tokens: 0,
+      reason: 'no_tokens',
+    };
+  }
+
+  // 3. Obtain Firebase Messaging client
+  const messaging = getMessagingClient();
+  if (!messaging) {
+    console.warn(
+      `[PushDelivery] FCM not configured. Cannot dispatch push to ${tokenRows.length} device(s) ` +
+        `for recipient=${job.recipient_id}. Set FIREBASE_SERVICE_ACCOUNT_KEY to enable.`,
+    );
+    return {
+      recipient_id: job.recipient_id,
+      delivered_count: 0,
+      failed_count: 0,
+      pruned_tokens: 0,
+      reason: 'fcm_not_configured',
+    };
+  }
+
+  // 4. Construct payload and dispatch multicast message
+  const tokens = tokenRows.map((r) => r.token);
+  const dataPayload: Record<string, string> = {
+    ...job.data,
+    category: job.category,
+    ...(job.notification_id ? { notification_id: job.notification_id } : {}),
+  };
+
+  let response;
+  try {
+    response = await messaging.sendEachForMulticast({
+      tokens,
+      notification: {
+        title: job.title,
+        body: job.body,
+      },
+      data: dataPayload,
+      android: {
+        priority: job.category === 'call' ? 'high' : 'normal',
+        notification: {
+          channelId: `younme_${job.category}`,
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: 'default',
+            badge: 1,
+          },
+        },
+      },
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`[PushDelivery] FCM multicast transport error (will retry): ${msg}`);
+  }
+
+  // 5. Evaluate response & prune invalid tokens
+  const staleTokens: string[] = [];
+  let retryableCount = 0;
+
+  response.responses.forEach((res, idx) => {
+    if (!res.success && res.error) {
+      const code = res.error.code;
+      if (STALE_TOKEN_CODES.has(code)) {
+        staleTokens.push(tokens[idx]);
+      } else if (RETRYABLE_FCM_CODES.has(code)) {
+        retryableCount++;
+      }
+    }
+  });
+
+  // Prune stale tokens from Supabase asynchronously
+  if (staleTokens.length > 0) {
+    const { error: pruneError } = await supabase
+      .from('device_tokens')
+      .delete()
+      .in('token', staleTokens);
+
+    if (pruneError) {
+      console.error(`[PushDelivery] Failed to prune stale tokens: ${pruneError.message}`);
+    } else {
+      console.log(
+        `[PushDelivery] Pruned ${staleTokens.length} unregistered/invalid token(s) ` +
+          `for recipient=${job.recipient_id}`,
+      );
+    }
+  }
+
+  console.log(
+    `[PushDelivery] Dispatched — recipient=${job.recipient_id} ` +
+      `success=${response.successCount} failure=${response.failureCount}`,
+  );
+
+  // If ALL targeted tokens failed and failures were retryable, trigger BullMQ backoff retry
+  if (response.successCount === 0 && retryableCount > 0 && retryableCount === response.failureCount) {
+    throw new Error(
+      `[PushDelivery] All FCM targets experienced retryable provider errors (${retryableCount} failed)`,
+    );
+  }
+
+  return {
+    recipient_id: job.recipient_id,
+    delivered_count: response.successCount,
+    failed_count: response.failureCount,
+    pruned_tokens: staleTokens.length,
+  };
+}
+</file>
+
+<file path="src/processors/vision.processor.ts">
+/**
+ * YoUnMe Worker — Google Cloud Vision Processor
+ *
+ * Handles VisionScanJob:
+ *  1. Validates and authorises image_url (SSRF guard).
+ *  2. Calls Vision API: SafeSearch + TEXT_DETECTION.
+ *  3. Applies contact-detection to OCR output (mirrors Go/NestJS logic).
+ *  4. Persists moderation outcome to Supabase `media_moderation` table.
+ *  5. Returns a structured result that the BullMQ worker logs.
+ *
+ * Design rules:
+ *  - Never logs raw image URLs or raw OCR text (privacy).
+ *  - On transient Vision API errors → throws (BullMQ retries with backoff).
+ *  - On permanent failures (bad URL, invalid image) → marks as blocked with
+ *    status 'pending_review' so a human can decide.
+ *  - Never auto-approves if Vision API fails.
+ */
+
+import vision from '@google-cloud/vision';
+import type { ImageAnnotatorClient, protos } from '@google-cloud/vision';
+import { z } from 'zod';
+import { env, visionConfigured, supabaseConfigured } from '../config.js';
+import { getSupabaseClient } from '../supabase.js';
+import type { VisionScanJob, ModerationOutcome } from '../types.js';
+
+// ─── Payload Validation ──────────────────────────────────────────────────────
+
+export const VisionScanJobSchema = z.object({
+  asset_id: z.string().uuid('asset_id must be a valid UUID'),
+  user_id: z.string().uuid('user_id must be a valid UUID'),
+  image_url: z.string().url('image_url must be a valid URL'),
+  type: z.enum(['profile_photo', 'chat_media', 'video_call_preview']),
+});
+
+// ─── Safe-Search Likelihood mapping ─────────────────────────────────────────
+
+type Likelihood = 'UNKNOWN' | 'VERY_UNLIKELY' | 'UNLIKELY' | 'POSSIBLE' | 'LIKELY' | 'VERY_LIKELY';
+
+const LIKELIHOOD_NAMES: Record<number, Likelihood> = {
+  0: 'UNKNOWN',
+  1: 'VERY_UNLIKELY',
+  2: 'UNLIKELY',
+  3: 'POSSIBLE',
+  4: 'LIKELY',
+  5: 'VERY_LIKELY',
+};
+
+function normalizeLikelihood(val: unknown): Likelihood {
+  if (typeof val === 'number') {
+    return LIKELIHOOD_NAMES[val] ?? 'UNKNOWN';
+  }
+  if (typeof val === 'string') {
+    return val as Likelihood;
+  }
+  return 'UNKNOWN';
+}
+
+const BLOCK_THRESHOLDS: Record<string, readonly Likelihood[]> = {
+  adult: ['LIKELY', 'VERY_LIKELY'],
+  racy: ['VERY_LIKELY'],
+  violence: ['LIKELY', 'VERY_LIKELY'],
+};
+
+function exceedsThreshold(likelihood: unknown, category: string): boolean {
+  const norm = normalizeLikelihood(likelihood);
+  const thresholds = BLOCK_THRESHOLDS[category] ?? [];
+  return thresholds.includes(norm);
+}
+
+// ─── OCR Contact Detection ────────────────────────────────────────────────────
+// Mirror of the Go NormalizeText + phone/social regex logic.
+
+const PHONE_DIGIT_REGEX = /\d{10,}/;
+const PHONE_SPACED_REGEX = /\+?\d[\d\s\-().]{8,}\d/;
+const SOCIAL_HANDLE_REGEX =
+  /(insta|ig|telegram|snap|snapchat|t\.me|wa\.me|whatsapp|sc)\s*[:\s_-]*@?[a-zA-Z0-9_.]{3,}/i;
+
+function detectContactInOcr(texts: string[]): boolean {
+  for (const text of texts) {
+    const digitsOnly = text.replace(/\D/g, '');
+    if (PHONE_DIGIT_REGEX.test(digitsOnly)) return true;
+    if (PHONE_SPACED_REGEX.test(text)) return true;
+    if (SOCIAL_HANDLE_REGEX.test(text)) return true;
+  }
+  return false;
+}
+
+// ─── URL Allowlist Guard (SSRF prevention) ────────────────────────────────────
+
+function isAllowedImageUrl(url: string): boolean {
+  if (!env.SUPABASE_STORAGE_BUCKET_PREFIX) {
+    // In development, allow any HTTPS URL; log a warning.
+    if (!url.startsWith('https://')) {
+      return false;
+    }
+    return true;
+  }
+  return url.startsWith(env.SUPABASE_STORAGE_BUCKET_PREFIX);
+}
+
+// ─── Vision Client (lazy) ────────────────────────────────────────────────────
+
+let _visionClient: ImageAnnotatorClient | null = null;
+
+function getVisionClient(): ImageAnnotatorClient {
+  if (_visionClient) return _visionClient;
+  _visionClient = new vision.ImageAnnotatorClient({
+    ...(env.GCLOUD_PROJECT_ID ? { projectId: env.GCLOUD_PROJECT_ID } : {}),
+    // GOOGLE_APPLICATION_CREDENTIALS is read automatically from the environment.
+  });
+  return _visionClient;
+}
+
+// ─── Supabase Persistence ─────────────────────────────────────────────────────
+
+async function persistOutcome(outcome: ModerationOutcome): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    // No Supabase client in dev/test — log only.
+    console.log(
+      `[Vision] Supabase not configured. Outcome for asset ${outcome.asset_id}: ${outcome.status}`,
+    );
+    return;
+  }
+
+  const { error } = await supabase.from('media_moderation').upsert(
+    {
+      asset_id: outcome.asset_id,
+      user_id: outcome.user_id,
+      status: outcome.status,
+      safe_search_adult: outcome.safe_search_adult,
+      safe_search_racy: outcome.safe_search_racy,
+      safe_search_violence: outcome.safe_search_violence,
+      contact_detected: outcome.contact_detected,
+      action_taken: outcome.action_taken,
+      reviewed_at: outcome.reviewed_at,
+    },
+    { onConflict: 'asset_id' }, // idempotent upsert
+  );
+
+  if (error) {
+    // Surface to BullMQ for retry if it's a transient DB error.
+    throw new Error(`[Vision] Failed to persist moderation outcome: ${error.message}`);
+  }
+}
+
+// ─── Main Processor ──────────────────────────────────────────────────────────
+
+export async function processVisionScan(rawJob: unknown): Promise<ModerationOutcome> {
+  // 1. Validate payload
+  const parseResult = VisionScanJobSchema.safeParse(rawJob);
+  if (!parseResult.success) {
+    const issues = parseResult.error.issues.map((i) => i.message).join('; ');
+    throw new Error(`[Vision] Invalid job payload: ${issues}`);
+  }
+  const job: VisionScanJob = parseResult.data;
+
+  // 2. SSRF guard: validate image URL is within approved storage
+  if (!isAllowedImageUrl(job.image_url)) {
+    const outcome: ModerationOutcome = {
+      asset_id: job.asset_id,
+      user_id: job.user_id,
+      status: 'blocked',
+      safe_search_adult: 'UNKNOWN',
+      safe_search_racy: 'UNKNOWN',
+      safe_search_violence: 'UNKNOWN',
+      contact_detected: false,
+      action_taken: 'REJECTED_DISALLOWED_URL',
+      reviewed_at: new Date().toISOString(),
+    };
+    await persistOutcome(outcome);
+    return outcome;
+  }
+
+  // 3. If Vision API not configured, mark pending_review (do NOT auto-approve)
+  if (!visionConfigured) {
+    console.warn(
+      `[Vision] Google Cloud credentials not configured. ` +
+        `Marking asset ${job.asset_id} as pending_review. ` +
+        `Set GOOGLE_APPLICATION_CREDENTIALS or GCLOUD_PROJECT_ID to enable real scanning.`,
+    );
+    const outcome: ModerationOutcome = {
+      asset_id: job.asset_id,
+      user_id: job.user_id,
+      status: 'pending_review',
+      safe_search_adult: 'UNKNOWN',
+      safe_search_racy: 'UNKNOWN',
+      safe_search_violence: 'UNKNOWN',
+      contact_detected: false,
+      action_taken: 'PENDING_VISION_NOT_CONFIGURED',
+      reviewed_at: new Date().toISOString(),
+    };
+    await persistOutcome(outcome);
+    return outcome;
+  }
+
+  // 4. Call Google Cloud Vision API
+  let safeSearchAnnotation: protos.google.cloud.vision.v1.ISafeSearchAnnotation | null = null;
+  let ocrTexts: string[] = [];
+
+  try {
+    const client = getVisionClient();
+    const [response] = await client.annotateImage({
+      image: { source: { imageUri: job.image_url } },
+      features: [
+        { type: 'SAFE_SEARCH_DETECTION' },
+        { type: 'TEXT_DETECTION' },
+      ],
+    });
+
+    safeSearchAnnotation = response.safeSearchAnnotation ?? null;
+    ocrTexts = (response.textAnnotations ?? [])
+      .slice(0, 1) // first annotation is the full-image text block
+      .map((a: protos.google.cloud.vision.v1.IEntityAnnotation) => a.description ?? '');
+  } catch (err: unknown) {
+    // Transient Vision API error — rethrow so BullMQ retries with backoff
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`[Vision] Transient Vision API error (will retry): ${msg}`);
+  }
+
+  // 5. Apply moderation rules
+  const adult = normalizeLikelihood(safeSearchAnnotation?.adult);
+  const racy = normalizeLikelihood(safeSearchAnnotation?.racy);
+  const violence = normalizeLikelihood(safeSearchAnnotation?.violence);
+
+  const isExplicit =
+    exceedsThreshold(adult, 'adult') ||
+    exceedsThreshold(racy, 'racy') ||
+    exceedsThreshold(violence, 'violence');
+
+  const contactDetected = detectContactInOcr(ocrTexts);
+
+  let status: ModerationOutcome['status'];
+  let actionTaken: string;
+
+  if (isExplicit) {
+    status = 'blocked';
+    actionTaken = 'BLOCKED_EXPLICIT_CONTENT';
+  } else if (contactDetected) {
+    status = 'blocked';
+    actionTaken = 'BLOCKED_OCR_CONTACT_DETECTED';
+  } else {
+    status = 'approved';
+    actionTaken = 'APPROVED';
+  }
+
+  const outcome: ModerationOutcome = {
+    asset_id: job.asset_id,
+    user_id: job.user_id,
+    status,
+    safe_search_adult: adult,
+    safe_search_racy: racy,
+    safe_search_violence: violence,
+    contact_detected: contactDetected,
+    action_taken: actionTaken,
+    reviewed_at: new Date().toISOString(),
+  };
+
+  // 6. Persist (idempotent upsert)
+  await persistOutcome(outcome);
+
+  // Log only non-sensitive summary (no URLs, no OCR text)
+  console.log(
+    `[Vision] asset=${job.asset_id} type=${job.type} ` +
+      `status=${status} action=${actionTaken}`,
+  );
+
+  return outcome;
+}
+</file>
+
+<file path="src/config.ts">
+/**
+ * YoUnMe Worker — Environment Configuration
+ *
+ * All secrets come from environment variables. Never hardcode credentials.
+ * Fails fast at startup with clear error messages if required vars are absent.
+ */
+
+import { z } from 'zod';
+
+const envSchema = z.object({
+  // ── Redis ────────────────────────────────────────────────────────────────
+  REDIS_URL: z
+    .string()
+    .url('REDIS_URL must be a valid URL, e.g. redis://localhost:6379')
+    .default('redis://localhost:6379'),
+
+  // ── Supabase ─────────────────────────────────────────────────────────────
+  SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL').optional(),
+  /**
+   * Service-role key — grants privileged write access.
+   * Keep strictly server-side. Never expose to clients.
+   */
+  SUPABASE_SERVICE_ROLE_KEY: z
+    .string()
+    .min(1, 'SUPABASE_SERVICE_ROLE_KEY must not be empty')
+    .optional(),
+
+  // ── Google Cloud Vision ──────────────────────────────────────────────────
+  /**
+   * Path to a Google Cloud service-account JSON key file.
+   * Alternatively, set GOOGLE_APPLICATION_CREDENTIALS in the environment.
+   * When deployed to Cloud Run with Workload Identity, omit this variable
+   * and assign the Vision API role to the Cloud Run service account instead.
+   */
+  GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
+  GCLOUD_PROJECT_ID: z.string().optional(),
+
+  // ── Supabase Storage Bucket ──────────────────────────────────────────────
+  /**
+   * Allowed Supabase Storage bucket URL prefix.
+   * The worker rejects any image_url that does not start with this value,
+   * preventing server-side request forgery via enqueued jobs.
+   */
+  SUPABASE_STORAGE_BUCKET_PREFIX: z.string().optional(),
+
+  // ── Firebase Cloud Messaging (FCM) ──────────────────────────────────────
+  /**
+   * Firebase Service Account Key as a JSON string, base64-encoded string,
+   * or path to a credentials file. In Cloud Run with Workload Identity,
+   * this can be omitted if GOOGLE_APPLICATION_CREDENTIALS or ADC is present.
+   */
+  FIREBASE_SERVICE_ACCOUNT_KEY: z.string().optional(),
+  FIREBASE_PROJECT_ID: z.string().optional(),
+
+  // ── Worker Tuning ────────────────────────────────────────────────────────
+  /** Number of jobs processed concurrently per queue. Default: 3 */
+  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(3),
+  /** Maximum Vision API retries before a job moves to failed state */
+  VISION_MAX_RETRIES: z.coerce.number().int().nonnegative().default(3),
+  /** Maximum FCM Push Delivery retries before moving to failed state */
+  PUSH_MAX_RETRIES: z.coerce.number().int().nonnegative().default(3),
+
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+});
+
+type Env = z.infer<typeof envSchema>;
+
+function loadEnv(): Env {
+  const parsed = envSchema.safeParse(process.env);
+  if (!parsed.success) {
+    const issues = parsed.error.issues
+      .map((i) => `  • ${i.path.join('.')}: ${i.message}`)
+      .join('\n');
+    console.error(`[Worker] ❌ Invalid environment configuration:\n${issues}`);
+    process.exit(1);
+  }
+  return parsed.data;
+}
+
+export const env = loadEnv();
+
+/** True when Supabase credentials are fully configured */
+export const supabaseConfigured =
+  Boolean(env.SUPABASE_URL) && Boolean(env.SUPABASE_SERVICE_ROLE_KEY);
+
+/** True when Google Cloud Vision is likely configured */
+export const visionConfigured = Boolean(
+  env.GOOGLE_APPLICATION_CREDENTIALS || env.GCLOUD_PROJECT_ID,
+);
+
+/** True when Firebase Cloud Messaging is likely configured */
+export const fcmConfigured = Boolean(
+  env.FIREBASE_SERVICE_ACCOUNT_KEY ||
+  env.FIREBASE_PROJECT_ID ||
+  env.GOOGLE_APPLICATION_CREDENTIALS,
+);
+</file>
+
+<file path="src/fcm.ts">
+/**
+ * YoUnMe Worker — Firebase Cloud Messaging (FCM) Client Singleton
+ *
+ * Exclusively handles mobile push notification dispatch via Firebase Admin SDK.
+ * Does NOT initialize Firebase Authentication or Firebase Realtime/Firestore DB.
+ *
+ * Follows Cloud Run best practices:
+ *  - Initialized safely and only once per process.
+ *  - Credentials loaded from Secret Manager (FIREBASE_SERVICE_ACCOUNT_KEY) or
+ *    Google Cloud Workload Identity / Application Default Credentials.
+ *  - Fails safely without crashing if credentials are not configured in dev/test.
+ *  - Secrets and access tokens are never logged.
+ */
+
+import { initializeApp, getApps, cert, applicationDefault } from 'firebase-admin/app';
+import { getMessaging, type Messaging } from 'firebase-admin/messaging';
+import { env, fcmConfigured } from './config.js';
+
+let _messaging: Messaging | null = null;
+
+/**
+ * Obtain the initialized Firebase Messaging singleton.
+ * Returns null if credentials are not configured (graceful degradation).
+ */
+export function getMessagingClient(): Messaging | null {
+  if (_messaging) return _messaging;
+
+  if (!fcmConfigured) {
+    return null;
+  }
+
+  if (getApps().length === 0) {
+    let credential;
+
+    if (env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+      const raw = env.FIREBASE_SERVICE_ACCOUNT_KEY.trim();
+      try {
+        if (raw.startsWith('{')) {
+          credential = cert(JSON.parse(raw));
+        } else {
+          // Check for base64 encoded JSON
+          const decoded = Buffer.from(raw, 'base64').toString('utf8');
+          if (decoded.trim().startsWith('{')) {
+            credential = cert(JSON.parse(decoded));
+          } else {
+            // Assume file path
+            credential = cert(raw);
+          }
+        }
+      } catch (err) {
+        console.warn(
+          `[FCM] Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY as JSON or base64. ` +
+            `Falling back to applicationDefault credentials. Error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        credential = applicationDefault();
+      }
+    } else {
+      credential = applicationDefault();
+    }
+
+    initializeApp({
+      credential,
+      ...(env.FIREBASE_PROJECT_ID ? { projectId: env.FIREBASE_PROJECT_ID } : {}),
+    });
+  }
+
+  _messaging = getMessaging();
+  return _messaging;
+}
+</file>
+
+<file path="src/index.ts">
+/**
+ * YoUnMe Worker — Main Worker Entry Point
+ *
+ * Registers BullMQ workers for all supported job queues:
+ *   - younme:vision-scan       → Vision API moderation
+ *   - younme:notification      → In-app notification persistence
+ *   - younme:contact-guard-audit → Contact Guard violation audit trail
+ *
+ * Features:
+ *  - Single IORedis connection shared across all workers (no per-worker connections)
+ *  - Exponential backoff on all queues
+ *  - QueueEvents listener for failed-job observability
+ *  - Graceful shutdown on SIGTERM / SIGINT (Cloud Run termination signal)
+ *  - Worker stays alive after processing (suitable for Cloud Run always-on or min-instances=1)
+ */
+
+import { Worker, QueueEvents, type Job } from 'bullmq';
+import IORedis from 'ioredis';
+import { env, fcmConfigured, visionConfigured, supabaseConfigured } from './config.js';
+import {
+  QUEUE_VISION_SCAN,
+  QUEUE_NOTIFICATION,
+  QUEUE_CONTACT_GUARD_AUDIT,
+  QUEUE_PUSH_DELIVERY,
+} from './types.js';
+import { processVisionScan } from './processors/vision.processor.js';
+import { processNotification } from './processors/notification.processor.js';
+import { processContactGuardAudit } from './processors/contact-guard.processor.js';
+import { processPushDelivery } from './processors/push-delivery.processor.js';
+
+// ─── Redis Connection ─────────────────────────────────────────────────────────
+
+const connection = new IORedis(env.REDIS_URL, {
+  maxRetriesPerRequest: null, // required by BullMQ
+  enableReadyCheck: false,
+  lazyConnect: false,
+  retryStrategy(times) {
+    const delay = Math.min(times * 500, 10_000); // max 10s between retries
+    console.warn(`[Worker] Redis reconnect attempt #${times}, waiting ${delay}ms`);
+    return delay;
+  },
+});
+
+connection.on('connect', () => console.log('[Worker] Redis connected.'));
+connection.on('error', (err) => console.error('[Worker] Redis error:', err.message));
+
+// ─── Generic Job Runner ───────────────────────────────────────────────────────
+
+async function runJob<T>(
+  job: Job,
+  processor: (data: unknown) => Promise<T>,
+  label: string,
+): Promise<T> {
+  const start = Date.now();
+  console.log(`[Worker] ▶ job_id=${job.id} queue=${job.queueName} attempt=${job.attemptsMade + 1}`);
+
+  try {
+    const result = await processor(job.data);
+    const ms = Date.now() - start;
+    console.log(`[Worker] ✅ job_id=${job.id} queue=${label} duration=${ms}ms`);
+    return result;
+  } catch (err) {
+    const ms = Date.now() - start;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[Worker] ❌ job_id=${job.id} queue=${label} attempt=${job.attemptsMade + 1} ` +
+        `duration=${ms}ms error="${msg}"`,
+    );
+    throw err; // rethrow so BullMQ applies retry/backoff
+  }
+}
+
+// ─── Queue Workers ────────────────────────────────────────────────────────────
+
+const visionWorker = new Worker(
+  QUEUE_VISION_SCAN,
+  (job) => runJob(job, processVisionScan, 'vision-scan'),
+  {
+    connection,
+    concurrency: env.WORKER_CONCURRENCY,
+  },
+);
+
+const notificationWorker = new Worker(
+  QUEUE_NOTIFICATION,
+  (job) => runJob(job, processNotification, 'notification'),
+  {
+    connection,
+    concurrency: env.WORKER_CONCURRENCY,
+  },
+);
+
+const contactGuardWorker = new Worker(
+  QUEUE_CONTACT_GUARD_AUDIT,
+  (job) => runJob(job, processContactGuardAudit, 'contact-guard-audit'),
+  {
+    connection,
+    concurrency: env.WORKER_CONCURRENCY,
+  },
+);
+
+const pushDeliveryWorker = new Worker(
+  QUEUE_PUSH_DELIVERY,
+  (job) => runJob(job, processPushDelivery, 'push-delivery'),
+  {
+    connection,
+    concurrency: env.WORKER_CONCURRENCY,
+  },
+);
+
+const allWorkers = [visionWorker, notificationWorker, contactGuardWorker, pushDeliveryWorker];
+
+// ─── QueueEvents — Failed Job Observability ───────────────────────────────────
+
+function attachQueueEvents(queueName: string): void {
+  const events = new QueueEvents(queueName, { connection });
+  events.on('failed', ({ jobId, failedReason }) => {
+    console.error(
+      `[Worker] ☠ PERMANENTLY FAILED job_id=${jobId} queue=${queueName} reason="${failedReason}"`,
+    );
+    // In production: send alert to Sentry / Cloud Logging / PagerDuty here.
+  });
+  events.on('stalled', ({ jobId }) => {
+    console.warn(`[Worker] ⚠ STALLED job_id=${jobId} queue=${queueName} — will be retried`);
+  });
+}
+
+[
+  QUEUE_VISION_SCAN,
+  QUEUE_NOTIFICATION,
+  QUEUE_CONTACT_GUARD_AUDIT,
+  QUEUE_PUSH_DELIVERY,
+].forEach(attachQueueEvents);
+
+// ─── Startup Banner ───────────────────────────────────────────────────────────
+
+console.log('================================================================');
+console.log('🔧 YoUnMe Background Worker v2.0 — Starting');
+console.log(
+  `📍 Queues: ${QUEUE_VISION_SCAN} | ${QUEUE_NOTIFICATION} | ` +
+    `${QUEUE_CONTACT_GUARD_AUDIT} | ${QUEUE_PUSH_DELIVERY}`,
+);
+console.log(`🔗 Redis: ${env.REDIS_URL.replace(/:\/\/.*@/, '://<credentials>@')}`);
+console.log(`⚙  Concurrency: ${env.WORKER_CONCURRENCY}`);
+console.log(
+  `🛡  Services: Supabase=${supabaseConfigured ? '✅' : '⚠️ disabled'} | ` +
+    `Vision=${visionConfigured ? '✅' : '⚠️ disabled'} | ` +
+    `FCM=${fcmConfigured ? '✅' : '⚠️ disabled'}`,
+);
+console.log('================================================================');
+
+// ─── Graceful Shutdown ────────────────────────────────────────────────────────
+
+let isShuttingDown = false;
+
+async function shutdown(signal: string): Promise<void> {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(`\n[Worker] ${signal} received — graceful shutdown starting…`);
+
+  // Close workers (finish current jobs, reject new ones)
+  await Promise.allSettled(allWorkers.map((w) => w.close()));
+
+  // Close Redis
+  await connection.quit().catch(() => connection.disconnect());
+
+  console.log('[Worker] Shutdown complete. Exiting.');
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('uncaughtException', (err) => {
+  console.error('[Worker] Uncaught exception:', err);
+  shutdown('uncaughtException').catch(() => process.exit(1));
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[Worker] Unhandled rejection:', reason);
+});
+</file>
+
+<file path="src/queue-producer.ts">
+/**
+ * YoUnMe — BullMQ Queue Producer Helper for NestJS
+ *
+ * Import this module from any NestJS controller or service to enqueue jobs
+ * to the background worker. This is the correct pattern for production.
+ *
+ * Usage in NestJS:
+ *
+ *   import { enqueueVisionScan, enqueueNotification } from '../../worker-bullmq/src/queue-producer.js';
+ *
+ *   // After user uploads a photo:
+ *   await enqueueVisionScan({ asset_id, user_id, image_url, type: 'profile_photo' });
+ *
+ *   // After a match is created:
+ *   await enqueueNotification({
+ *     recipient_id: otherUserId,
+ *     category: 'match',
+ *     title: 'You have a new match! 🔥',
+ *     body: 'Start a conversation now.',
+ *     data: { match_id: matchId },
+ *   });
+ *
+ * The producer uses the same Redis connection string as the worker.
+ * In production both services point to the same Redis instance.
+ */
+
+import { Queue, type JobsOptions } from 'bullmq';
+import IORedis from 'ioredis';
+import {
+  QUEUE_VISION_SCAN,
+  QUEUE_NOTIFICATION,
+  QUEUE_CONTACT_GUARD_AUDIT,
+  QUEUE_PUSH_DELIVERY,
+  type VisionScanJob,
+  type NotificationJob,
+  type ContactGuardAuditJob,
+  type PushDeliveryJob,
+} from './types.js';
+
+// ─── Shared Redis Connection for Producers ────────────────────────────────────
+
+const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
+
+const producerConnection = new IORedis(REDIS_URL, {
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  lazyConnect: true,
+});
+
+// ─── Queue Instances ──────────────────────────────────────────────────────────
+
+const visionQueue = new Queue(QUEUE_VISION_SCAN, { connection: producerConnection });
+const notificationQueue = new Queue(QUEUE_NOTIFICATION, { connection: producerConnection });
+const contactGuardQueue = new Queue(QUEUE_CONTACT_GUARD_AUDIT, { connection: producerConnection });
+const pushDeliveryQueue = new Queue(QUEUE_PUSH_DELIVERY, { connection: producerConnection });
+
+// ─── Default Job Options ──────────────────────────────────────────────────────
+
+const defaultOpts: JobsOptions = {
+  attempts: 4,
+  backoff: { type: 'exponential', delay: 2000 },
+  removeOnComplete: { age: 3600 }, // keep completed jobs for 1h for debugging
+  removeOnFail: { age: 86400 },   // keep failed jobs for 24h for ops review
+};
+
+// ─── Producer Functions ───────────────────────────────────────────────────────
+
+/**
+ * Enqueue an image moderation job.
+ * Call this immediately after a user uploads media to Supabase Storage.
+ */
+export async function enqueueVisionScan(job: VisionScanJob): Promise<string | undefined> {
+  const added = await visionQueue.add('vision-scan', job, {
+    ...defaultOpts,
+    // asset_id as job ID ensures only one scan per asset (deduplication)
+    jobId: `vision:${job.asset_id}`,
+  });
+  return added.id;
+}
+
+/**
+ * Enqueue an in-app notification.
+ * The worker persists the record to Supabase; Realtime delivers it to Flutter.
+ */
+export async function enqueueNotification(job: NotificationJob): Promise<string | undefined> {
+  const added = await notificationQueue.add('notification', job, defaultOpts);
+  return added.id;
+}
+
+/**
+ * Enqueue a Contact Guard audit record.
+ * Call this from chat.controller.ts when a message is blocked.
+ * The `idempotency_key` must be unique per blocking event.
+ */
+export async function enqueueContactGuardAudit(
+  job: ContactGuardAuditJob,
+): Promise<string | undefined> {
+  const added = await contactGuardQueue.add('contact-guard-audit', job, {
+    ...defaultOpts,
+    jobId: `guard:${job.idempotency_key}`, // BullMQ-level deduplication
+  });
+  return added.id;
+}
+
+/**
+ * Enqueue a native mobile push notification via Firebase Cloud Messaging.
+ * Call this directly for push notifications or let `enqueueNotification` fan out automatically.
+ */
+export async function enqueuePushDelivery(
+  job: PushDeliveryJob,
+): Promise<string | undefined> {
+  const added = await pushDeliveryQueue.add('push-delivery', job, {
+    ...defaultOpts,
+    attempts: 5, // extra retries for mobile push network resilience
+    jobId: job.notification_id
+      ? `push:${job.notification_id}`
+      : `push:${job.recipient_id}:${Date.now()}`,
+  });
+  return added.id;
+}
+</file>
+
+<file path="src/supabase.ts">
+/**
+ * YoUnMe Worker — Supabase Client (Service-Role)
+ *
+ * This client uses the service-role key and must remain strictly server-side.
+ * It is used only for persisting moderation outcomes and audit records.
+ *
+ * If Supabase credentials are not configured (dev/test without creds),
+ * the client is null and processors fall back to logging-only mode.
+ */
+
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { env, supabaseConfigured } from './config.js';
+
+let _supabase: SupabaseClient | null = null;
+
+export function getSupabaseClient(): SupabaseClient | null {
+  if (_supabase) return _supabase;
+
+  if (!supabaseConfigured) {
+    return null;
+  }
+
+  _supabase = createClient(env.SUPABASE_URL!, env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: {
+      // Service-role clients must not use session-based auth
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+
+  return _supabase;
+}
+</file>
+
+<file path="src/types-compat.ts">
+/**
+ * Backward-compatibility type aliases for the server.ts import shim.
+ * These mirror the original VisionScanJob and PushNotificationJob shapes.
+ */
+
+export type VisionScanJob = {
+  asset_id: string;
+  user_id: string;
+  image_url: string;
+  type: 'profile_photo' | 'chat_media' | 'video_call_preview';
+};
+
+/**
+ * @deprecated No push provider has been selected.
+ * The `channel` field cannot be acted upon until FCM or APNs is configured.
+ * See notification.processor.ts for the current implementation.
+ */
+export type PushNotificationJob = {
+  recipient_id: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+  channel: 'fcm' | 'apns';
+};
+</file>
+
+<file path="src/types.ts">
+/**
+ * YoUnMe Worker — Queue Names & Job Payload Contracts
+ *
+ * This file is the single source of truth for queue names and payload shapes.
+ * Both the NestJS producer and this worker must agree on these contracts.
+ *
+ * Queue names follow the format: "younme:<domain>"
+ */
+
+// ─── Queue Names ────────────────────────────────────────────────────────────
+
+export const QUEUE_VISION_SCAN = 'younme:vision-scan';
+export const QUEUE_NOTIFICATION = 'younme:notification';
+export const QUEUE_CONTACT_GUARD_AUDIT = 'younme:contact-guard-audit';
+export const QUEUE_PUSH_DELIVERY = 'younme:push-delivery';
+
+// ─── Job Payload Interfaces ──────────────────────────────────────────────────
+
+/**
+ * Enqueued by NestJS when a user uploads media (profile photo, chat image,
+ * or a video-call thumbnail capture). The worker fetches the image from
+ * Supabase Storage, calls Vision API, and persists the result.
+ */
+export interface VisionScanJob {
+  /** UUID of the stored asset record (used for idempotency) */
+  asset_id: string;
+  /** UUID of the owning user */
+  user_id: string;
+  /**
+   * Full Supabase Storage URL.
+   * The worker validates this is within the expected bucket before fetching.
+   */
+  image_url: string;
+  /** Context for the moderation decision */
+  type: 'profile_photo' | 'chat_media' | 'video_call_preview';
+}
+
+/**
+ * Moderation verdict persisted after Vision scan.
+ * Written to the `media_moderation` table via the Supabase service role.
+ */
+export interface ModerationOutcome {
+  asset_id: string;
+  user_id: string;
+  status: 'approved' | 'blocked' | 'pending_review';
+  safe_search_adult: string;
+  safe_search_racy: string;
+  safe_search_violence: string;
+  /** True when OCR detected suspicious contact information */
+  contact_detected: boolean;
+  action_taken: string;
+  reviewed_at: string;
+}
+
+/**
+ * Enqueued by NestJS for in-app notification persistence.
+ * Once persisted to Supabase, this job triggers push delivery to the
+ * `younme:push-delivery` queue for mobile client delivery via FCM.
+ */
+export interface NotificationJob {
+  /** UUID of the receiving user */
+  recipient_id: string;
+  /** Notification category; used to route to the correct delivery channel */
+  category: 'match' | 'message' | 'call' | 'system';
+  title: string;
+  body: string;
+  /** Arbitrary extra data forwarded to the Flutter client */
+  data: Record<string, string>;
+}
+
+/**
+ * Result returned by the notification processor.
+ */
+export interface NotificationResult {
+  recipient_id: string;
+  notification_id: string | null;
+  in_app_delivered: boolean;
+  push_enqueued: boolean;
+}
+
+/**
+ * Enqueued to deliver native mobile push notifications via Firebase Cloud Messaging.
+ * Triggered automatically by the notification processor or directly for real-time alerts.
+ */
+export interface PushDeliveryJob {
+  /** UUID of the receiving user */
+  recipient_id: string;
+  /** Notification category */
+  category: 'match' | 'message' | 'call' | 'system';
+  title: string;
+  body: string;
+  /** Custom data payload passed to the Flutter app */
+  data?: Record<string, string>;
+  /** Optional reference to the in-app notification row in Supabase */
+  notification_id?: string;
+}
+
+/**
+ * Result returned by the push delivery processor.
+ */
+export interface PushDeliveryResult {
+  recipient_id: string;
+  delivered_count: number;
+  failed_count: number;
+  pruned_tokens: number;
+  reason?: string;
+}
+
+/**
+ * Enqueued by NestJS when the REST Contact Guard flags a message as a
+ * violation. The worker persists an auditable strike record.
+ *
+ * Note: Real-time blocking happens in Go and NestJS; the worker only writes
+ * the audit trail so the violation cannot be lost on process restart.
+ */
+export interface ContactGuardAuditJob {
+  /** UUID of the user who sent the blocked message */
+  user_id: string;
+  /** UUID of the conversation (matches.id) */
+  conversation_id: string;
+  /** Category of the detected violation */
+  detected_type: 'phone_number' | 'social_handle' | 'external_url';
+  /**
+   * Normalised (homoglyph-resolved) excerpt — must NOT contain raw phone
+   * numbers or personal data. The NestJS producer is responsible for
+   * stripping sensitive content before enqueueing.
+   */
+  normalised_excerpt: string;
+  /** BullMQ job ID of the originating request — used to prevent duplicate strikes */
+  idempotency_key: string;
+}
+</file>
+
+<file path="src/worker.ts">
+/**
+ * YoUnMe Dating App — Backward-Compatibility Re-export
+ *
+ * IMPORTANT — ARCHITECTURAL NOTE:
+ *   The NestJS server.ts currently imports `workerService` from this file and
+ *   calls it inline. This was a development shortcut. The worker is now a
+ *   proper standalone BullMQ process (src/index.ts) and should NOT run inside
+ *   NestJS in production.
+ *
+ *   This file provides a no-op shim so that the existing server.ts import
+ *   does not break. The workerService.start() call in server.ts becomes a
+ *   harmless log statement.
+ *
+ *   Production path:
+ *     NestJS → enqueues jobs to Redis → Worker process consumes them.
+ *     See src/queue-producer.ts for the NestJS-side job enqueuing helper.
+ *
+ * @deprecated This shim will be removed once server.ts is updated to use
+ *             the queue producer pattern.
+ */
+
+export { VisionScanJob, PushNotificationJob } from './types-compat.js';
+
+class BackgroundWorkerShim {
+  public start(): void {
+    console.log(
+      '[Worker Shim] ⚠  workerService.start() called inside NestJS. ' +
+        'In production, run the worker as a separate process: npm run dev (in worker-bullmq). ' +
+        'The actual BullMQ workers are in src/index.ts.',
+    );
+  }
+
+  /** @deprecated Use BullMQ queue producer in src/queue-producer.ts instead */
+  public async processVisionScan(job: unknown): Promise<{
+    passed: boolean;
+    safe_search: { adult: string; racy: string; violence: string };
+    detected_text: string[];
+    action_taken: string;
+  }> {
+    console.warn(
+      '[Worker Shim] processVisionScan() called inline inside NestJS. ' +
+        'Enqueue a VisionScanJob to the BullMQ queue instead.',
+    );
+    // Return a safe pending_review status — never auto-approve
+    return {
+      passed: false,
+      safe_search: { adult: 'UNKNOWN', racy: 'UNKNOWN', violence: 'UNKNOWN' },
+      detected_text: [],
+      action_taken: 'PENDING_REVIEW_ENQUEUE_VIA_BULLMQ',
+    };
+  }
+}
+
+export const workerService = new BackgroundWorkerShim();
+
+// Re-export queue names and types for NestJS producer usage
+export {
+  QUEUE_VISION_SCAN,
+  QUEUE_NOTIFICATION,
+  QUEUE_CONTACT_GUARD_AUDIT,
+} from './types.js';
+export type { VisionScanJob as VisionScanJobType, NotificationJob, ContactGuardAuditJob } from './types.js';
+</file>
+
+<file path=".env.example">
+# ─────────────────────────────────────────────────────────────────────────────
+# YoUnMe — Worker Environment Variables (.env.example)
+# Copy this file to .env and fill in real values.
+# The .env file is gitignored and must NEVER be committed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Redis ─────────────────────────────────────────────────────────────────────
+# Local dev (default): redis://localhost:6379
+# Cloud Run + Memorystore: redis://<PRIVATE_IP>:6379
+REDIS_URL=redis://localhost:6379
+
+# ── Supabase (Server-Side Only) ───────────────────────────────────────────────
+# Obtain from: Supabase Dashboard → Project → API Settings
+# The service-role key bypasses RLS. Keep it strictly server-side.
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+
+# ── Supabase Storage SSRF Guard ───────────────────────────────────────────────
+# Only image URLs starting with this prefix will be accepted for Vision scanning.
+# Example: https://your-project-id.supabase.co/storage/v1/object/public/media/
+SUPABASE_STORAGE_BUCKET_PREFIX=https://your-project-id.supabase.co/storage/v1/object/public/media/
+
+# ── Google Cloud Vision API ───────────────────────────────────────────────────
+# Option A: Path to a service-account JSON key file (dev/local)
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcp-service-account.json
+
+# Option B: On Cloud Run with Workload Identity, omit GOOGLE_APPLICATION_CREDENTIALS
+# and assign the "Cloud Vision API User" IAM role to the Cloud Run service account.
+
+# Your GCP project ID (used for Vision API client init)
+GCLOUD_PROJECT_ID=your-gcp-project-id
+
+# ── Firebase Cloud Messaging (FCM) ────────────────────────────────────────────
+# Used exclusively for mobile push delivery (FCM v1).
+# Option A: Path to service account JSON, or raw JSON string, or base64 JSON string
+FIREBASE_SERVICE_ACCOUNT_KEY=your-firebase-service-account-key-json
+FIREBASE_PROJECT_ID=your-firebase-project-id
+
+# Option B: On Cloud Run with Workload Identity or GOOGLE_APPLICATION_CREDENTIALS,
+# the Firebase Admin SDK can use Application Default Credentials automatically.
+
+# ── Worker Tuning ─────────────────────────────────────────────────────────────
+# Number of jobs processed concurrently per queue (default: 3)
+WORKER_CONCURRENCY=3
+
+# Maximum Vision API retries before job moves to failed state (default: 3)
+VISION_MAX_RETRIES=3
+
+# Maximum FCM Push Delivery retries (default: 3)
+PUSH_MAX_RETRIES=3
+
+NODE_ENV=development
+</file>
+
+<file path="Dockerfile">
+# ─────────────────────────────────────────────────────────────────────────────
+# YoUnMe — Background Worker Dockerfile
+# Target: Google Cloud Run (asia-south1 Mumbai)
+# Config: 1 vCPU, 512 MiB RAM, min-instances=1 (avoids cold-start on first job)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install dependencies first (layer-caching)
+COPY package*.json ./
+RUN npm ci --include=dev
+
+# Copy source and compile TypeScript
+COPY tsconfig.json ./
+COPY src/ ./src/
+RUN npm run build
+
+# ── Stage 2: Production image ─────────────────────────────────────────────────
+FROM node:20-alpine AS production
+
+# Non-root user for Cloud Run security best practices
+RUN addgroup -S worker && adduser -S worker -G worker
+
+WORKDIR /app
+
+# Install production dependencies only
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Copy compiled output from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Do NOT copy src/ or tsconfig.json into the production image
+
+USER worker
+
+ENV NODE_ENV=production
+
+# Cloud Run supplies PORT; this worker does not listen on a port but the
+# variable is here for health-check compatibility if a /health endpoint
+# is added later.
+ENV PORT=8082
+
+# Structured log output (single-line JSON is preferred by Cloud Logging)
+ENV NODE_OPTIONS="--enable-source-maps"
+
+# The worker process must not exit after processing a single job.
+# It stays alive waiting for new Redis jobs until SIGTERM is received.
+CMD ["node", "dist/index.js"]
+</file>
+
+<file path="jest.resolver.cjs">
+/**
+ * Custom Jest resolver for ESM TypeScript projects.
+ * Remaps .js imports to .ts so jest finds TypeScript source files.
+ * Must be CommonJS (.cjs).
+ */
+
+const path = require('path');
+
+module.exports = (request, options) => {
+  // Remap relative .js imports → .ts
+  if (request.startsWith('.') && request.endsWith('.js')) {
+    const tsRequest = request.slice(0, -3) + '.ts';
+    try {
+      return options.defaultResolver(tsRequest, options);
+    } catch {
+      // .ts not found — fall through to try original .js
+    }
+  }
+  return options.defaultResolver(request, options);
+};
+</file>
+
+<file path="package.json">
+{
+  "name": "younme-worker-bullmq",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "YoUnMe Cloud Run Background Worker — BullMQ + Redis (asia-south1 Mumbai)",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google-cloud/vision": "^4.3.2",
+    "@supabase/supabase-js": "^2.44.3",
+    "bullmq": "^5.7.0",
+    "firebase-admin": "^14.5.0",
+    "ioredis": "^5.4.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.2",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/default-esm",
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ],
+    "moduleNameMapper": {
+      "^(\\.\\.?/.*)\\.js$": "$1"
+    },
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "useESM": true,
+          "diagnostics": false,
+          "tsconfig": {
+            "module": "ESNext",
+            "moduleResolution": "Bundler"
+          }
+        }
+      ]
+    },
+    "testEnvironment": "node",
+    "testRegex": "src/__tests__/.*\\.test\\.ts$",
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/__tests__/**"
+    ]
+  }
+}
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
+</file>
+
+<file path="UNRESOLVED_DECISIONS.md">
+# YoUnMe Worker — Unresolved Decisions
+
+This document tracks decisions that must be made before production deployment.
+
+---
+
+## 🟢 RESOLVED: Native Push Notification Provider (Firebase Cloud Messaging)
+
+**Status:** Decided & Implemented.
+
+**Decision:** Firebase Cloud Messaging (FCM) is approved exclusively as the native mobile
+push notification delivery provider. Supabase remains the sole authentication and database platform.
+No Firebase Auth or Firebase Realtime/Firestore DB is introduced.
+
+**Implementation Summary:**
+1. Dedicated queue `younme:push-delivery` added to isolate push delivery latency, retries, and rate limits from in-app notification persistence.
+2. `firebase-admin` (v14.5.0) installed and initialized via `src/fcm.ts` singleton.
+3. Additive migration added to `database/worker-migration.sql` for `device_tokens` table with RLS.
+4. Auto-pruning of stale/unregistered tokens (`messaging/registration-token-not-registered`, `messaging/invalid-registration-token`).
+5. Exponential backoff retries for transient FCM provider outages.
+6. Privacy-preserving notification payloads (no PII or raw tokens logged).
+
+---
+
+## 🟡 MEDIUM: Cloud Run Deployment Configuration
+
+**Status:** Not verified.
+
+The Dockerfile and worker code are ready for Cloud Run, but the following
+infrastructure items must be confirmed:
+
+- [ ] Google Cloud project and region (`asia-south1`) are provisioned.
+- [ ] Redis instance (Google Cloud Memorystore for Redis) is provisioned and the
+      `REDIS_URL` (private VPC IP) is available.
+- [ ] A Cloud Run service for `worker-bullmq` is created separately from the NestJS service.
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` is stored in Secret Manager and mounted as an env var.
+- [ ] `GOOGLE_APPLICATION_CREDENTIALS` or Workload Identity is configured on the
+      Cloud Run service account with `roles/cloudvision.user`.
+- [ ] `SUPABASE_STORAGE_BUCKET_PREFIX` is set to the production bucket prefix.
+- [ ] Min-instances is set to 1 to avoid cold-start delays on job processing.
+
+---
+
+## 🟡 MEDIUM: NestJS Producer Integration
+
+**Status:** Partial.
+
+The `queue-producer.ts` file provides typed `enqueue*` helper functions.
+These are not yet called from the NestJS controllers.
+
+To complete integration:
+1. Update `onboarding.controller.ts` — after a photo_url is saved, call `enqueueVisionScan`.
+2. Update `chat.controller.ts` — after a Contact Guard block, call `enqueueContactGuardAudit`.
+3. Update `discovery.controller.ts` / `chat.controller.ts` — after a match is created,
+   call `enqueueNotification` for the matched user.
+
+See `src/queue-producer.ts` for usage examples.
+
+---
+
+## 🟢 LOW: Strike Accumulation / Account Suspension
+
+**Status:** Not implemented.
+
+The contact guard audit table records violations, but the NestJS `chat.controller.ts`
+uses an in-memory `userStrikes` map that resets on restart. A persistent strike system
+with thresholds and cooldowns requires:
+
+1. A `user_strikes` table (user_id, current_count, last_violation_at, reset_at).
+2. Suspension logic in NestJS when a threshold is crossed.
+3. Agreement on thresholds (3 strikes? 5 strikes?) — this is a product decision.
+</file>
+
+</files>
