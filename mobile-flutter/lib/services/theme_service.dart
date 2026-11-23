@@ -5,48 +5,55 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Core brand accents
-  static const Color flamePink = Color(0xFFE11D48); // Vibrant Crimson / Rose
-  static const Color flameHotPink = Color(0xFFEC4899); // Hot Pink
-  static const Color flamePurple = Color(0xFF9B51E0);
+  // Core brand accents derived directly from the YoUnMe Logo
+  static const Color flamePink = Color(0xFFFF2A6D); // Vibrant Romantic Rose (Logo ribbon & "Yo")
+  static const Color flameHotPink = Color(0xFFFF4D79); // Radiant Coral Rose
+  static const Color flameSunset = Color(0xFFFF7A59); // Sunset Coral Glow (Heart inner curve)
+  static const Color flamePurple = Color(0xFF8B1E62); // Romantic Plum / Violet (Logo "Me")
   static const Color cyanAccent = Color(0xFF38BDF8); // Verified Blue Badge
-  static const Color goldAccent = Color(0xFFF59E0B); // Streak Flame / Ruby Amber
+  static const Color goldAccent = Color(0xFFFF9E7D); // Warm Sunset Apricot Glow
   static const Color onlineGreen = Color(0xFF22C55E); // Active / Match Green
-  static const Color rubyPink = Color(0xFFFB7185); // Ruby Pink
+  static const Color rubyPink = Color(0xFFFF2A6D); // Signature Ruby Pink
   static const Color offlineGrey = Color(0xFF8E8E93);
   static const Color errorRed = Color(0xFFFF4757);
 
-  // Dark Mode Surfaces & Backgrounds - Deep dark plum/void black (#0D070C to #140A12)
-  static const Color darkBackground = Color(0xFF0D070C);
-  static const Color darkSurface = Color(0xFF140A12);
-  static const Color darkCard = Color(0xFF1B1119);
-  static const Color darkElevated = Color(0xFF1E131C);
-  static const Color darkBorder = Color(0xFF2E1E2B);
+  // Dark Mode Surfaces & Backgrounds - Deep Obsidian Midnight Plum
+  static const Color darkBackground = Color(0xFF0D0711);
+  static const Color darkSurface = Color(0xFF160B1C);
+  static const Color darkCard = Color(0xFF1E1026);
+  static const Color darkElevated = Color(0xFF261430);
+  static const Color darkBorder = Color(0xFF331742);
   static const Color darkTextPrimary = Color(0xFFFFFFFF);
-  static const Color darkTextSecondary = Color(0xFF9CA3AF);
-  static const Color darkTextMuted = Color(0xFF6B7280);
-  static const Color darkIncomingBubble = Color(0xFF241822);
+  static const Color darkTextSecondary = Color(0xFFD4C2D0);
+  static const Color darkTextMuted = Color(0xFF9E8497);
+  static const Color darkIncomingBubble = Color(0xFF24132B);
 
-  // Light Mode Surfaces & Backgrounds
-  static const Color lightBackground = Color(0xFFF9F6F0); // Warm cream / warm white
+  // Light Mode Surfaces & Backgrounds - Soft Romantic Blush & Warm Ivory (Logo Canvas)
+  static const Color lightBackground = Color(0xFFFFF5F8); // Soft Glowing Blush
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightCard = Color(0xFFFFFFFF);
-  static const Color lightElevated = Color(0xFFF2ECE4);
-  static const Color lightBorder = Color(0x1A2D1B2E);
-  static const Color lightTextPrimary = Color(0xFF231826); // Dark plum / charcoal
-  static const Color lightTextSecondary = Color(0xFF6B5E6E);
-  static const Color lightTextMuted = Color(0xFF9A8D9D);
-  static const Color lightIncomingBubble = Color(0xFFEDE7DF);
+  static const Color lightElevated = Color(0xFFFDE8EE);
+  static const Color lightBorder = Color(0x33FF2A6D);
+  static const Color lightTextPrimary = Color(0xFF2B0A23); // Deep Romantic Plum Charcoal
+  static const Color lightTextSecondary = Color(0xFF724D68);
+  static const Color lightTextMuted = Color(0xFFA38099);
+  static const Color lightIncomingBubble = Color(0xFFF8E7ED);
 
   // Brand Gradients
   static const LinearGradient flameGradient = LinearGradient(
-    colors: [Color(0xFFE11D48), Color(0xFFEC4899)],
+    colors: [Color(0xFFFF2A6D), Color(0xFFFF7A59)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient logoTypographyGradient = LinearGradient(
+    colors: [Color(0xFFFF2A6D), Color(0xFFD81B60), Color(0xFF791E60)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient subtleLightCardGradient = LinearGradient(
-    colors: [Color(0xFFFFFFFF), Color(0xFFFDFBF7)],
+    colors: [Color(0xFFFFFFFF), Color(0xFFFFF0F5)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/chat/chat_tab_screen.dart';
@@ -6,13 +7,25 @@ import 'screens/home/discovery_tab_screen.dart';
 import 'screens/connect/connect_tab_screen.dart';
 import 'screens/auth/splash_landing_screen.dart';
 import 'screens/auth/sign_in_screen.dart';
-import 'screens/auth/onboarding_wizard_screen.dart';
+import 'screens/auth/basic_profile_page.dart';
 import 'services/theme_service.dart';
 import 'services/theme_provider.dart';
 import 'services/app_state_provider.dart';
 
 void main() {
   runApp(const ProviderScope(child: YoUnMeApp()));
+}
+
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
 }
 
 class YoUnMeApp extends StatefulWidget {
@@ -41,6 +54,7 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
           return MaterialApp(
             title: 'YoUnMe Dating App',
             debugShowCheckedModeBanner: false,
+            scrollBehavior: const AppScrollBehavior(),
             themeMode: _themeProvider.themeMode,
             // ─── Light Mode ThemeData ───
             theme: ThemeData(
@@ -102,6 +116,10 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
               ),
               extensions: const [YoUnMeThemeExtension.dark],
             ),
+            routes: {
+              '/home': (_) => const MainShellScreen(),
+              '/profile-setup': (_) => const BasicProfilePage(),
+            },
             home: ProviderScope(child: const AuthGate()),
           );
         },
@@ -124,7 +142,9 @@ const _kTabLabels = [
 // Main App Shell
 // ─────────────────────────────────────────────────────────────────────────────
 class MainShellScreen extends StatefulWidget {
-  const MainShellScreen({super.key});
+  final bool showStreakOnEntry;
+
+  const MainShellScreen({super.key, this.showStreakOnEntry = false});
 
   @override
   State<MainShellScreen> createState() => _MainShellScreenState();
@@ -136,7 +156,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget _buildBody(YoUnMeThemeExtension theme) {
     switch (_currentIndex) {
       case 0:
-        return const DiscoveryTabScreen();
+        return DiscoveryTabScreen(showStreakOnEntry: widget.showStreakOnEntry);
       case 1:
         return const ConnectTabScreen();
       case 2:
@@ -210,7 +230,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     Icon(
                       active ? iconEntries[i].value : iconEntries[i].key,
                       size: 22,
-                      color: active ? const Color(0xFFEC4899) : const Color(0xFF9CA3AF),
+                      color: active
+                          ? const Color(0xFFEC4899)
+                          : const Color(0xFF9CA3AF),
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -218,7 +240,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-                        color: active ? const Color(0xFFEC4899) : const Color(0xFF9CA3AF),
+                        color: active
+                            ? const Color(0xFFEC4899)
+                            : const Color(0xFF9CA3AF),
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -258,6 +282,7 @@ class AuthGate extends ConsumerWidget {
             onCreateAccount: () =>
                 notifier.setAuthScreen(AuthScreen.onboarding),
             onSignIn: () => notifier.setAuthScreen(AuthScreen.signin),
+            onComplete: (data) => notifier.setAuthenticated(true),
           );
         case AuthScreen.signin:
           return SignInScreen(
@@ -266,11 +291,7 @@ class AuthGate extends ConsumerWidget {
             onGoToSignUp: () => notifier.setAuthScreen(AuthScreen.onboarding),
           );
         case AuthScreen.onboarding:
-          return OnboardingWizardScreen(
-            onBack: () => notifier.setAuthScreen(AuthScreen.splash),
-            onComplete: (data) => notifier.setAuthenticated(true),
-            onGoToSignIn: () => notifier.setAuthScreen(AuthScreen.signin),
-          );
+          return const BasicProfilePage();
       }
     }
     return const MainShellScreen();

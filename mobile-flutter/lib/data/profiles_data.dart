@@ -73,11 +73,11 @@ final ScheduledDateModel kDemoScheduledDate = ScheduledDateModel(
   id: 'sd_1',
   withUserId: 'p-01',
   nickname: 'Ananya',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
-  venue: 'Olive Bistro, Jubilee Hills',
+  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
+  venue: 'Roastery Coffee House',
   address: 'Road No. 46, Jubilee Hills, Hyderabad, Telangana 500033',
   city: 'Hyderabad',
-  scheduledAt: DateTime(2026, 11, 16, 18, 30),
+  scheduledAt: DateTime(2026, 11, 19, 19, 30),
   durationMins: 120,
   isDate: true,
   activityType: 'Specialty Coffee Tasting & Vinyl Browsing ☕🎵',
@@ -86,7 +86,7 @@ final ScheduledDateModel kDemoScheduledDate = ScheduledDateModel(
   romanticMilestone: '7-Day Connection Streak 🔥 • 98% Compatibility Vibe',
   sharedPlaylist: 'Acoustic Sunset Romance • 18 Songs Curated for Two',
   vibeNotes:
-      'Subko has cozy candlelit booths, artisan sourdough croissants, and an eclectic vinyl selection. Perfect quiet ambiance to chat and unwind together.',
+      'Roastery Coffee House has cozy candlelit booths, artisan sourdough croissants, and an eclectic vinyl selection. Perfect quiet ambiance to chat and unwind together.',
 );
 
 const List<CandidateCard> kDemoProfiles = [
@@ -101,6 +101,7 @@ const List<CandidateCard> kDemoProfiles = [
     photoUrls: [
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Specialty Coffee ☕', 'Indie Vinyl 🎵', 'Modern Art 🎨'],
     vibeScore: 98,
@@ -119,6 +120,7 @@ const List<CandidateCard> kDemoProfiles = [
     photoUrls: [
       'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Architecture 🏛️', 'Rock Climbing 🧗', 'Sunsets 🌇'],
     vibeScore: 95,
@@ -137,6 +139,7 @@ const List<CandidateCard> kDemoProfiles = [
     photoUrls: [
       'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Art Galleries 🖼️', 'Jazz Nights 🎷', 'Pottery 🏺'],
     vibeScore: 96,
@@ -155,6 +158,7 @@ const List<CandidateCard> kDemoProfiles = [
     photoUrls: [
       'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Design Systems 📐', 'Filter Coffee ☕', 'Stationery 🖋️'],
     vibeScore: 97,
@@ -173,6 +177,7 @@ const List<CandidateCard> kDemoProfiles = [
     photoUrls: [
       'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Books 📚', 'Classical Dance 💃', 'Vinyl Records 🎶'],
     vibeScore: 96,
@@ -190,6 +195,8 @@ const List<CandidateCard> kDemoProfiles = [
     bio: 'Fintech lead & weekend badminton player 🏸 Obsessed with sourdough baking, indie podcasts, and impromptu road trips.',
     photoUrls: [
       'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Badminton 🏸', 'Sourdough 🥖', 'Tech Startups 🚀'],
     vibeScore: 95,
@@ -207,6 +214,8 @@ const List<CandidateCard> kDemoProfiles = [
     bio: 'Data scientist with an obsession for street photography & rooftop sunsets 🌇 Let\'s grab artisanal gelato and talk sci-fi.',
     photoUrls: [
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Street Photography 📸', 'Gelato 🍨', 'Sci-Fi 🚀'],
     vibeScore: 94,
@@ -224,6 +233,8 @@ const List<CandidateCard> kDemoProfiles = [
     bio: 'Architectural conservator & heritage walk enthusiast 🏛️ Love Hyderabadi chai, Urdu poetry, and quiet museum afternoons.',
     photoUrls: [
       'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Heritage Walks 🏛️', 'Irani Chai ☕', 'Poetry 📜'],
     vibeScore: 93,
@@ -241,6 +252,8 @@ const List<CandidateCard> kDemoProfiles = [
     bio: 'Contemporary dancer & ocean swimmer 🌊 Catch me barefoot on the sand or hunting for the city\'s spiciest pani puri.',
     photoUrls: [
       'https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1616766098956-c81f12114571?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Dance 💃', 'Ocean Swims 🏊‍♀️', 'Street Food 🍲'],
     vibeScore: 92,
@@ -258,6 +271,8 @@ const List<CandidateCard> kDemoProfiles = [
     bio: 'Brand strategist & amateur mixologist 🍸 Vinyl records, lush plant nurseries, and deep conversations about psychology.',
     photoUrls: [
       'https://images.unsplash.com/photo-1616766098956-c81f12114571?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Mixology 🍹', 'Plant Care 🌿', 'Psychology 🧠'],
     vibeScore: 91,
@@ -275,6 +290,8 @@ const List<CandidateCard> kDemoProfiles = [
     bio: 'Creative director & marathon runner 🏃‍♂️ Morning trails, vintage motorbikes, and finding the best biryani spots in town.',
     photoUrls: [
       'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Marathon 🏃‍♂️', 'Vintage Bikes 🏍️', 'Biryani 🍛'],
     vibeScore: 93,
@@ -292,6 +309,8 @@ const List<CandidateCard> kDemoProfiles = [
     bio: 'Venture architect & jazz saxophonist 🎷 Pour-over coffee nerd, architectural sketching, and spontaneous weekend getaways.',
     photoUrls: [
       'https://images.unsplash.com/photo-1615813967515-e1838c1c5116?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
     ],
     sharedInterests: ['Pour Over ☕', 'Live Jazz 🎷', 'Architecture 🏛️'],
     vibeScore: 95,
@@ -319,7 +338,7 @@ const List<SparkCrushItem> kSparkCrushList = [
     age: 23,
     city: 'Bengaluru, Indiranagar',
     avatar: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
-    type: 'spark',
+    type: 'mega_crush',
     direction: 'received',
     timestamp: '1h ago',
     interests: ['Design Systems 📐', 'Filter Coffee ☕'],
@@ -341,7 +360,7 @@ const List<SparkCrushItem> kSparkCrushList = [
     age: 24,
     city: 'Mumbai, Bandra West',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80',
-    type: 'spark',
+    type: 'mega_crush',
     direction: 'received',
     timestamp: '5h ago',
     interests: ['Pottery 🏺', 'Acoustic Rock 🎸'],
@@ -352,12 +371,14 @@ const List<SparkCrushItem> kSparkCrushList = [
     age: 26,
     city: 'Hyderabad, Gachibowli',
     avatar: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=800&q=80',
-    type: 'spark',
+    type: 'mega_crush',
     direction: 'sent',
     timestamp: 'Yesterday',
     interests: ['Badminton 🏸', 'Tech Startups 🚀'],
   ),
 ];
+
+const List<SparkCrushItem> kMegaCrushList = kSparkCrushList;
 
 const List<String> kIcebreakerPrompts = [
   "☕ If we met for coffee, what's your go-to order?",
@@ -397,6 +418,45 @@ List<MatchHistoryItem> generate50Matches() {
 final ScheduledDateModel demoScheduledDate = kDemoScheduledDate;
 const List<SparkCrushItem> sparkCrushList = kSparkCrushList;
 List<LikeHistoryItem> generate50History() => generate50LikesHistory();
+
+final List<Map<String, dynamic>> liveProfiles = [
+  {
+    'name': 'Ananya',
+    'avatar': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+    'age': 23,
+    'bio': 'Coffee lover & art curator',
+  },
+  {
+    'name': 'Kavya',
+    'avatar': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
+    'age': 24,
+    'bio': 'Architectural designer & travel photographer',
+  },
+  {
+    'name': 'Zoya',
+    'avatar': 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
+    'age': 22,
+    'bio': 'Indie music vocalist & vinyl collector',
+  },
+  {
+    'name': 'Meera',
+    'avatar': 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80',
+    'age': 25,
+    'bio': 'Creative director & yoga practitioner',
+  },
+  {
+    'name': 'Tanya',
+    'avatar': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80',
+    'age': 23,
+    'bio': 'Pastry chef & food blogger',
+  },
+  {
+    'name': 'Riya',
+    'avatar': 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=800&q=80',
+    'age': 24,
+    'bio': 'Tech strategist & marathon runner',
+  },
+];
 
 const List<RandomCallAvatarProfile> randomCallAvatarProfiles = [
   RandomCallAvatarProfile(
@@ -475,7 +535,7 @@ const List<RandomCallAvatarProfile> randomCallAvatarProfiles = [
 
 List<LikeHistoryItem> generate50LikesHistory() {
   final List<LikeHistoryItem> list = [];
-  const types = ['like', 'spark', 'mega_crush', 'passed', 'like'];
+  const types = ['like', 'mega_crush', 'mega_crush', 'passed', 'like'];
   for (int i = 0; i < 50; i++) {
     final p = kDemoProfiles[i % kDemoProfiles.length];
     list.add(

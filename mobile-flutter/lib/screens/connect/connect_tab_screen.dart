@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../data/profiles_data.dart';
 import '../../models/discovery_connect_models.dart';
@@ -10,14 +11,31 @@ class ConnectTabScreen extends StatefulWidget {
   State<ConnectTabScreen> createState() => _ConnectTabScreenState();
 }
 
-class _ConnectTabScreenState extends State<ConnectTabScreen> {
+class _ConnectTabScreenState extends State<ConnectTabScreen> with SingleTickerProviderStateMixin {
   int _subTabIndex = 0; // 0: Random call, 1: Likes, 2: Matches
   String _activeFilter = 'Recommended';
   String? _expandedFloatingAvatarId;
 
+  late final AnimationController _waveCtrl;
+
   final List<String> _filters = ['Recommended', 'Nearby', '• Online', 'Interests'];
 
-  final List<SparkCrushItem> _sparks = kSparkCrushList;
+  final List<SparkCrushItem> _megaCrushes = kSparkCrushList;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _waveCtrl.dispose();
+    super.dispose();
+  }
 
   void _startCall(String name, String avatar, bool isVideo) {
     Navigator.push(
@@ -213,7 +231,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
   // SUB-TAB 1: RANDOM CALL
   // ─────────────────────────────────────────────────────────────────────────────
   Widget _buildRandomCallSubTab() {
-    final floatingAvatars = [
+    final bobbingProfiles = [
       const RandomCallAvatarProfile(
         id: 'f_1',
         name: 'Kavya',
@@ -295,7 +313,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Quick-connect CTA buttons side-by-side: "📞 Join Audio Call" and "📹 Join Video Call"
+        // Quick-connect CTA buttons side-by-side
         Row(
           children: [
             Expanded(
@@ -353,7 +371,174 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
         ),
         const SizedBox(height: 18),
 
-        // Floating Connections [Live] Card (Tap bubble to connect)
+        // Dual Sinusoidal Bézier Wave Canvas with 4 Undulating Bobbing Avatars
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B1119),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFF2E1E2B)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x40000000),
+                blurRadius: 16,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.waves, size: 18, color: Color(0xFFEC4899)),
+                      SizedBox(width: 6),
+                      Text(
+                        'Live Sinusoidal Waves',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        '[Live]',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF22C55E)),
+                      ),
+                    ],
+                  ),
+                  const Text('Tap avatar to connect', style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Animated Canvas with Bézier Waves and Bobbing Avatars
+              SizedBox(
+                height: 180,
+                child: AnimatedBuilder(
+                  animation: _waveCtrl,
+                  builder: (context, _) {
+                    return Stack(
+                      children: [
+                        // Dual sinusoidal canvas
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _SinusoidalWavePainter(
+                              phase: _waveCtrl.value * 2 * math.pi,
+                            ),
+                          ),
+                        ),
+
+                        // 4 Undulating Bobbing Avatars along the waves
+                        ...List.generate(bobbingProfiles.length, (i) {
+                          final p = bobbingProfiles[i];
+                          final isExpanded = _expandedFloatingAvatarId == p.id;
+                          final phaseOffset = (i * 1.5);
+                          final bobbingY = math.sin((_waveCtrl.value * 2 * math.pi) + phaseOffset) * 16.0;
+
+                          // Left positions: 6%, 30%, 54%, 78%
+                          final leftPercent = 0.05 + (i * 0.24);
+
+                          return Positioned(
+                            left: leftPercent * (MediaQuery.of(context).size.width - 70),
+                            top: 42 + bobbingY,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _expandedFloatingAvatarId = isExpanded ? null : p.id;
+                                });
+                              },
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Stack(
+                                    children: [
+                                      Container(
+                                        width: 54,
+                                        height: 54,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isExpanded ? const Color(0xFFEC4899) : p.ringColor,
+                                            width: isExpanded ? 2.5 : 2,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: p.ringColor.withValues(alpha: 0.4),
+                                              blurRadius: 10,
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(27),
+                                          child: SafeProfileImage(imageUrl: p.avatar, width: 54, height: 54),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 0,
+                                        left: 0,
+                                        child: Container(
+                                          width: 17,
+                                          height: 17,
+                                          decoration: const BoxDecoration(color: Color(0xCC000000), shape: BoxShape.circle),
+                                          alignment: Alignment.center,
+                                          child: Text(p.sticker, style: const TextStyle(fontSize: 9.5)),
+                                        ),
+                                      ),
+                                      const Positioned(
+                                        bottom: 2,
+                                        right: 2,
+                                        child: CircleAvatar(radius: 4.5, backgroundColor: Color(0xFF22C55E)),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(p.name, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Colors.white)),
+                                  Text(p.language, style: const TextStyle(fontSize: 9, color: Color(0xFF9CA3AF))),
+                                  if (isExpanded) ...[
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () => _startCall(p.name, p.avatar, false),
+                                          child: Container(
+                                            width: 24,
+                                            height: 24,
+                                            margin: const EdgeInsets.only(right: 3),
+                                            decoration: const BoxDecoration(color: Color(0xFF22C55E), shape: BoxShape.circle),
+                                            child: const Icon(Icons.call, size: 12, color: Colors.white),
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () => _startCall(p.name, p.avatar, true),
+                                          child: Container(
+                                            width: 24,
+                                            height: 24,
+                                            decoration: const BoxDecoration(color: Color(0xFF38BDF8), shape: BoxShape.circle),
+                                            child: const Icon(Icons.videocam, size: 12, color: Colors.white),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Random Call Metrics Card (Time spent, total calls, weekly insights)
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -364,119 +549,143 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Row(
+                children: [
+                  Icon(Icons.assessment_outlined, color: Color(0xFF38BDF8), size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Random Call Metrics',
+                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
+                  Spacer(),
+                  Text('Weekly Activity', style: TextStyle(fontSize: 10.5, color: Color(0xFF9CA3AF))),
+                ],
+              ),
+              const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
-                    children: [
-                      Text(
-                        'Floating Connections',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        '[Live]',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF22C55E)),
-                      ),
-                    ],
-                  ),
-                  const Text('Tap bubble to connect', style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                  _metricBox('3h 42m', 'Time Spent', Icons.timer, const Color(0xFFEC4899)),
+                  _metricBox('18 Calls', 'Total Calls', Icons.phone_in_talk, const Color(0xFF22C55E)),
+                  _metricBox('+28% Wk', 'Weekly Insights', Icons.trending_up, const Color(0xFFF59E0B)),
                 ],
-              ),
-              const SizedBox(height: 16),
-
-              // 4 animal avatar bubbles with inline expandable Audio/Video call buttons on tap
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: floatingAvatars.map((p) {
-                  final isExpanded = _expandedFloatingAvatarId == p.id;
-                  return Column(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _expandedFloatingAvatarId = isExpanded ? null : p.id;
-                          });
-                        },
-                        child: Stack(
-                          children: [
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isExpanded ? const Color(0xFFEC4899) : p.ringColor,
-                                  width: isExpanded ? 2.5 : 2,
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(30),
-                                child: SafeProfileImage(imageUrl: p.avatar, width: 60, height: 60),
-                              ),
-                            ),
-                            Positioned(
-                              top: 0,
-                              left: 0,
-                              child: Container(
-                                width: 18,
-                                height: 18,
-                                decoration: const BoxDecoration(color: Color(0xCC000000), shape: BoxShape.circle),
-                                alignment: Alignment.center,
-                                child: Text(p.sticker, style: const TextStyle(fontSize: 10)),
-                              ),
-                            ),
-                            const Positioned(
-                              bottom: 2,
-                              right: 2,
-                              child: CircleAvatar(radius: 5, backgroundColor: Color(0xFF22C55E)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(p.name, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
-                      Text(p.language, style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
-                      if (isExpanded) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () => _startCall(p.name, p.avatar, false),
-                              child: Container(
-                                width: 26,
-                                height: 26,
-                                margin: const EdgeInsets.only(right: 4),
-                                decoration: const BoxDecoration(color: Color(0xFF22C55E), shape: BoxShape.circle),
-                                child: const Icon(Icons.call, size: 14, color: Colors.white),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () => _startCall(p.name, p.avatar, true),
-                              child: Container(
-                                width: 26,
-                                height: 26,
-                                decoration: const BoxDecoration(color: Color(0xFF38BDF8), shape: BoxShape.circle),
-                                child: const Icon(Icons.videocam, size: 14, color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  );
-                }).toList(),
               ),
             ],
           ),
         ),
+        const SizedBox(height: 18),
+
+        // Random Call History Section
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Random Call History',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0x26EC4899),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text('Recent Voice & Video', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFEC4899))),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        _callHistoryTile('Kavya', 'Video Call • 14m 20s', 'Today, 11:20 AM', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80', isVideo: true, rating: '5.0 ⭐'),
+        _callHistoryTile('Aanya', 'Audio Call • 8m 45s', 'Yesterday, 8:15 PM', 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80', isVideo: false, rating: '4.8 ⭐'),
+        _callHistoryTile('Rohan', 'Audio Call • 12m 10s', 'Nov 15, 6:40 PM', 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80', isVideo: false, rating: '4.9 ⭐'),
+        _callHistoryTile('Sneha', 'Video Call • 22m 30s', 'Nov 14, 9:05 PM', 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80', isVideo: true, rating: '5.0 ⭐'),
+        const SizedBox(height: 20),
       ],
     );
   }
 
+  Widget _metricBox(String value, String label, IconData icon, Color color) {
+    return Container(
+      width: (MediaQuery.of(context).size.width - 76) / 3,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF140A12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Colors.white)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(fontSize: 9.5, color: Color(0xFF9CA3AF))),
+        ],
+      ),
+    );
+  }
+
+  Widget _callHistoryTile(String name, String typeAndDuration, String time, String avatar, {required bool isVideo, required String rating}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1119),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF2E1E2B)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(radius: 20, backgroundImage: NetworkImage(avatar)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(name, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white)),
+                    const SizedBox(width: 6),
+                    Text(rating, style: const TextStyle(fontSize: 10, color: Color(0xFFF59E0B))),
+                  ],
+                ),
+                Text(typeAndDuration, style: const TextStyle(fontSize: 10.5, color: Color(0xFF9CA3AF))),
+                Text(time, style: const TextStyle(fontSize: 9.5, color: Color(0xFF64748B))),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => _startCall(name, avatar, isVideo),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isVideo ? const Color(0x2638BDF8) : const Color(0x2622C55E),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: isVideo ? const Color(0x8038BDF8) : const Color(0x8022C55E)),
+              ),
+              child: Row(
+                children: [
+                  Icon(isVideo ? Icons.videocam : Icons.call, size: 13, color: isVideo ? const Color(0xFF38BDF8) : const Color(0xFF22C55E)),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Call Back',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: isVideo ? const Color(0xFF38BDF8) : const Color(0xFF22C55E),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
-  // SUB-TAB 2: LIKES
+  // SUB-TAB 2: LIKES (TERMINOLOGY "MEGA CRUSH" & 50-ITEM VERTICAL REELS SCROLL BOX)
   // ─────────────────────────────────────────────────────────────────────────────
   Widget _buildLikesSubTab() {
     final history = generate50LikesHistory();
@@ -484,12 +693,12 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 🔥 Sparks & Mega Crushes (5) (Priority Matches pink label)
+        // 🔥 Mega Crushes (5) (Priority Matches pink label)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              '🔥 Sparks & Mega Crushes (5)',
+              '🔥 Mega Crushes (5)',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
             ),
             Container(
@@ -508,9 +717,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
           height: 130,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: _sparks.length,
+            itemCount: _megaCrushes.length,
             itemBuilder: (context, i) {
-              final s = _sparks[i];
+              final s = _megaCrushes[i];
               return Container(
                 width: 105,
                 margin: const EdgeInsets.only(right: 10),
@@ -533,9 +742,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      s.type == 'mega_crush' ? 'Mega Crush' : 'Spark Sent',
-                      style: const TextStyle(fontSize: 9.5, color: Color(0xFFEC4899), fontWeight: FontWeight.w600),
+                    const Text(
+                      'Mega Crush',
+                      style: TextStyle(fontSize: 9.5, color: Color(0xFFEC4899), fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -570,8 +779,8 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _statItem('24', 'Likes Sent', '+18%'),
-                  _statItem('6', 'Sparks', '+25%'),
-                  _statItem('3', 'Mega Crushes', '100%'),
+                  _statItem('8', 'Mega Crushes', '+35%'),
+                  _statItem('3', 'Top Admirers', '100%'),
                   _statItem('8', 'Matches/Wk', '92% rate'),
                 ],
               ),
@@ -580,7 +789,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
         ),
         const SizedBox(height: 18),
 
-        // 10 People Liked You (10 Views Daily, green badge Free Tier v1: Full View Active)
+        // 10 People Liked You
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -617,69 +826,125 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
         ),
         const SizedBox(height: 18),
 
-        // Likes History (50) (Max 50 recent)
-        const Text('Likes History (50)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
-        const SizedBox(height: 8),
-
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 8, // sample top 8 for smooth view
-          itemBuilder: (ctx, i) {
-            final h = history[i];
-            Color badgeColor;
-            switch (h.type) {
-              case 'mega_crush':
-                badgeColor = const Color(0xFFEC4899);
-                break;
-              case 'spark':
-                badgeColor = const Color(0xFFF59E0B);
-                break;
-              case 'passed':
-                badgeColor = const Color(0xFF6B7280);
-                break;
-              default:
-                badgeColor = const Color(0xFF22C55E);
-            }
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(10),
+        // Contained 50-Item Vertical Reels Scroll Box in Like History with Snapping
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Likes History (50 Profiles)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF1B1119),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF2E1E2B)),
+                color: const Color(0x33EC4899),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: const Color(0x66EC4899)),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  CircleAvatar(radius: 20, backgroundImage: NetworkImage(h.avatar)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${h.name}, ${h.age}', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
-                        Text('${h.city} • ${h.timestamp}', style: const TextStyle(fontSize: 10.5, color: Color(0xFF9CA3AF))),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: badgeColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
-                    ),
-                    child: Text(
-                      h.type.toUpperCase(),
-                      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: badgeColor),
-                    ),
-                  ),
+                  Icon(Icons.unfold_more, size: 12, color: Color(0xFFFF8DA1)),
+                  SizedBox(width: 4),
+                  Text('Vertical Reels Snapping', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFFFF8DA1))),
                 ],
               ),
-            );
-          },
+            ),
+          ],
         ),
+        const SizedBox(height: 10),
+
+        // Contained Box with Vertical Page Snapping
+        Container(
+          height: 380,
+          decoration: BoxDecoration(
+            color: const Color(0xFF140A12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFF2E1E2B)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: ListView.builder(
+              physics: const PageScrollPhysics(), // Snapping reels scroll
+              itemCount: history.length, // All 50 items
+              itemBuilder: (ctx, i) {
+                final h = history[i];
+                final isMegaCrush = h.type == 'mega_crush';
+                final isPass = h.type == 'passed';
+                final badgeColor = isMegaCrush
+                    ? const Color(0xFFEC4899)
+                    : isPass
+                        ? const Color(0xFF6B7280)
+                        : const Color(0xFF22C55E);
+
+                return Container(
+                  height: 95,
+                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B1119),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isMegaCrush ? const Color(0x66EC4899) : const Color(0xFF2E1E2B),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(radius: 26, backgroundImage: NetworkImage(h.avatar)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              children: [
+                                Text('${h.name}, ${h.age}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
+                                  ),
+                                  child: Text(
+                                    isMegaCrush ? 'MEGA CRUSH' : h.type.toUpperCase(),
+                                    style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: badgeColor),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text('${h.city} • ${h.timestamp}', style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                            Text(
+                              h.interests.take(2).join(' • '),
+                              style: const TextStyle(fontSize: 10, color: Color(0xFFFF8DA1)),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Matched with ${h.name}! ✨')),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(colors: [Color(0xFFE11D48), Color(0xFFEC4899)]),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text('Match', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -749,7 +1014,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
         ),
         const SizedBox(height: 18),
 
-        // Matches History (50) (Max 50 recent)
+        // Matches History (50)
         const Text('Matches History (50)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
         const SizedBox(height: 10),
 
@@ -799,7 +1064,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Potential Matches (10) (Tap for preview)
+        // Potential Matches (10)
         const Text('Potential Matches (10)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
         const SizedBox(height: 10),
 
@@ -942,4 +1207,56 @@ class _ConnectTabScreenState extends State<ConnectTabScreen> {
       ),
     );
   }
+}
+
+class _SinusoidalWavePainter extends CustomPainter {
+  final double phase;
+
+  _SinusoidalWavePainter({required this.phase});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final width = size.width;
+    final height = size.height;
+    final centerY = height * 0.52;
+
+    // First Sinusoidal Bézier wave: Rose/Crimson
+    final path1 = Path();
+    final paint1 = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFFE11D48), Color(0xFFEC4899), Color(0xFFFB7185)],
+      ).createShader(Rect.fromLTWH(0, 0, width, height))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+
+    // Second Sinusoidal Bézier wave: Sky/Cyan
+    final path2 = Path();
+    final paint2 = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFF06B6D4), Color(0xFF38BDF8), Color(0xFF818CF8)],
+      ).createShader(Rect.fromLTWH(0, 0, width, height))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+
+    final amplitude1 = height * 0.22;
+    final amplitude2 = height * 0.18;
+    final phase2 = phase + (math.pi / 2);
+
+    path1.moveTo(0, centerY + math.sin(phase) * amplitude1);
+    path2.moveTo(0, centerY + math.cos(phase2) * amplitude2);
+
+    for (double x = 0; x <= width; x += 4) {
+      final t = (x / width) * 2 * math.pi;
+      final y1 = centerY + math.sin(t + phase) * amplitude1;
+      final y2 = centerY + math.sin(t * 1.5 + phase2) * amplitude2;
+      path1.lineTo(x, y1);
+      path2.lineTo(x, y2);
+    }
+
+    canvas.drawPath(path1, paint1);
+    canvas.drawPath(path2, paint2);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SinusoidalWavePainter oldDelegate) => true;
 }

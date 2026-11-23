@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'unified_auth_flow.dart';
 
 class SignInScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -376,45 +377,60 @@ class _SignInScreenState extends State<SignInScreen> {
         Row(
           children: [
             Expanded(
-              child: Container(
-                height: 46,
-                decoration: BoxDecoration(
-                  color: const Color(0x3D2B091C),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0x38FF8DA1)),
+              child: GestureDetector(
+                onTap: () => showSystemGoogleAccounts(
+                  context,
+                  onAccountSelected: (selectedEmail) {
+                    setState(() => _idCtrl.text = selectedEmail);
+                    _handleLogin();
+                  },
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.g_mobiledata, size: 24, color: Colors.white),
-                    SizedBox(width: 4),
-                    Text(
-                      'Google',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
-                    ),
-                  ],
+                child: Container(
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: const Color(0x3D2B091C),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0x38FF8DA1)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.g_mobiledata, size: 24, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        'Google',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Container(
-                height: 46,
-                decoration: BoxDecoration(
-                  color: const Color(0x3D2B091C),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0x38FF8DA1)),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.apple, size: 20, color: Colors.white),
-                    SizedBox(width: 6),
-                    Text(
-                      'Apple',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
-                    ),
-                  ],
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => _idCtrl.text = 'apple.id@icloud.com');
+                  _handleLogin();
+                },
+                child: Container(
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: const Color(0x3D2B091C),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0x38FF8DA1)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.apple, size: 20, color: Colors.white),
+                      SizedBox(width: 6),
+                      Text(
+                        'Apple',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

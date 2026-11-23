@@ -157,7 +157,7 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Expandable accordion: "How Rubies Work"
+                    // Expandable accordion: "How Rubies Work" (with "Ways to Earn Free Rubies" nested inside)
                     Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFF1B1119),
@@ -174,15 +174,43 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                             style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Colors.white),
                           ),
                           leading: const Icon(Icons.help_outline, color: Color(0xFFEC4899), size: 20),
-                          children: const [
-                            Padding(
-                              padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
                               child: Text(
                                 '• 20 Rubies/min for HD instant live random voice & video calls.\n'
                                 '• 50 Rubies to send a priority Mega Crush directly to top admirers.\n'
                                 '• 10 Rubies to unlock an additional swipe rewind if daily free undo is used.\n'
                                 '• Rubies never expire and can be earned daily through streaks.',
                                 style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), height: 1.5),
+                              ),
+                            ),
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF140A12),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0x33F59E0B)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.stars, color: Color(0xFFF59E0B), size: 16),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Ways to Earn Free Rubies',
+                                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _freeRubyRow('Daily Streak check-in', '+10 to +70 Rubies daily'),
+                                  _freeRubyRow('Complete biometric face verification', '+50 Rubies instant'),
+                                  _freeRubyRow('Invite a friend with your code', '+100 Rubies per invite'),
+                                ],
                               ),
                             ),
                           ],
@@ -198,14 +226,14 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Package 1: Starter Spark (Quick Refill) — 100 Rubies — ₹99 button
+                    // Package 1: Starter Crush (Quick Refill) — 100 Rubies — ₹99 button
                     _buildRubyPackageCard(
-                      name: 'Starter Spark',
+                      name: 'Starter Crush',
                       badge: 'Quick Refill',
                       rubies: 100,
                       price: '₹99',
                       isPopular: false,
-                      onBuy: () => _buyPackage('Starter Spark', 100, '₹99'),
+                      onBuy: () => _buyPackage('Starter Crush', 100, '₹99'),
                     ),
                     const SizedBox(height: 10),
 
@@ -230,36 +258,6 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                       price: '₹799',
                       isPopular: false,
                       onBuy: () => _buyPackage('VIP Inferno', 1400, '₹799'),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Ways to Earn Free Rubies Card
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1B1119),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: const Color(0xFF2E1E2B)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.stars, color: Color(0xFFF59E0B), size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'Ways to Earn Free Rubies',
-                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Colors.white),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _freeRubyRow('Daily Streak check-in', '+10 to +70 Rubies daily'),
-                          _freeRubyRow('Complete biometric face verification', '+50 Rubies instant'),
-                          _freeRubyRow('Invite a friend with your code', '+100 Rubies per invite'),
-                        ],
-                      ),
                     ),
                     const SizedBox(height: 18),
 

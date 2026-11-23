@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../screens/home/daily_streak_screen.dart';
 
 class TopNavBar extends StatelessWidget {
   final int rubyBalance;
   final int streakDays;
   final VoidCallback onOpenRubies;
-  final VoidCallback onOpenStreak;
+  final VoidCallback? onOpenStreak;
   final VoidCallback onOpenNotifications;
   final VoidCallback? onLogoTap;
 
@@ -13,7 +14,7 @@ class TopNavBar extends StatelessWidget {
     required this.rubyBalance,
     required this.streakDays,
     required this.onOpenRubies,
-    required this.onOpenStreak,
+    this.onOpenStreak,
     required this.onOpenNotifications,
     this.onLogoTap,
   });
@@ -114,7 +115,18 @@ class TopNavBar extends StatelessWidget {
 
               // 2. Daily Streak Pill
               GestureDetector(
-                onTap: onOpenStreak,
+                onTap: () {
+                  if (onOpenStreak != null) {
+                    onOpenStreak!();
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StreakPage(currentStreak: streakDays),
+                      ),
+                    );
+                  }
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(

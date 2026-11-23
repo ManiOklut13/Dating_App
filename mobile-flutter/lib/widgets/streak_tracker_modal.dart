@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../screens/home/daily_streak_screen.dart';
 
 class StreakTrackerModal extends StatefulWidget {
   final int streakDays;
@@ -84,64 +85,45 @@ class _StreakTrackerModalState extends State<StreakTrackerModal> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(7, (index) {
                   final day = index + 1;
-                  final isPast = day < widget.streakDays;
                   final isCurrent = day == widget.streakDays;
+                  final isCompleted = day <= widget.streakDays;
                   return Column(
                     children: [
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.local_fire_department_rounded,
+                            size: 32,
+                            color: isCompleted
+                                ? (isCurrent ? const Color(0xFFFFD166) : const Color(0xFFF43F5E))
+                                : const Color(0x26FFFFFF),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '$day',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: isCompleted
+                                    ? (isCurrent ? const Color(0xFF9B1D20) : Colors.white)
+                                    : const Color(0x66FFFFFF),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
                       Text(
-                        'D$day',
+                        isCurrent ? 'Today' : 'D$day',
                         style: TextStyle(
                           fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: isCurrent
-                              ? const Color(0xFFF43F5E)
-                              : const Color(0xFF64748B),
+                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                          color: isCurrent ? Colors.white : const Color(0xFF94A3B8),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        width: 30,
-                        height: 30,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: isCurrent
-                              ? const LinearGradient(
-                                  colors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
-                                )
-                              : null,
-                          color: isCurrent
-                              ? null
-                              : isPast
-                                  ? const Color(0x38F43F5E)
-                                  : const Color(0x0AFFFFFF),
-                          border: Border.all(
-                            color: isCurrent
-                                ? const Color(0xFFFFD700)
-                                : isPast
-                                    ? const Color(0x73F43F5E)
-                                    : const Color(0x14FFFFFF),
-                            width: isCurrent ? 1.5 : 1,
-                          ),
-                        ),
-                        child: isPast
-                            ? const Icon(
-                                Icons.check_circle_outline,
-                                size: 14,
-                                color: Color(0xFFF43F5E),
-                              )
-                            : Text(
-                                '$day',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: isCurrent
-                                      ? Colors.white
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
-                      ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         '+${day * 10}💎',
                         style: TextStyle(
@@ -149,7 +131,7 @@ class _StreakTrackerModalState extends State<StreakTrackerModal> {
                           fontWeight: FontWeight.w700,
                           color: isCurrent
                               ? const Color(0xFFFFD700)
-                              : isPast
+                              : isCompleted
                                   ? const Color(0xFF94A3B8)
                                   : const Color(0xFF475569),
                         ),
@@ -219,6 +201,42 @@ class _StreakTrackerModalState extends State<StreakTrackerModal> {
                         ),
                       ),
                     ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StreakPage(currentStreak: widget.streakDays),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0x1AFFFFFF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0x33FF6B6B)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.stars_rounded, size: 16, color: Color(0xFFFECA57)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Spin Daily Lucky Wheel 🎰',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFFF8DA1),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),

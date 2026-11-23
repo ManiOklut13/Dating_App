@@ -43,7 +43,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _NotificationModel(
       id: 'n2',
       title: 'Secret Admirer',
-      subtitle: 'Someone in Bandra just sent you a Spark Crush.',
+      subtitle: 'Someone in Bandra just sent you a Mega Crush.',
       time: '25m ago',
       icon: Icons.favorite,
       iconColor: const Color(0xFFEC4899),
@@ -144,62 +144,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ],
                     ),
                   ),
-                  GestureDetector(
-                    onTap: _markAllRead,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0x1AFFFFFF),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0x26FFFFFF)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.check, size: 13, color: Color(0xFF22C55E)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Mark all read',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
 
-            // Filter pills: All (active pink pill) and Unread (2)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  _filterPill('All', 'All'),
-                  const SizedBox(width: 8),
-                  _filterPill('Unread', 'Unread ($_unreadCount)'),
-                ],
-              ),
-            ),
-
-            // Notification Cards list
+            // Notification Cards clean list
             Expanded(
-              child: filtered.isEmpty
-                  ? Center(
+              child: _notifications.isEmpty
+                  ? const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.notifications_none, size: 48, color: Color(0xFF6B7280)),
-                          const SizedBox(height: 12),
+                          Icon(Icons.notifications_none, size: 48, color: Color(0xFF6B7280)),
+                          SizedBox(height: 12),
                           Text(
-                            _filter == 'Unread' ? 'No unread notifications' : 'No notifications yet',
-                            style: const TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                            'No notifications yet',
+                            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
                           ),
                         ],
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filtered.length,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      itemCount: _notifications.length,
                       itemBuilder: (context, i) {
                         final n = filtered[i];
                         return GestureDetector(

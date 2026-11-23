@@ -1,52 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../widgets/top_nav_bar.dart';
-import '../../widgets/date_reminder_card.dart';
 import '../../widgets/discovery_deck.dart';
 import '../../widgets/streak_tracker_modal.dart';
+import 'daily_streak_screen.dart';
 import 'date_plan_details_screen.dart';
 import 'rubies_screen.dart';
 import 'notifications_screen.dart';
 import '../calls/live_interactive_call_screen.dart';
 import '../../data/profiles_data.dart';
-import '../../models/discovery_connect_models.dart';
 import '../../services/app_state_provider.dart';
 
 class DiscoveryTabScreen extends ConsumerStatefulWidget {
-  const DiscoveryTabScreen({super.key});
+  final bool showStreakOnEntry;
+
+  const DiscoveryTabScreen({super.key, this.showStreakOnEntry = false});
 
   @override
   ConsumerState<DiscoveryTabScreen> createState() => _DiscoveryTabScreenState();
 }
 
 class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen> {
-  String? _expandedAvatarId;
   bool _hasClaimedStreakBonus = false;
 
-  void _openStreakModal(BuildContext context) {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && StreakSessionManager.shouldShowStreakPopup()) {
+        _showStreakDialog(); // Your existing streak pop-up method
+      }
+    });
+  }
+
+  void _showStreakDialog() {
+    _showDailyStreakDialog(context);
+  }
+
+  void _showDailyStreakDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (ctx) => Consumer(
-        builder: (context, ref, _) {
+      barrierColor: Colors.transparent,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
           final appState = ref.watch(appStateProvider);
           return StreakTrackerModal(
             streakDays: appState.streakDays,
             hasClaimed: _hasClaimedStreakBonus,
             onClaimBonus: () {
-              setState(() => _hasClaimedStreakBonus = true);
+              setDialogState(() {
+                _hasClaimedStreakBonus = true;
+              });
+              setState(() {
+                _hasClaimedStreakBonus = true;
+              });
               ref.read(appStateProvider.notifier).addRubies(40);
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✓ +40 Rubies Credited! 🔥'),
-                  backgroundColor: Color(0xFF22C55E),
-                ),
-              );
             },
-            onClose: () => Navigator.pop(ctx),
+            onClose: () {
+              Navigator.of(dialogCtx).pop();
+            },
           );
         },
+      ),
+    );
+  }
+
+  void _openStreakModal(BuildContext context) {
+    final appState = ref.read(appStateProvider);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StreakPage(currentStreak: appState.streakDays),
       ),
     );
   }
@@ -65,14 +90,74 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen> {
     );
   }
 
-  void _startCall(RandomCallAvatarProfile profile, bool isVideo) {
+  void _startCall(String userName, String avatarUrl, bool isVideo) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => LiveInteractiveCallScreen(
-          userName: profile.name,
-          avatarUrl: profile.avatar,
+          userName: userName,
+          avatarUrl: avatarUrl,
           isVideo: isVideo,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScheduledDateCard({
+    required String partnerName,
+    required int partnerAge,
+    required String avatarUrl,
+    required String dateTimeText,
+    required String venueName,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E24),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.pinkAccent.withOpacity(0.35)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 26,
+              backgroundImage: NetworkImage(avatarUrl),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Date with $partnerName, $partnerAge',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$dateTimeText • $venueName',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 13,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.pinkAccent,
+            ),
+          ],
         ),
       ),
     );
@@ -96,11 +181,18 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen> {
                 onOpenRubies: _openRubiesScreen,
                 onOpenStreak: () => _openStreakModal(context),
                 onOpenNotifications: _openNotificationsScreen,
+                onLogoTap: () {
+                  ref.read(appStateProvider.notifier).setAuthenticated(false);
+                },
               ),
 
               // Date Reminder Banner (Top of Home)
-              DateReminderCard(
-                scheduledDate: demoScheduledDate,
+              _buildScheduledDateCard(
+                partnerName: 'Ananya',
+                partnerAge: 24,
+                avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
+                dateTimeText: 'Tonight, 7:30 PM',
+                venueName: 'Roastery Coffee House',
                 onTap: () {
                   Navigator.push(
                     context,
@@ -109,198 +201,84 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen> {
                 },
               ),
 
-              const SizedBox(height: 8),
-
-              // Random Call Strip Header: "Random Call" + green "Live" pill on left; "Tap bubble to connect" on right
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
                       children: [
-                        const Text(
-                          'Random Call',
+                        Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                        SizedBox(width: 8),
+                        Text(
+                          'Available Live Profiles',
                           style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
                             color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0x2622C55E),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: const Color(0x8022C55E)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CircleAvatar(radius: 3, backgroundColor: Color(0xFF22C55E)),
-                              SizedBox(width: 4),
-                              Text(
-                                'Live',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF22C55E),
-                                ),
-                              ),
-                            ],
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    const Text(
-                      'Tap bubble to connect',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF9CA3AF),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // Random Call Strip (Horizontal Scrollable Row with Inline Expand)
-              SizedBox(
-                height: 125,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: randomCallAvatarProfiles.length,
-                  itemBuilder: (context, index) {
-                    final p = randomCallAvatarProfiles[index];
-                    final isExpanded = _expandedAvatarId == p.id;
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _expandedAvatarId = isExpanded ? null : p.id;
-                              });
-                            },
-                            child: Stack(
-                              children: [
-                                Container(
-                                  width: 58,
-                                  height: 58,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isExpanded ? const Color(0xFFEC4899) : p.ringColor,
-                                      width: isExpanded ? 2.5 : 2,
-                                    ),
-                                    boxShadow: isExpanded
-                                        ? [
-                                            BoxShadow(
-                                              color: const Color(0x66EC4899),
-                                              blurRadius: 12,
-                                              spreadRadius: 2,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(29),
-                                    child: SafeProfileImage(imageUrl: p.avatar, width: 58, height: 58),
-                                  ),
-                                ),
-                                // Online green dot
-                                Positioned(
-                                  right: 2,
-                                  bottom: 2,
-                                  child: Container(
-                                    width: 12,
-                                    height: 12,
+                  ),
+                  SizedBox(
+                    height: 110,
+                    // Clean container without the CustomPaint sinusoidal wave background
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: liveProfiles.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final user = liveProfiles[index];
+                        return GestureDetector(
+                          onTap: () {
+                            // Trigger random call or open profile
+                            _startCall(user['name'] as String, user['avatar'] as String, true);
+                          },
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Stack(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(2.5),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF22C55E),
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: const Color(0xFF0D070C), width: 2),
+                                      border: Border.all(color: Colors.greenAccent, width: 2),
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 28,
+                                      backgroundImage: NetworkImage(user['avatar'] as String),
                                     ),
                                   ),
-                                ),
-                                // Animal sticker emoji badge
-                                Positioned(
-                                  top: 0,
-                                  left: 0,
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xCC000000),
-                                      shape: BoxShape.circle,
+                                  Positioned(
+                                    bottom: 2,
+                                    right: 2,
+                                    child: Container(
+                                      width: 12,
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        color: Colors.greenAccent,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: const Color(0xFF121212), width: 2),
+                                      ),
                                     ),
-                                    alignment: Alignment.center,
-                                    child: Text(p.sticker, style: const TextStyle(fontSize: 10)),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                user['name'] as String,
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            p.name,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Text(
-                            p.language,
-                            style: const TextStyle(
-                              fontSize: 9.5,
-                              color: Color(0xFF9CA3AF),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-
-                          // Inline expandable Audio Call and Video Call buttons
-                          if (isExpanded)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                GestureDetector(
-                                  onTap: () => _startCall(p, false),
-                                  child: Container(
-                                    width: 26,
-                                    height: 26,
-                                    margin: const EdgeInsets.only(right: 4),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF22C55E),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.call, size: 14, color: Colors.white),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () => _startCall(p, true),
-                                  child: Container(
-                                    width: 26,
-                                    height: 26,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF38BDF8),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.videocam, size: 14, color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
 
               // Discovery Header: "Discovery" on left, "Swipe & Connect" on right

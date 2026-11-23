@@ -1,17 +1,33 @@
 import 'package:flutter/material.dart';
+import '../../main.dart';
 import '../../models/discovery_connect_models.dart';
 import '../../data/profiles_data.dart';
+import 'unified_auth_flow.dart';
 
 class OnboardingWizardScreen extends StatefulWidget {
   final void Function(OnboardingProfileData)? onComplete;
   final VoidCallback? onBack;
   final VoidCallback? onGoToSignIn;
+  final String? initialEmail;
+  final String? initialPhone;
+  final String? initialPassword;
+  final String? initialFirstName;
+  final String? initialLastName;
+  final String? initialAvatar;
+  final bool isPreVerified;
 
   const OnboardingWizardScreen({
     super.key,
     this.onComplete,
     this.onBack,
     this.onGoToSignIn,
+    this.initialEmail,
+    this.initialPhone,
+    this.initialPassword,
+    this.initialFirstName,
+    this.initialLastName,
+    this.initialAvatar,
+    this.isPreVerified = false,
   });
 
   @override
@@ -23,23 +39,46 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
   bool _isStep1B = false;
 
   // Step 1A & 1B State
-  final TextEditingController _firstCtrl = TextEditingController(text: 'Aarav');
-  final TextEditingController _lastCtrl = TextEditingController(text: 'Kapoor');
-  final TextEditingController _emailCtrl = TextEditingController(text: 'aarav.kapoor@younme.love');
-  final TextEditingController _phoneCtrl = TextEditingController(text: '98765 43210');
+  late final TextEditingController _firstCtrl;
+  late final TextEditingController _lastCtrl;
+  late final TextEditingController _emailCtrl;
+  late final TextEditingController _phoneCtrl;
   final List<TextEditingController> _otpCtrls = [
     TextEditingController(text: '2'),
     TextEditingController(text: '0'),
     TextEditingController(text: '2'),
     TextEditingController(text: '6'),
   ];
-  final TextEditingController _createPwCtrl = TextEditingController(text: 'password123');
-  final TextEditingController _confirmPwCtrl = TextEditingController(text: 'password123');
+  late final TextEditingController _createPwCtrl;
+  late final TextEditingController _confirmPwCtrl;
   bool _showCreatePw = false;
   bool _showConfirmPw = false;
   int _otpTimer = 45;
 
+  @override
+  void initState() {
+    super.initState();
+    _firstCtrl = TextEditingController(text: widget.initialFirstName ?? 'Aarav');
+    _lastCtrl = TextEditingController(text: widget.initialLastName ?? 'Kapoor');
+    _emailCtrl = TextEditingController(
+      text: widget.initialEmail ?? 'aarav.kapoor@younme.love',
+    );
+    _phoneCtrl = TextEditingController(
+      text: widget.initialPhone ?? '98765 43210',
+    );
+    final pw = widget.initialPassword ?? 'password123';
+    _createPwCtrl = TextEditingController(text: pw);
+    _confirmPwCtrl = TextEditingController(text: pw);
+    if (widget.initialAvatar != null) {
+      _primaryPhoto = widget.initialAvatar!;
+    }
+    if (widget.isPreVerified) {
+      _currentStep = 2;
+    }
+  }
+
   // Step 2 State
+  DateTime _selectedDob = DateTime(2000, 6, 15);
   String _birthDay = '15';
   String _birthMonth = '06';
   String _birthYear = '2000';
@@ -47,6 +86,150 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
   String _orientation = 'Straight';
   String _primaryPhoto = 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80';
   bool _autoEnhanced = true;
+  bool _bitmojiGenerated = true;
+
+  Future<void> _pickDateOfBirth() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDob,
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: Color(0xFFF43F5E),
+            onPrimary: Colors.white,
+            surface: Color(0xFF191C24),
+            onSurface: Colors.white,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDob = picked;
+        _birthDay = picked.day.toString().padLeft(2, '0');
+        _birthMonth = picked.month.toString().padLeft(2, '0');
+        _birthYear = picked.year.toString();
+      });
+    }
+  }
+
+  String _formatDob() {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final m = months[_selectedDob.month - 1];
+    return '${_selectedDob.day} $m ${_selectedDob.year}';
+  }
+
+  int _calculateAge() {
+    final now = DateTime.now();
+    int age = now.year - _selectedDob.year;
+    if (now.month < _selectedDob.month || (now.month == _selectedDob.month && now.day < _selectedDob.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  void _openCitySearch() {
+    final cities = [
+      'Hyderabad',
+      'Bhimavaram',
+      'Visakhapatnam',
+      'Bengaluru',
+      'Chennai',
+      'Mumbai',
+      'Vijayawada',
+      'Delhi',
+      'Pune',
+      'Kolkata',
+    ];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF131620),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        String query = '';
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final filtered = cities
+                .where((c) => c.toLowerCase().contains(query.toLowerCase()))
+                .toList();
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Select Present City',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Color(0xFF94A3B8), size: 18),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF191C24),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0x26FFFFFF)),
+                      ),
+                      child: TextField(
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        decoration: const InputDecoration(
+                          hintText: 'Search city...',
+                          hintStyle: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                          border: InputBorder.none,
+                          icon: Icon(Icons.search, size: 18, color: Color(0xFF94A3B8)),
+                        ),
+                        onChanged: (val) => setSheetState(() => query = val),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 240),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filtered.length,
+                        itemBuilder: (ctx, i) {
+                          final c = filtered[i];
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.location_on, color: Color(0xFFFF8DA1), size: 18),
+                            title: Text(c, style: const TextStyle(color: Colors.white, fontSize: 13)),
+                            onTap: () {
+                              setState(() => _cityCtrl.text = c);
+                              Navigator.pop(ctx);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   final List<String> _demoAvatars = [
     'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
@@ -126,6 +309,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
 
   void _handleNext() {
     if (_currentStep == 1 && !_isStep1B) {
+      if (widget.isPreVerified) {
+        setState(() => _currentStep = 2);
+        return;
+      }
       setState(() => _isStep1B = true);
       return;
     }
@@ -149,6 +336,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       return;
     }
     if (_currentStep > 1) {
+      if (_currentStep == 2 && widget.isPreVerified) {
+        setState(() => _currentStep = 1);
+        return;
+      }
       setState(() => _currentStep--);
     } else {
       widget.onBack?.call();
@@ -187,6 +378,13 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       allowContactsSync: _contactsSync,
     );
     widget.onComplete?.call(profile);
+
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const MainShellScreen(showStreakOnEntry: true),
+      ),
+      (route) => false,
+    );
   }
 
   String _getStepTitle() {
@@ -300,52 +498,63 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                 ),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: _handleBack,
-                      child: Container(
-                        height: 48,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: const Color(0x14FFFFFF),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0x1FFFFFFF)),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'Back',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                    if (_currentStep != 5) ...[
+                      GestureDetector(
+                        onTap: _handleBack,
+                        child: Container(
+                          height: 50,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: const Color(0x14FFFFFF),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0x1FFFFFFF)),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'Back',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
+                      const SizedBox(width: 12),
+                    ],
                     Expanded(
                       child: GestureDetector(
                         onTap: _handleNext,
                         child: Container(
-                          height: 48,
+                          height: 52,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             gradient: const LinearGradient(
-                              colors: [Color(0xFFFF8DA1), Color(0xFFFF4D88)],
+                              colors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
                             ),
                             boxShadow: const [
                               BoxShadow(
-                                color: Color(0x59FF4D88),
-                                blurRadius: 16,
+                                color: Color(0x59F43F5E),
+                                blurRadius: 18,
                                 offset: Offset(0, 4),
                               ),
                             ],
                           ),
                           alignment: Alignment.center,
-                          child: Text(
-                            _currentStep == 5
-                                ? 'Complete Setup & Start Swiping →'
-                                : 'Continue →',
-                            style: const TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _currentStep == 5
+                                    ? 'Enter YoUnMe'
+                                    : _currentStep == 3
+                                        ? 'Continue to Story'
+                                        : 'Continue',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward_rounded, size: 20, color: Colors.white),
+                            ],
                           ),
                         ),
                       ),
@@ -549,11 +758,41 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         const SizedBox(height: 16),
 
         // 3 Full-width Social Cards
-        _socialButton(Icons.g_mobiledata, 'Continue with Google'),
+        _socialButton(
+          Icons.g_mobiledata,
+          'Continue with Google',
+          onTap: () => showSystemAccountPicker(
+            context,
+            provider: 'google',
+            onAccountSelected: _onSocialPicked,
+          ),
+        ),
         const SizedBox(height: 10),
-        _socialButton(Icons.apple, 'Continue with Apple'),
+        _socialButton(
+          Icons.apple,
+          'Continue with Apple',
+          onTap: () => showSystemAccountPicker(
+            context,
+            provider: 'apple',
+            onAccountSelected: _onSocialPicked,
+          ),
+        ),
         const SizedBox(height: 10),
-        _socialButton(Icons.facebook, 'Continue with Facebook'),
+        _socialButton(
+          Icons.facebook,
+          'Continue with Facebook',
+          onTap: () {
+            _onSocialPicked(
+              const SystemAccount(
+                email: 'aarav.fb@example.com',
+                firstName: 'Aarav',
+                lastName: 'Kapoor',
+                provider: 'facebook',
+                avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
+              ),
+            );
+          },
+        ),
         const SizedBox(height: 20),
 
         Center(
@@ -573,21 +812,43 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
     );
   }
 
-  Widget _socialButton(IconData icon, String label) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: const Color(0xFF191C24),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x1FFFFFFF)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 22, color: Colors.white),
-          const SizedBox(width: 10),
-          Text(label, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Colors.white)),
-        ],
+  void _onSocialPicked(SystemAccount acc) {
+    setState(() {
+      _firstCtrl.text = acc.firstName;
+      _lastCtrl.text = acc.lastName;
+      _emailCtrl.text = acc.email;
+      if (acc.avatarUrl != null) {
+        _primaryPhoto = acc.avatarUrl!;
+      }
+      _currentStep = 2;
+    });
+  }
+
+  Widget _socialButton(IconData icon, String label, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: const Color(0xFF191C24),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0x26FFFFFF)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: icon == Icons.g_mobiledata ? 28 : 22, color: Colors.white),
+            const SizedBox(width: 10),
+            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+          ],
+        ),
       ),
     );
   }
@@ -751,33 +1012,304 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Basic Profile Details 💖', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+        const Text(
+          'Basic Profile Details 💖',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+        ),
         const SizedBox(height: 4),
-        const Text('Introduce yourself with your birthdate, orientation, and primary photo.', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+        const Text(
+          'Scan your face or upload a photo to generate your custom Bitmoji avatar.',
+          style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+        ),
         const SizedBox(height: 18),
 
-        // Date of Birth
+        // Bitmoji Avatar Generator Section
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF191C24),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0x33FF4D88)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26FF4D88),
+                blurRadius: 16,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Avatar Preview (Bitmoji style)
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 110,
+                    height: 110,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFFF4D88), width: 2.5),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x66FF4D88),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(55),
+                      child: SafeProfileImage(
+                        imageUrl: _primaryPhoto,
+                        width: 110,
+                        height: 110,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE11D48),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.auto_awesome, size: 14, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Green Confirmation Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0x264ADE80),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: const Color(0x804ADE80)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, size: 12, color: Color(0xFF4ADE80)),
+                    SizedBox(width: 5),
+                    Text(
+                      'Bitmoji avatar generated from your photo',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF4ADE80),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Action Buttons: Scan Face & Upload Photo
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _primaryPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';
+                          _bitmojiGenerated = true;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('📸 Face scanned! Bitmoji avatar updated.')),
+                        );
+                      },
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0x26FF4D88),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0x80FF4D88)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.camera_alt_outlined, size: 16, color: Color(0xFFFF8DA1)),
+                            SizedBox(width: 6),
+                            Text(
+                              'Scan Face',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _primaryPhoto = 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80';
+                          _bitmojiGenerated = true;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('📁 Photo uploaded! Bitmoji avatar created.')),
+                        );
+                      },
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0x1AFFFFFF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0x26FFFFFF)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.upload_file, size: 16, color: Colors.white),
+                            SizedBox(width: 6),
+                            Text(
+                              'Upload Photo',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Demo Avatar Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: _demoAvatars.map((url) {
+                  final active = _primaryPhoto == url;
+                  return GestureDetector(
+                    onTap: () => setState(() => _primaryPhoto = url),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: active ? const Color(0xFFFF4D88) : const Color(0x26FFFFFF),
+                          width: active ? 2 : 1,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: SafeProfileImage(imageUrl: url),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Below that: First Name and Last Name
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('First Name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF191C24),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0x1FFFFFFF)),
+                    ),
+                    alignment: Alignment.centerLeft,
+                    child: TextField(
+                      controller: _firstCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                      decoration: const InputDecoration(border: InputBorder.none, hintText: 'First Name'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Last Name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF191C24),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0x1FFFFFFF)),
+                    ),
+                    alignment: Alignment.centerLeft,
+                    child: TextField(
+                      controller: _lastCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                      decoration: const InputDecoration(border: InputBorder.none, hintText: 'Last Name'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // Below that: Date of Birth with Calendar Icon
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('📅 Date of Birth', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
-            const Text('24 yrs old • 18+ Verified ✓', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4ADE80))),
+            Text('${_calculateAge()} yrs old • 18+ Verified ✓', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4ADE80))),
           ],
         ),
         const SizedBox(height: 6),
-        Row(
-          children: [
-            _dobBox('Day', _birthDay, (v) => setState(() => _birthDay = v)),
-            const SizedBox(width: 8),
-            _dobBox('Month', _birthMonth, (v) => setState(() => _birthMonth = v)),
-            const SizedBox(width: 8),
-            _dobBox('Year', _birthYear, (v) => setState(() => _birthYear = v)),
-          ],
+        GestureDetector(
+          onTap: _pickDateOfBirth,
+          child: Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF191C24),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0x26FFFFFF)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _formatDob(),
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0x26FF4D88),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.calendar_month_rounded, size: 20, color: Color(0xFFFF8DA1)),
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 18),
 
-        // I am a: Male | Female | Non-Binary
-        const Text('I am a:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
+        // Below that: Gender selection (Male, Female, Non-Binary)
+        const Text('Gender Selection', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -814,124 +1346,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 20),
-
-        // Primary Profile Photo Box (180px height, rounded-20)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('📷 Primary Profile Photo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0x264ADE80),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Text('Face Centered', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF4ADE80))),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 180,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFFF4D88), width: 1.5),
-          ),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: SafeProfileImage(
-                  imageUrl: _primaryPhoto,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
-                    gradient: LinearGradient(
-                      colors: [Colors.transparent, Color(0xD9000000)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Tap to Change Photo', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
-                      Text('✨ AI Enhanced', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFFFFD700))),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Demo Avatar Row
-        const Text('Or select a demo avatar:', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: _demoAvatars.map((url) {
-            final active = _primaryPhoto == url;
-            return GestureDetector(
-              onTap: () => setState(() => _primaryPhoto = url),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: active ? const Color(0xFFFF4D88) : const Color(0x26FFFFFF),
-                    width: active ? 2 : 1,
-                  ),
-                ),
-                child: SafeProfileImage(
-                  imageUrl: url,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 16),
-
-        // Auto-Enhance Photo Card
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF191C24),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0x1FFFFFFF)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 18),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Auto-Enhance Photo', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
-                    Text('Optimizes skin glow & lighting automatically', style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8))),
-                  ],
-                ),
-              ),
-              Checkbox(
-                value: _autoEnhanced,
-                activeColor: const Color(0xFFFF4D88),
-                onChanged: (v) => setState(() => _autoEnhanced = v ?? true),
-              ),
-            ],
-          ),
-        ),
+        const SizedBox(height: 14),
       ],
     );
   }
@@ -1158,14 +1573,19 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         const Text('Add context about your career, location, and matching criteria.', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
         const SizedBox(height: 18),
 
-        // Profession & Education 2-column
+        // Profession & Education 2-column (Optional)
         Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Profession', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
+                  const Row(
+                    children: [
+                      Text('Profession ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
+                      Text('(Optional)', style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8))),
+                    ],
+                  ),
                   const SizedBox(height: 6),
                   Container(
                     height: 46,
@@ -1179,7 +1599,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                     child: TextField(
                       controller: _professionCtrl,
                       style: const TextStyle(color: Colors.white, fontSize: 13),
-                      decoration: const InputDecoration(border: InputBorder.none),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Profession (Optional)',
+                        hintStyle: TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
+                      ),
                     ),
                   ),
                 ],
@@ -1190,7 +1614,12 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Education', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
+                  const Row(
+                    children: [
+                      Text('Education ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
+                      Text('(Optional)', style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8))),
+                    ],
+                  ),
                   const SizedBox(height: 6),
                   Container(
                     height: 46,
@@ -1204,7 +1633,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                     child: TextField(
                       controller: _educationCtrl,
                       style: const TextStyle(color: Colors.white, fontSize: 13),
-                      decoration: const InputDecoration(border: InputBorder.none),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Education (Optional)',
+                        hintStyle: TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
+                      ),
                     ),
                   ),
                 ],
@@ -1241,31 +1674,81 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         ),
         const SizedBox(height: 16),
 
-        // City / Location + Auto-detect
+        // City / Location + Auto-detect GPS + Modal City Search
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('📍 City / Location', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
-            GestureDetector(
-              onTap: () => setState(() => _cityCtrl.text = 'Mumbai, Bandra West (GPS Active)'),
-              child: const Text('☑️ Auto-detect GPS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF38BDF8))),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () => setState(() => _cityCtrl.text = 'Hyderabad (GPS Active)'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0x2638BDF8),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0x6638BDF8)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.my_location, size: 12, color: Color(0xFF38BDF8)),
+                        SizedBox(width: 4),
+                        Text('Auto GPS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF38BDF8))),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: _openCitySearch,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0x26EC4899),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0x66EC4899)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.search, size: 12, color: Color(0xFFFF8DA1)),
+                        SizedBox(width: 4),
+                        Text('Search', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1))),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
         const SizedBox(height: 6),
-        Container(
-          height: 46,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF191C24),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0x1FFFFFFF)),
-          ),
-          alignment: Alignment.centerLeft,
-          child: TextField(
-            controller: _cityCtrl,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: const InputDecoration(border: InputBorder.none),
+        GestureDetector(
+          onTap: _openCitySearch,
+          child: Container(
+            height: 46,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF191C24),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x1FFFFFFF)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _cityCtrl,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Tap to select or search city',
+                      hintStyle: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                    ),
+                  ),
+                ),
+                const Icon(Icons.arrow_drop_down, color: Color(0xFFFF8DA1)),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -1331,111 +1814,261 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Safety & Verification 🛡️', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+        const Text(
+          'Safety & Verification 🛡️',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+        ),
         const SizedBox(height: 4),
-        const Text('Protect yourself & gain high trust matching with biometric verification.', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+        const Text(
+          'Protect yourself & gain high trust matching with biometric verification.',
+          style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+        ),
         const SizedBox(height: 18),
 
-        // Blink Face Liveness Card
+        // Hero Card: Expanded Blink Face Liveness (takes roughly half screen height ~340px)
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
           decoration: BoxDecoration(
             color: const Color(0xFF191C24),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0x334ADE80)),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0x40FF4D88), width: 1.5),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33FF4D88),
+                blurRadius: 28,
+                spreadRadius: 2,
+                offset: Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Color(0x66000000),
+                blurRadius: 20,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
+              // Header Row: Biometric shield + Title & verified status badge
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.face, size: 18, color: Color(0xFFFF8DA1)),
-                      SizedBox(width: 8),
-                      Text('Blink Face Liveness', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: const Color(0x26FF4D88),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0x66FF4D88)),
+                        ),
+                        child: const Icon(Icons.verified_user_rounded, size: 18, color: Color(0xFFFF8DA1)),
+                      ),
+                      const SizedBox(width: 10),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Blink Face Liveness',
+                            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Colors.white),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            '3D Anti-Spoofing Camera',
+                            style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0x264ADE80),
+                      color: const Color(0x2622C55E),
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: const Color(0x804ADE80)),
+                      border: Border.all(color: const Color(0x8022C55E)),
                     ),
-                    child: const Text('✓ Verified ✓', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF4ADE80))),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF4ADE80)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Verified Biometric',
+                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF4ADE80)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 20),
 
-              // Centered 110x140 oval photo reticle with #FF8DA1 border & glow
-              Container(
-                width: 110,
-                height: 140,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(55),
-                  border: Border.all(color: const Color(0xFFFF8DA1), width: 2),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x4DFF8DA1),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(55),
-                  child: SafeProfileImage(
-                    imageUrl: _primaryPhoto,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0x1AFF8DA1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0x4DFF8DA1)),
-                ),
+              // Large Center Liveness Preview Container with Glowing Oval Halo Reticle
+              Stack(
                 alignment: Alignment.center,
-                child: const Text(
-                  'Face Verified ✓ (Re-verify)',
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1)),
+                children: [
+                  // Outer Glow Halo
+                  Container(
+                    width: 156,
+                    height: 196,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(78),
+                      gradient: const RadialGradient(
+                        colors: [Color(0x59FF4D88), Colors.transparent],
+                      ),
+                    ),
+                  ),
+                  // Reticle Frame
+                  Container(
+                    width: 144,
+                    height: 184,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(72),
+                      border: Border.all(color: const Color(0xFFFF8DA1), width: 2.5),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x66FF4D88),
+                          blurRadius: 24,
+                          spreadRadius: 3,
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(70),
+                      child: SafeProfileImage(
+                        imageUrl: _primaryPhoto,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  // Corner target guides overlay
+                  Positioned(
+                    top: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xCC000000),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: const Color(0x40FFFFFF)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.visibility, size: 11, color: Color(0xFFFF8DA1)),
+                          SizedBox(width: 4),
+                          Text('Blink Detected', style: TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Bottom Pass Pill Overlay
+                  Positioned(
+                    bottom: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xE610131B),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: const Color(0x8022C55E)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shield, size: 12, color: Color(0xFF4ADE80)),
+                          SizedBox(width: 5),
+                          Text(
+                            '100% Liveness Confirmed',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF4ADE80)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Action Trigger Button
+              GestureDetector(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('✓ Blink face liveness re-scan complete and verified!')),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0x26FF4D88),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0x80FF4D88)),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.camera_alt_outlined, size: 16, color: Color(0xFFFF8DA1)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Face Verified ✓ (Tap to Re-verify)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
-        // Voice Prompt Verification Card
+        // Voice Verification Card (Renamed from Voice PIN Verification)
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: const Color(0xFF191C24),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0x1FFFFFFF)),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0x2638BDF8)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.mic, size: 16, color: Color(0xFF38BDF8)),
-                  SizedBox(width: 8),
-                  Text('🎙️ Voice PIN Verification', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white)),
-                  Spacer(),
-                  Text('Voice Verified ✓', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF4ADE80))),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0x1A38BDF8),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.mic_none_rounded, size: 17, color: Color(0xFF38BDF8)),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Voice Verification', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Colors.white)),
+                        SizedBox(height: 2),
+                        Text('Anti-spoofing voiceprint analysis active & verified', style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8))),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0x2622C55E),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0x8022C55E)),
+                    ),
+                    child: const Text('Voice Verified ✓', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF4ADE80))),
+                  ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [0.3, 0.7, 0.9, 0.4, 0.8, 0.5, 0.3, 0.6, 0.8, 0.4]
+                children: [0.3, 0.7, 0.9, 0.4, 0.8, 0.5, 0.3, 0.6, 0.8, 0.4, 0.9, 0.6, 0.3, 0.7]
                     .map(
                       (h) => Container(
                         width: 4,
@@ -1468,11 +2101,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Permissions Switches
-        _permissionTile('Push Notifications', 'Real-time alerts for mutual matches & calls', _pushNotif, (v) => setState(() => _pushNotif = v)),
-        const SizedBox(height: 8),
-        _permissionTile('Live GPS Location', 'Precise distance matching within Bandra/Jubilee Hills', _liveGps, (v) => setState(() => _liveGps = v)),
-        const SizedBox(height: 8),
+        // Remaining discreet contacts switch
         _permissionTile('Add Friends by Contacts', 'Discover mutual acquaintances discreetly', _contactsSync, (v) => setState(() => _contactsSync = v)),
       ],
     );
