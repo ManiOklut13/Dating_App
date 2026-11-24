@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+
 import '../../models/call_user.dart';
 import '../../services/call_history_service.dart';
 import 'audio_call_screen.dart';
+import 'call_ui.dart';
 import 'video_call_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main Calls Screen — three tabs: Audio · Video · History
+// Calls page — Audio · Video · History
 // ─────────────────────────────────────────────────────────────────────────────
 class CallsScreen extends StatefulWidget {
   const CallsScreen({super.key});
@@ -14,112 +16,244 @@ class CallsScreen extends StatefulWidget {
   State<CallsScreen> createState() => _CallsScreenState();
 }
 
-class _CallsScreenState extends State<CallsScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+class _CallsScreenState extends State<CallsScreen> {
+  int _tab = 0; // 0 audio · 1 video · 2 history
+  String _historyFilter = 'all'; // all | audio | video | missed
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // ── Tab bar ────────────────────────────────────────────────────────
-        Container(
-          color: const Color(0xFF0F121D),
-          child: TabBar(
-            controller: _tabController,
-            indicatorColor: const Color(0xFFFF2D55),
-            indicatorWeight: 3,
-            labelColor: const Color(0xFFFF2D55),
-            unselectedLabelColor: Colors.white38,
-            labelStyle: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              letterSpacing: 0.3,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-            tabs: const [
-              Tab(
-                icon: Icon(Icons.phone_outlined, size: 20),
-                text: 'Audio',
+    return Scaffold(
+      backgroundColor: CallUi.bg,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0x26180A14), Color(0x0008060C)],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(),
+              _buildTabs(),
+              const SizedBox(height: 4),
+              Expanded(child: _buildTabBody()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Header ───────────────────────────────────────────────────────────────
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 16, 14),
+      child: Row(
+        children: [
+          Material(
+            color: CallUi.panel,
+            shape: const CircleBorder(side: BorderSide(color: CallUi.border)),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => Navigator.of(context).maybePop(),
+              child: const SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(Icons.arrow_back_ios_new,
+                    size: 15, color: Colors.white),
               ),
-              Tab(
-                icon: Icon(Icons.videocam_outlined, size: 20),
-                text: 'Video',
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Calls',
+                  style: TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Audio calls, video calls and call history',
+                  style: TextStyle(fontSize: 11.5, color: CallUi.muted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Tabs ─────────────────────────────────────────────────────────────────
+  Widget _buildTabs() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: CallUi.panel,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CallUi.border),
+      ),
+      child: Row(
+        children: [
+          _tabButton(
+            index: 0,
+            icon: Icons.phone_outlined,
+            label: 'Audio',
+            count: _kContacts.length,
+            gradient: CallUi.audioTab,
+          ),
+          _tabButton(
+            index: 1,
+            icon: Icons.videocam_outlined,
+            label: 'Video',
+            count: _kContacts.length,
+            gradient: CallUi.videoTab,
+          ),
+          _tabButton(
+            index: 2,
+            icon: Icons.history,
+            label: 'History',
+            gradient: CallUi.historyTab,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabButton({
+    required int index,
+    required IconData icon,
+    required String label,
+    int? count,
+    required LinearGradient gradient,
+  }) {
+    final selected = _tab == index;
+
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _tab = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 2),
+          decoration: BoxDecoration(
+            gradient: selected ? gradient : null,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: gradient.colors.last.withValues(alpha: 0.30),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: selected
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.55),
               ),
-              Tab(
-                icon: Icon(Icons.history, size: 20),
-                text: 'History',
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  count == null ? label : '$label ($count)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    color: selected
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.55),
+                  ),
+                ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
 
-        // ── Tab views ──────────────────────────────────────────────────────
+  // ─── Tab body ─────────────────────────────────────────────────────────────
+  Widget _buildTabBody() {
+    switch (_tab) {
+      case 1:
+        return _buildContactList(
+          forVideo: true,
+          sectionLabel: '${_kContacts.length} video call contacts',
+        );
+      case 2:
+        return _buildHistory();
+      default:
+        return _buildContactList(
+          forVideo: false,
+          sectionLabel: '${_kContacts.length} audio call contacts',
+        );
+    }
+  }
+
+  Widget _buildContactList({
+    required bool forVideo,
+    required String sectionLabel,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+          child: Text(
+            sectionLabel,
+            style: const TextStyle(fontSize: 12, color: CallUi.muted),
+          ),
+        ),
         Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: const [
-              _AudioTab(),
-              _VideoTab(),
-              _HistoryTab(),
-            ],
+          child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 24),
+            itemCount: _kContacts.length,
+            itemBuilder: (_, i) => _buildContactCard(_kContacts[i], forVideo),
           ),
         ),
       ],
     );
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared contact-list tile
-// ─────────────────────────────────────────────────────────────────────────────
-class _ContactTile extends StatelessWidget {
-  final CallUser user;
-  final VoidCallback onAudioCall;
-  final VoidCallback onVideoCall;
-  final bool showBothButtons;
-  final bool isForVideo;
+  Widget _buildContactCard(_CallContact contact, bool forVideo) {
+    final user = contact.user;
 
-  const _ContactTile({
-    required this.user,
-    required this.onAudioCall,
-    required this.onVideoCall,
-    this.showBothButtons = false,
-    this.isForVideo = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF111318),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        color: CallUi.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: CallUi.border),
       ),
       child: Row(
         children: [
-          // Avatar
-          _AvatarWidget(user: user, size: 52),
-          const SizedBox(width: 14),
-
-          // Name + city
+          CallAvatar(
+            name: user.name,
+            asset: CallUi.avatarAssetFor(user.name),
+            size: 52,
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,286 +263,186 @@ class _ContactTile extends StatelessWidget {
                     Flexible(
                       child: Text(
                         user.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (user.isVerified) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 5),
                       const Icon(Icons.verified,
-                          color: Color(0xFF3B82F6), size: 16),
+                          size: 15, color: CallUi.verified),
                     ],
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  user.city,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white38,
-                  ),
-                ),
+                const SizedBox(height: 4),
+                contact.isOnline
+                    ? Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: CallUi.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'Active now',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: CallUi.green,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        contact.lastSeen,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: CallUi.muted,
+                        ),
+                      ),
               ],
             ),
           ),
-
-          // Call buttons
-          if (showBothButtons) ...[
-            _CallIconBtn(
-              icon: Icons.phone,
-              color: const Color(0xFF00E676),
-              tooltip: 'Audio call',
-              onTap: onAudioCall,
-            ),
-            const SizedBox(width: 8),
-            _CallIconBtn(
-              icon: Icons.videocam,
-              color: const Color(0xFF00E5FF),
-              tooltip: 'Video call',
-              onTap: onVideoCall,
-            ),
-          ] else if (isForVideo) ...[
-            _CallIconBtn(
-              icon: Icons.videocam,
-              color: const Color(0xFF00E5FF),
-              tooltip: 'Video call demo',
-              onTap: onVideoCall,
-            ),
-          ] else ...[
-            _CallIconBtn(
-              icon: Icons.phone,
-              color: const Color(0xFF00E676),
-              tooltip: 'Audio call demo',
-              onTap: onAudioCall,
-            ),
-          ],
+          const SizedBox(width: 8),
+          CallActionButton(
+            icon: forVideo ? Icons.videocam : Icons.phone,
+            color: forVideo ? CallUi.video : CallUi.audio,
+            tooltip: forVideo ? 'Video call' : 'Audio call',
+            onTap: () => _startCall(user, video: forVideo),
+          ),
         ],
       ),
     );
   }
-}
 
-class _CallIconBtn extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String tooltip;
-  final VoidCallback onTap;
+  // ─── History ──────────────────────────────────────────────────────────────
+  Widget _buildHistory() {
+    final service = CallHistoryService.instance;
 
-  const _CallIconBtn({
-    required this.icon,
-    required this.color,
-    required this.tooltip,
-    required this.onTap,
-  });
+    return AnimatedBuilder(
+      animation: service,
+      builder: (context, _) {
+        final all = service.history;
+        final filtered = all.where((e) {
+          switch (_historyFilter) {
+            case 'audio':
+              return e.type == CallType.audio;
+            case 'video':
+              return e.type == CallType.video;
+            case 'missed':
+              return e.direction == CallDirection.missed;
+            default:
+              return true;
+          }
+        }).toList();
 
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(30),
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withOpacity(0.12),
-            border: Border.all(color: color.withOpacity(0.35)),
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Audio Tab
-// ─────────────────────────────────────────────────────────────────────────────
-class _AudioTab extends StatelessWidget {
-  const _AudioTab();
-
-  void _startAudioCall(BuildContext context, CallUser user) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AudioCallScreen(user: user),
-        fullscreenDialog: true,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(top: 12, bottom: 24),
-      children: [
-        _SectionHeader(
-          icon: Icons.phone_in_talk,
-          label: 'Audio Calls',
-          subtitle: 'Tap a contact to start a voice call demo',
-        ),
-        ...kDemoUsers.map(
-          (u) => _ContactTile(
-            user: u,
-            showBothButtons: false,
-            onAudioCall: () => _startAudioCall(context, u),
-            onVideoCall: () {},
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Video Tab
-// ─────────────────────────────────────────────────────────────────────────────
-class _VideoTab extends StatelessWidget {
-  const _VideoTab();
-
-  void _startVideoCall(BuildContext context, CallUser user) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => VideoCallScreen(user: user),
-        fullscreenDialog: true,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(top: 12, bottom: 24),
-      children: [
-        _SectionHeader(
-          icon: Icons.videocam,
-          label: 'Video Calls',
-          subtitle: 'Tap the video button to start a video call demo',
-        ),
-        ...kDemoUsers.map(
-          (u) => _ContactTile(
-            user: u,
-            showBothButtons: false,
-            isForVideo: true,
-            onAudioCall: () {},
-            onVideoCall: () => _startVideoCall(context, u),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// History Tab
-// ─────────────────────────────────────────────────────────────────────────────
-class _HistoryTab extends StatefulWidget {
-  const _HistoryTab();
-
-  @override
-  State<_HistoryTab> createState() => _HistoryTabState();
-}
-
-class _HistoryTabState extends State<_HistoryTab> {
-  @override
-  void initState() {
-    super.initState();
-    // Listen for new entries added by call screens
-    CallHistoryService.instance.addListener(_onHistoryChanged);
-  }
-
-  @override
-  void dispose() {
-    CallHistoryService.instance.removeListener(_onHistoryChanged);
-    super.dispose();
-  }
-
-  void _onHistoryChanged() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final history = CallHistoryService.instance.history;
-
-    if (history.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.history, size: 64, color: Colors.white12),
-            const SizedBox(height: 16),
-            const Text(
-              'No call history yet',
-              style: TextStyle(fontSize: 16, color: Colors.white38),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _filterPill('All', 'all'),
+                    const SizedBox(width: 8),
+                    _filterPill('Audio', 'audio'),
+                    const SizedBox(width: 8),
+                    _filterPill('Video', 'video'),
+                    const SizedBox(width: 8),
+                    _filterPill('Missed', 'missed'),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'Make a call from the Audio or Video tab',
-              style: TextStyle(fontSize: 13, color: Colors.white24),
+            Expanded(
+              child: filtered.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No calls in this filter',
+                        style: TextStyle(fontSize: 13, color: CallUi.muted),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 8, bottom: 24),
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) => _buildHistoryCard(filtered[i]),
+                    ),
             ),
           ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 12, bottom: 24),
-      itemCount: history.length,
-      itemBuilder: (_, i) => _HistoryTile(entry: history[i]),
+        );
+      },
     );
   }
-}
 
-class _HistoryTile extends StatelessWidget {
-  final CallHistoryEntry entry;
+  Widget _filterPill(String label, String key) {
+    final selected = _historyFilter == key;
 
-  const _HistoryTile({required this.entry});
-
-  String _formatDate(DateTime dt) {
-    final now = DateTime.now();
-    final diff = now.difference(dt);
-    if (diff.inDays == 0) {
-      final h = dt.hour.toString().padLeft(2, '0');
-      final m = dt.minute.toString().padLeft(2, '0');
-      return 'Today $h:$m';
-    } else if (diff.inDays == 1) {
-      final h = dt.hour.toString().padLeft(2, '0');
-      final m = dt.minute.toString().padLeft(2, '0');
-      return 'Yesterday $h:$m';
-    } else {
-      return '${dt.day}/${dt.month}/${dt.year}';
-    }
+    return GestureDetector(
+      onTap: () => setState(() => _historyFilter = key),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? CallUi.pink.withValues(alpha: 0.14)
+              : CallUi.panel,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? CallUi.pink : CallUi.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected
+                ? CallUi.pinkSoft
+                : Colors.white.withValues(alpha: 0.60),
+          ),
+        ),
+      ),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildHistoryCard(CallHistoryEntry entry) {
     final isMissed = entry.direction == CallDirection.missed;
+    final isVideo = entry.type == CallType.video;
+    final accent = isVideo ? CallUi.video : CallUi.audio;
+
+    final details = [
+      callTimeLabel(entry.timestamp),
+      if (!isMissed && entry.duration.inSeconds > 0)
+        callDurationLabel(entry.duration),
+    ].join('  ·  ');
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF111318),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isMissed
-              ? const Color(0xFFFF4757).withOpacity(0.3)
-              : Colors.white.withOpacity(0.07),
-        ),
+        color: CallUi.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: CallUi.border),
       ),
       child: Row(
         children: [
-          // Avatar
-          _AvatarWidget(user: entry.user, size: 48),
-          const SizedBox(width: 14),
-
-          // Info
+          CallAvatar(
+            name: entry.user.name,
+            asset: CallUi.avatarAssetFor(entry.user.name),
+            size: 50,
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,200 +451,181 @@ class _HistoryTile extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        entry.user.name,
-                        style: TextStyle(
+                        entry.user.name.split(' ').first,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: isMissed
-                              ? const Color(0xFFFF4757)
-                              : Colors.white,
+                          color: Colors.white,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (entry.user.isVerified) ...[
-                      const SizedBox(width: 5),
-                      const Icon(Icons.verified,
-                          color: Color(0xFF3B82F6), size: 14),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(entry.directionIcon,
-                        color: entry.directionColor, size: 14),
-                    const SizedBox(width: 4),
-                    Icon(
-                      entry.type == CallType.audio
-                          ? Icons.phone
-                          : Icons.videocam,
-                      color: Colors.white38,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      entry.type == CallType.audio ? 'Audio' : 'Video',
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.white38),
-                    ),
-                    if (!isMissed) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        '· ${entry.durationLabel}',
-                        style: const TextStyle(
-                            fontSize: 12, color: Colors.white38),
-                      ),
-                    ],
-                    if (entry.isDemo) ...[
-                      const SizedBox(width: 8),
+                    if (isMissed) ...[
+                      const SizedBox(width: 7),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
+                            horizontal: 7, vertical: 1),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(6),
+                          color: CallUi.pink.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(7),
                         ),
                         child: const Text(
-                          'DEMO',
+                          'Missed',
                           style: TextStyle(
-                            fontSize: 9,
-                            color: Colors.white30,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.8,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: CallUi.pinkSoft,
                           ),
                         ),
                       ),
                     ],
                   ],
                 ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      entry.directionIcon,
+                      size: 13,
+                      color: entry.directionColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        details,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: CallUi.muted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-
-          // Date
-          Text(
-            _formatDate(entry.timestamp),
-            style: const TextStyle(fontSize: 11, color: Colors.white30),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared sub-widgets
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Section header row inside a list.
-class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-
-  const _SectionHeader({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-      child: Row(
-        children: [
+          const SizedBox(width: 8),
           Container(
-            width: 36,
-            height: 36,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFF2D55), Color(0xFF9B51E0)],
-              ),
+              color: accent.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: accent.withValues(alpha: 0.30)),
             ),
-            child: Icon(icon, color: Colors.white, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: const TextStyle(fontSize: 11, color: Colors.white38),
-              ),
-            ],
+            child: Icon(
+              isVideo ? Icons.videocam : Icons.phone,
+              size: 16,
+              color: accent,
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-/// Reusable avatar: shows network image or coloured initials.
-class _AvatarWidget extends StatelessWidget {
-  final CallUser user;
-  final double size;
-
-  const _AvatarWidget({required this.user, required this.size});
-
-  String get _initials {
-    final parts = user.name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return parts[0][0].toUpperCase();
-  }
-
-  Color get _bgColor {
-    const colors = [
-      Color(0xFF9B51E0),
-      Color(0xFFFF2D55),
-      Color(0xFF00E5FF),
-      Color(0xFFFF6B35),
-      Color(0xFF00E676),
-    ];
-    final idx =
-        user.id.codeUnits.fold(0, (a, b) => a + b) % colors.length;
-    return colors[idx];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipOval(
-      child: user.avatarUrl != null
-          ? Image.network(
-              user.avatarUrl!,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildInitials(),
-            )
-          : _buildInitials(),
+  // ─── Calls (existing demo call screens) ───────────────────────────────────
+  void _startCall(CallUser user, {required bool video}) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => video
+            ? VideoCallScreen(user: user)
+            : AudioCallScreen(user: user),
+        fullscreenDialog: true,
+      ),
     );
   }
-
-  Widget _buildInitials() => Container(
-        width: size,
-        height: size,
-        color: _bgColor,
-        alignment: Alignment.center,
-        child: Text(
-          _initials,
-          style: TextStyle(
-            fontSize: size * 0.38,
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo roster for the Audio / Video tabs
+// ─────────────────────────────────────────────────────────────────────────────
+class _CallContact {
+  final CallUser user;
+  final bool isOnline;
+  final String lastSeen;
+
+  const _CallContact({
+    required this.user,
+    required this.isOnline,
+    this.lastSeen = '',
+  });
+}
+
+const _kContacts = <_CallContact>[
+  _CallContact(
+    user: CallUser(
+      id: '22222222-2222-2222-2222-222222222222',
+      name: 'Ananya Sharma',
+      isVerified: true,
+      city: 'Bandra, Mumbai',
+    ),
+    isOnline: true,
+  ),
+  _CallContact(
+    user: CallUser(
+      id: 'user-meera-kapoor',
+      name: 'Meera Kapoor',
+      isVerified: true,
+      city: 'Andheri, Mumbai',
+    ),
+    isOnline: true,
+  ),
+  _CallContact(
+    user: CallUser(
+      id: 'user-meera-4',
+      name: 'Meera Nair',
+      isVerified: true,
+      city: 'Kochi, Kerala',
+    ),
+    isOnline: true,
+  ),
+  _CallContact(
+    user: CallUser(
+      id: 'user-riya-2',
+      name: 'Riya Sen',
+      isVerified: true,
+      city: 'Hauz Khas, Delhi',
+    ),
+    isOnline: true,
+  ),
+  _CallContact(
+    user: CallUser(
+      id: 'user-tara-5',
+      name: 'Tara Deshmukh',
+      city: 'Pune, Maharashtra',
+    ),
+    isOnline: true,
+  ),
+  _CallContact(
+    user: CallUser(
+      id: 'user-vikram-6',
+      name: 'Vikram Singhania',
+      isVerified: true,
+      city: 'Colaba, Mumbai',
+    ),
+    isOnline: true,
+  ),
+  _CallContact(
+    user: CallUser(
+      id: 'user-aanya-7',
+      name: 'Aanya Patel',
+      city: 'Ahmedabad, Gujarat',
+    ),
+    isOnline: false,
+    lastSeen: 'Last seen 1d ago',
+  ),
+  _CallContact(
+    user: CallUser(
+      id: 'user-kabir-6',
+      name: 'Kabir Kapoor',
+      isVerified: true,
+      city: 'Colaba, Mumbai',
+    ),
+    isOnline: false,
+    lastSeen: 'Last seen 2h ago',
+  ),
+];

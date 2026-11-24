@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'features/plan_date/plan_date_screen.dart';
 import 'screens/chat/chat_tab_screen.dart';
 import 'screens/profile/profile_tab_screen.dart';
 import 'services/theme_service.dart';
@@ -14,6 +16,21 @@ import 'services/app_state_provider.dart';
 void main() {
   runApp(const ProviderScope(child: YoUnMeApp()));
 }
+
+final GoRouter _appRouter = GoRouter(
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const AuthGate(),
+    ),
+    GoRoute(
+      path: '/plan-date/:chatId',
+      builder: (context, state) => PlanDateScreen(
+        chatId: state.pathParameters['chatId'] ?? '',
+      ),
+    ),
+  ],
+);
 
 class YoUnMeApp extends StatefulWidget {
   const YoUnMeApp({super.key});
@@ -38,7 +55,7 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
       child: AnimatedBuilder(
         animation: _themeProvider,
         builder: (context, _) {
-          return MaterialApp(
+          return MaterialApp.router(
             title: 'YoUnMe Dating App',
             debugShowCheckedModeBanner: false,
             themeMode: _themeProvider.themeMode,
@@ -102,7 +119,7 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
               ),
               extensions: const [YoUnMeThemeExtension.dark],
             ),
-              home: const AuthGate(),   
+              routerConfig: _appRouter,
           );
         },
       ),
@@ -132,14 +149,6 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   int _currentIndex = 0; // Default to Chat tab for immediate verification
-
-  // Placeholder body widgets for unimplemented tabs
-  Widget _placeholder(String label, YoUnMeThemeExtension theme) => Center(
-        child: Text(
-          label,
-          style: TextStyle(fontSize: 18, color: theme.textMuted),
-        ),
-      );
 
   Widget _buildBody(YoUnMeThemeExtension theme) {
     switch (_currentIndex) {

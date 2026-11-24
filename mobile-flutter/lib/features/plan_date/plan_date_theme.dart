@@ -44,12 +44,29 @@ abstract final class PDColors {
   // Safety tip
   static const Color safetyBg  = Color(0xFF1A1226);
   static const Color safetyBorder = Color(0xFF2B2236);
+
+  // Chooser and planner accents
+  static const Color chooserCard = Color(0xFF121212);
+  static const Color chooserBorder = Color(0xFF3A2C2E);
+  static const Color chooserPink = Color(0xFFFF2D6F);
+  static const Color calendarYellow = Color(0xFFFACC15);
+  static const Color controlFill = Color(0xFF1A1420);
+  static const Color controlBorder = Color(0xFF33253B);
+  static const Color gradientPink = Color(0xFFE91E8C);
+  static const Color gradientPurple = Color(0xFFA21CAF);
 }
 
 abstract final class PDGradients {
   /// Primary gradient: used for selected states and the main CTA.
   static const LinearGradient primary = LinearGradient(
     colors: [Color(0xFFE8226F), Color(0xFFA8189B)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Magenta-to-purple selection gradient used across the planner.
+  static const LinearGradient selection = LinearGradient(
+    colors: [PDColors.gradientPink, PDColors.gradientPurple],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

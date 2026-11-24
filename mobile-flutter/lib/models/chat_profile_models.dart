@@ -31,6 +31,9 @@ class ChatConversationModel {
   final List<String> interests;
   final bool isVerified;
   final bool isOnline;
+  final bool isPinned;
+  final bool isVoiceNote;
+  final bool isSticker;
   final String lastMessage;
   final String timestamp;
   final int unreadCount;
@@ -47,6 +50,9 @@ class ChatConversationModel {
     required this.interests,
     this.isVerified = false,
     this.isOnline = false,
+    this.isPinned = false,
+    this.isVoiceNote = false,
+    this.isSticker = false,
     required this.lastMessage,
     required this.timestamp,
     this.unreadCount = 0,
@@ -70,6 +76,9 @@ class ChatConversationModel {
       interests: interests,
       isVerified: isVerified,
       isOnline: isOnline,
+      isPinned: isPinned,
+      isVoiceNote: isVoiceNote,
+      isSticker: isSticker,
       lastMessage: lastMessage ?? this.lastMessage,
       timestamp: timestamp ?? this.timestamp,
       unreadCount: unreadCount ?? this.unreadCount,

@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
+
 import '../../models/chat_profile_models.dart';
 import '../../services/app_data_service.dart';
 import '../../services/theme_service.dart';
+import 'profile_models.dart';
 
+/// Edit Profile sheet modelled on the reference screenshots: a scrollable
+/// identity + about-me form with a pinned Cancel / Save Changes footer.
+///
+/// Nickname and Date of Birth are shown but locked — they are rendered as
+/// read-only rows and never bound to a text controller.
 class EditProfileModalSheet extends StatefulWidget {
   final UserProfileModel profile;
+  final ProfileDetails details;
+  final ValueChanged<ProfileDetails>? onDetailsChanged;
 
   const EditProfileModalSheet({
     super.key,
     required this.profile,
+    this.details = ProfileDetails.defaults,
+    this.onDetailsChanged,
   });
 
   @override
@@ -17,7 +28,6 @@ class EditProfileModalSheet extends StatefulWidget {
 
 class _EditProfileModalSheetState extends State<EditProfileModalSheet> {
   late TextEditingController _nameController;
-  late TextEditingController _ageController;
   late TextEditingController _bioController;
   late TextEditingController _professionController;
   late TextEditingController _companyController;
@@ -26,28 +36,34 @@ class _EditProfileModalSheetState extends State<EditProfileModalSheet> {
   late TextEditingController _promptQuestionController;
   late TextEditingController _promptAnswerController;
 
+  late String _gender;
+  late String _orientation;
+
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.profile.name);
-    _ageController = TextEditingController(text: '${widget.profile.age}');
     _bioController = TextEditingController(text: widget.profile.bio);
-    _professionController = TextEditingController(text: widget.profile.profession);
+    _professionController =
+        TextEditingController(text: widget.profile.profession);
     _companyController = TextEditingController(text: widget.profile.company);
-    _educationController = TextEditingController(text: widget.profile.education);
+    _educationController =
+        TextEditingController(text: widget.profile.education);
     _cityController = TextEditingController(text: widget.profile.city);
     _promptQuestionController = TextEditingController(
-      text: widget.profile.personalPrompt['question'] ?? 'The key to my heart is...',
+      text: widget.profile.personalPrompt['question'] ??
+          'The key to my heart is...',
     );
     _promptAnswerController = TextEditingController(
       text: widget.profile.personalPrompt['answer'] ?? '',
     );
+    _gender = widget.details.gender;
+    _orientation = widget.details.sexualOrientation;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _ageController.dispose();
     _bioController.dispose();
     _professionController.dispose();
     _companyController.dispose();
@@ -59,13 +75,10 @@ class _EditProfileModalSheetState extends State<EditProfileModalSheet> {
   }
 
   void _save() {
-    final parsedAge = int.tryParse(_ageController.text.trim()) ?? widget.profile.age;
-
     final updated = widget.profile.copyWith(
       name: _nameController.text.trim().isNotEmpty
           ? _nameController.text.trim()
           : widget.profile.name,
-      age: parsedAge,
       bio: _bioController.text.trim(),
       profession: _professionController.text.trim(),
       company: _companyController.text.trim(),
@@ -80,6 +93,9 @@ class _EditProfileModalSheetState extends State<EditProfileModalSheet> {
     );
 
     AppDataService.instance.updateUserProfile(updated);
+    widget.onDetailsChanged?.call(
+      widget.details.copyWith(gender: _gender, sexualOrientation: _orientation),
+    );
     Navigator.of(context).pop();
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -94,15 +110,15 @@ class _EditProfileModalSheetState extends State<EditProfileModalSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = context.appTheme;
-    final isDark = context.isDarkMode;
     final viewInsets = MediaQuery.of(context).viewInsets;
-    final maxHeight = MediaQuery.of(context).size.height * 0.90;
 
     return Container(
-      constraints: BoxConstraints(maxHeight: maxHeight),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.94,
+      ),
       decoration: BoxDecoration(
         color: theme.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
         border: Border(
           top: BorderSide(color: theme.borderSubtle),
           left: BorderSide(color: theme.borderSubtle),
@@ -114,189 +130,249 @@ class _EditProfileModalSheetState extends State<EditProfileModalSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
             Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 8),
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.textMuted.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-
-            // Pinned Header: Title & Actions
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: theme.borderSubtle, width: 1),
-                ),
-              ),
+              padding: const EdgeInsets.fromLTRB(18, 18, 14, 14),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.close, color: theme.textSecondary, size: 22),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Edit Profile',
-                        style: TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.bold,
-                          color: theme.textPrimary,
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      gradient: ProfilePalette.primaryButton,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: ProfilePalette.magenta.withValues(alpha: 0.35),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
                         ),
-                      ),
-                    ],
-                  ),
-                  ElevatedButton(
-                    onPressed: _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.flamePink,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
+                      ],
                     ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                    child: const Icon(Icons.person, size: 22,
+                        color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Edit Profile',
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                            color: theme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Update your identity, bio, and dating intro',
+                          style: TextStyle(fontSize: 11.5,
+                              color: theme.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: theme.bgElevated,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: theme.borderSubtle),
                       ),
+                      child: Icon(Icons.close, size: 16,
+                          color: theme.textSecondary),
                     ),
                   ),
                 ],
               ),
             ),
-
-            // Scrollable Form Fields
+            Divider(height: 1, color: theme.borderSubtle),
             Flexible(
               child: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  top: 16,
-                  bottom: viewInsets.bottom + 24,
-                ),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                    18, 16, 18, viewInsets.bottom + 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _sectionLabel('Identity', Icons.person_outline,
+                        const Color(0xFFB85BF0), theme),
+                    const SizedBox(height: 12),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          flex: 3,
-                          child: _buildInputField(
-                            label: 'Display Name',
+                          child: _inputField(
+                            label: 'Full Name',
                             controller: _nameController,
                             theme: theme,
-                            isDark: isDark,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
-                          flex: 1,
-                          child: _buildInputField(
-                            label: 'Age',
-                            controller: _ageController,
+                          child: _lockedField(
+                            label: 'Date of Birth',
+                            value: widget.details.dateOfBirth,
                             theme: theme,
-                            isDark: isDark,
-                            keyboardType: TextInputType.number,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
-
-                    _buildInputField(
-                      label: 'About Me (Bio)',
+                    const SizedBox(height: 12),
+                    _lockedField(
+                      label: 'Nickname',
+                      value: widget.details.nickname,
+                      hint: '(visible to others)',
+                      theme: theme,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _dropdownField(
+                            label: 'Gender',
+                            value: _gender,
+                            options: kGenderOptions,
+                            theme: theme,
+                            onChanged: (value) =>
+                                setState(() => _gender = value),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _dropdownField(
+                            label: 'Sexual Orientation',
+                            value: _orientation,
+                            options: kSexualOrientationOptions,
+                            theme: theme,
+                            onChanged: (value) =>
+                                setState(() => _orientation = value),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    _sectionLabel('About Me', Icons.person_outline,
+                        ProfilePalette.purple, theme),
+                    const SizedBox(height: 12),
+                    _inputField(
+                      label: 'Personal Bio',
                       controller: _bioController,
                       theme: theme,
-                      isDark: isDark,
-                      maxLines: 4,
+                      maxLines: 5,
                       hintText: 'Share what makes you unique...',
                     ),
                     const SizedBox(height: 14),
-
-                    _buildInputField(
-                      label: 'Profession / Job Title',
+                    _promptCard(theme),
+                    const SizedBox(height: 20),
+                    _sectionLabel('More Details', Icons.badge_outlined,
+                        ProfilePalette.cyan, theme),
+                    const SizedBox(height: 12),
+                    _inputField(
+                      label: 'Profession',
                       controller: _professionController,
                       theme: theme,
-                      isDark: isDark,
                       prefixIcon: Icons.work_outline,
                     ),
-                    const SizedBox(height: 14),
-
-                    _buildInputField(
-                      label: 'Company / Workplace',
+                    const SizedBox(height: 12),
+                    _inputField(
+                      label: 'Company',
                       controller: _companyController,
                       theme: theme,
-                      isDark: isDark,
                       prefixIcon: Icons.business_outlined,
                     ),
-                    const SizedBox(height: 14),
-
-                    _buildInputField(
-                      label: 'Education / College',
+                    const SizedBox(height: 12),
+                    _inputField(
+                      label: 'Education',
                       controller: _educationController,
                       theme: theme,
-                      isDark: isDark,
                       prefixIcon: Icons.school_outlined,
                     ),
-                    const SizedBox(height: 14),
-
-                    _buildInputField(
-                      label: 'Location / City',
+                    const SizedBox(height: 12),
+                    _inputField(
+                      label: 'City / Location',
                       controller: _cityController,
                       theme: theme,
-                      isDark: isDark,
                       prefixIcon: Icons.location_on_outlined,
                     ),
-                    const SizedBox(height: 16),
-
-                    Divider(color: theme.borderSubtle),
-                    const SizedBox(height: 12),
-
-                    Text(
-                      'Personal Prompt',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: theme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    _buildInputField(
-                      label: 'Prompt Question',
-                      controller: _promptQuestionController,
-                      theme: theme,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 10),
-
-                    _buildInputField(
-                      label: 'Your Answer',
-                      controller: _promptAnswerController,
-                      theme: theme,
-                      isDark: isDark,
-                      maxLines: 2,
-                      hintText: 'Add an interesting conversation starter...',
-                    ),
-                    const SizedBox(height: 20),
                   ],
                 ),
+              ),
+            ),
+            Divider(height: 1, color: theme.borderSubtle),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        height: 46,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: theme.bgElevated,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: theme.borderSubtle),
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: theme.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 3,
+                    child: GestureDetector(
+                      onTap: _save,
+                      child: Container(
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: ProfilePalette.primaryButton,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  ProfilePalette.magenta.withValues(alpha: 0.3),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.save_outlined,
+                                size: 16, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'Save Changes',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -305,69 +381,287 @@ class _EditProfileModalSheetState extends State<EditProfileModalSheet> {
     );
   }
 
-  Widget _buildInputField({
+  // ── Pieces ─────────────────────────────────────────────────────────────
+  Widget _sectionLabel(
+    String label,
+    IconData icon,
+    Color color,
+    YoUnMeThemeExtension theme,
+  ) {
+    return Row(
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.4)),
+          ),
+          child: Icon(icon, size: 14, color: color),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.4,
+            color: theme.textSecondary,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Container(height: 1, color: theme.borderSubtle)),
+      ],
+    );
+  }
+
+  Widget _label(String label, YoUnMeThemeExtension theme, {String? hint}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: theme.textSecondary,
+            ),
+          ),
+          if (hint != null) ...[
+            const SizedBox(width: 5),
+            Text(
+              hint,
+              style: TextStyle(fontSize: 10, color: theme.textMuted),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _fieldShell(
+    YoUnMeThemeExtension theme, {
+    required Widget child,
+    bool locked = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.bgElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: locked
+              ? theme.borderSubtle
+              : theme.borderSubtle.withValues(alpha: 0.9),
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _inputField({
     required String label,
     required TextEditingController controller,
     required YoUnMeThemeExtension theme,
-    required bool isDark,
     IconData? prefixIcon,
     int maxLines = 1,
     String? hintText,
-    TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: theme.textSecondary,
+        _label(label, theme),
+        _fieldShell(
+          theme,
+          child: TextField(
+            controller: controller,
+            maxLines: maxLines,
+            textCapitalization: TextCapitalization.sentences,
+            style: TextStyle(
+              color: theme.textPrimary,
+              fontSize: 13.5,
+              height: 1.45,
+            ),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(color: theme.textMuted, fontSize: 13.5),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              prefixIcon: prefixIcon == null
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Icon(prefixIcon, size: 16,
+                          color: theme.textMuted),
+                    ),
+              prefixIconConstraints:
+                  const BoxConstraints(minWidth: 24, minHeight: 24),
+            ),
           ),
         ),
-        const SizedBox(height: 6),
+      ],
+    );
+  }
+
+  Widget _lockedField({
+    required String label,
+    required String value,
+    required YoUnMeThemeExtension theme,
+    String? hint,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _label(label, theme, hint: hint),
+        _fieldShell(
+          theme,
+          locked: true,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 11),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      color: theme.textSecondary,
+                    ),
+                  ),
+                ),
+                Icon(Icons.lock_outline, size: 14, color: theme.textMuted),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _dropdownField({
+    required String label,
+    required String value,
+    required List<String> options,
+    required YoUnMeThemeExtension theme,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _label(label, theme),
         Container(
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: theme.bgElevated,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: theme.borderSubtle),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Row(
-            crossAxisAlignment: maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: options.contains(value) ? value : options.first,
+              isExpanded: true,
+              dropdownColor: theme.bgElevated,
+              icon: Icon(Icons.keyboard_arrow_down,
+                  size: 18, color: theme.textSecondary),
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: theme.textPrimary,
+              ),
+              items: options
+                  .map((option) => DropdownMenuItem(
+                        value: option,
+                        child: Text(option),
+                      ))
+                  .toList(),
+              onChanged: (next) {
+                if (next != null) onChanged(next);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _promptCard(YoUnMeThemeExtension theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: ProfilePalette.promptCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: ProfilePalette.pink.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              if (prefixIcon != null) ...[
-                Padding(
-                  padding: EdgeInsets.only(top: maxLines > 1 ? 8 : 0, right: 8),
-                  child: Icon(prefixIcon, size: 18, color: theme.textMuted),
-                ),
-              ],
+              const Icon(Icons.format_quote, size: 13,
+                  color: ProfilePalette.pink),
+              const SizedBox(width: 6),
               Expanded(
-                child: TextField(
-                  controller: controller,
-                  maxLines: maxLines,
-                  keyboardType: keyboardType,
-                  style: TextStyle(
-                    color: theme.textPrimary,
-                    fontSize: 14,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: hintText,
-                    hintStyle: TextStyle(
-                      color: theme.textMuted,
-                      fontSize: 14,
-                    ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'DATING PROMPT: "${_promptQuestionController.text.isEmpty ? 'THE KEY TO MY HEART IS...' : _promptQuestionController.text.toUpperCase()}"',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.7,
+                    color: ProfilePalette.pink,
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          _inputField(
+            label: 'Your Answer',
+            controller: _promptAnswerController,
+            theme: theme,
+            maxLines: 2,
+            hintText: 'Add an interesting conversation starter...',
+          ),
+          const SizedBox(height: 8),
+          Theme(
+            data: Theme.of(context).copyWith(
+              dividerColor: Colors.transparent,
+              splashColor: Colors.transparent,
+            ),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(top: 4),
+              iconColor: ProfilePalette.pink,
+              collapsedIconColor: theme.textMuted,
+              leading: Icon(Icons.edit_note, size: 16, color: theme.textMuted),
+              title: Text(
+                'Change prompt question',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: theme.textSecondary,
+                ),
+              ),
+              children: [
+                _inputField(
+                  label: 'Prompt Question',
+                  controller: _promptQuestionController,
+                  theme: theme,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

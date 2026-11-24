@@ -8,11 +8,16 @@ class LiveInteractiveCallScreen extends StatefulWidget {
   final String avatarUrl;
   final bool isVideo;
 
+  /// Fired once when the call is ended from this screen (End Call or the
+  /// in-call back button), with the connected duration.
+  final ValueChanged<Duration>? onCallEnded;
+
   const LiveInteractiveCallScreen({
     super.key,
     required this.userName,
     required this.avatarUrl,
     this.isVideo = false,
+    this.onCallEnded,
   });
 
   @override
@@ -75,8 +80,10 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
   }
 
   void _endCall() {
+    if (_isEnded) return;
     _connectTimer?.cancel();
     _timer?.cancel();
+    widget.onCallEnded?.call(Duration(seconds: _seconds));
     setState(() => _isEnded = true);
   }
 
@@ -156,7 +163,9 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                         Text(
                           _isConnected
                               ? 'Connected with ${widget.userName} • 20 coins/min'
-                              : 'YoUnMe HD Voice • Ringing...',
+                              : widget.isVideo
+                                  ? 'YoUnMe HD Video • Ringing...'
+                                  : 'YoUnMe HD Voice • Ringing...',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
