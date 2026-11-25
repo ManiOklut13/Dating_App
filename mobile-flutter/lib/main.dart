@@ -177,7 +177,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget _buildBody(YoUnMeThemeExtension theme) {
     switch (_currentIndex) {
       case 0:
-        return DiscoveryTabScreen(showStreakOnEntry: widget.showStreakOnEntry);
+        return DiscoveryTabScreen(
+          showStreakOnEntry: widget.showStreakOnEntry,
+          onNavigateToConnect: () => setState(() => _currentIndex = 1),
+        );
       case 1:
         return const ConnectTabScreen();
       case 2:

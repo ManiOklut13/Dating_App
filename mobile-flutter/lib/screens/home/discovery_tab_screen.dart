@@ -4,7 +4,7 @@ import '../../widgets/top_nav_bar.dart';
 import '../../widgets/discovery_deck.dart';
 import '../../widgets/streak_tracker_modal.dart';
 import 'daily_streak_screen.dart';
-import 'date_plan_details_screen.dart';
+import 'home_screen.dart';
 import 'rubies_screen.dart';
 import 'notifications_screen.dart';
 import '../calls/live_interactive_call_screen.dart';
@@ -13,8 +13,13 @@ import '../../services/app_state_provider.dart';
 
 class DiscoveryTabScreen extends ConsumerStatefulWidget {
   final bool showStreakOnEntry;
+  final VoidCallback? onNavigateToConnect;
 
-  const DiscoveryTabScreen({super.key, this.showStreakOnEntry = false});
+  const DiscoveryTabScreen({
+    super.key,
+    this.showStreakOnEntry = false,
+    this.onNavigateToConnect,
+  });
 
   @override
   ConsumerState<DiscoveryTabScreen> createState() => _DiscoveryTabScreenState();
@@ -22,6 +27,50 @@ class DiscoveryTabScreen extends ConsumerStatefulWidget {
 
 class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen> {
   bool _hasClaimedStreakBonus = false;
+  String? _selectedRandomCallUserId;
+
+  final List<RandomCallUser> _randomCallUsers = const [
+    RandomCallUser(
+      id: 'usr_1',
+      name: 'Aarav',
+      age: 24,
+      city: 'Hyderabad',
+      status: 'Online',
+      avatarIcon: Icons.face_retouching_natural,
+      avatarBgColor: Color(0xFFFFE5EC),
+      avatarAccentColor: Color(0xFFE94057),
+    ),
+    RandomCallUser(
+      id: 'usr_2',
+      name: 'Meera',
+      age: 23,
+      city: 'Bengaluru',
+      status: 'Online',
+      avatarIcon: Icons.face_3,
+      avatarBgColor: Color(0xFFE8F0FE),
+      avatarAccentColor: Color(0xFF3B82F6),
+    ),
+    RandomCallUser(
+      id: 'usr_3',
+      name: 'Rohan',
+      age: 26,
+      city: 'Visakhapatnam',
+      status: 'Available',
+      avatarIcon: Icons.face_6,
+      avatarBgColor: Color(0xFFFEF3C7),
+      avatarAccentColor: Color(0xFFD97706),
+    ),
+    RandomCallUser(
+      id: 'usr_4',
+      name: 'Ananya',
+      age: 22,
+      city: 'Chennai',
+      status: 'Online',
+      avatarIcon: Icons.face_4,
+      avatarBgColor: Color(0xFFDCFCE7),
+      avatarAccentColor: Color(0xFF16A34A),
+    ),
+  ];
 
   @override
   void initState() {
@@ -103,63 +152,290 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen> {
     );
   }
 
-  Widget _buildScheduledDateCard({
-    required String partnerName,
-    required int partnerAge,
-    required String avatarUrl,
-    required String dateTimeText,
-    required String venueName,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E24),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.pinkAccent.withOpacity(0.35)),
+  void _toggleRandomCallSelection(String userId) {
+    setState(() {
+      _selectedRandomCallUserId =
+          (_selectedRandomCallUserId == userId) ? null : userId;
+    });
+  }
+
+  void _startRandomCall(RandomCallUser user, {required bool isVideo}) {
+    final callType = isVideo ? 'Video Call' : 'Audio Call';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Starting $callType with ${user.name}...'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LiveInteractiveCallScreen(
+          userName: user.name,
+          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb',
+          isVideo: isVideo,
         ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundImage: NetworkImage(avatarUrl),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
+      ),
+    );
+  }
+
+  Widget _buildRandomCallsSection() {
+    const primaryColor = Color(0xFFE94057);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Date with $partnerName, $partnerAge',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
+                  const Text(
+                    'Random Calls',
+                    style: TextStyle(
+                      fontSize: 19,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
-                    '$dateTimeText • $venueName',
+                    'Tap an avatar to start an audio or video call',
                     style: TextStyle(
+                      fontSize: 12.5,
                       color: Colors.grey[400],
-                      fontSize: 13,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.pinkAccent,
-            ),
-          ],
+              TextButton.icon(
+                onPressed: widget.onNavigateToConnect ?? () {},
+                icon: const Icon(Icons.shuffle_rounded,
+                    size: 18, color: primaryColor),
+                label: const Text(
+                  'Connect Tab',
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: 4),
+
+        // 2-Column Grid of Avatar-Only Profiles
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _randomCallUsers.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.86,
+            ),
+            itemBuilder: (context, index) {
+              final user = _randomCallUsers[index];
+              final isSelected = _selectedRandomCallUserId == user.id;
+
+              return GestureDetector(
+                onTap: () => _toggleRandomCallSelection(user.id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF16161D),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isSelected ? primaryColor : Colors.white12,
+                      width: isSelected ? 1.8 : 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isSelected
+                            ? primaryColor.withOpacity(0.25)
+                            : Colors.black.withOpacity(0.3),
+                        blurRadius: isSelected ? 12 : 6,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Avatar + Status Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: user.avatarBgColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              user.avatarIcon,
+                              color: user.avatarAccentColor,
+                              size: 26,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: user.status == 'Online'
+                                  ? const Color(0xFFDCFCE7).withOpacity(0.2)
+                                  : const Color(0xFFFEF3C7).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: user.status == 'Online'
+                                        ? const Color(0xFF16A34A)
+                                        : const Color(0xFFD97706),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  user.status,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: user.status == 'Online'
+                                        ? Colors.greenAccent
+                                        : Colors.amberAccent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Name, Age, City
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${user.name}, ${user.age}',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(Icons.location_on_outlined,
+                                  size: 13, color: Colors.grey[400]),
+                              const SizedBox(width: 2),
+                              Text(
+                                user.city,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[400],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      // Action: Pop out Audio & Video buttons when selected, or prompt button
+                      if (isSelected)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: () =>
+                                    _startRandomCall(user, isVideo: false),
+                                child: Container(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        const Color(0xFFE8F0FE).withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.call_rounded,
+                                      size: 18, color: Color(0xFF60A5FA)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: InkWell(
+                                onTap: () =>
+                                    _startRandomCall(user, isVideo: true),
+                                child: Container(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        const Color(0xFFFFE5EC).withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.videocam_rounded,
+                                      size: 18, color: primaryColor),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 7),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF22222C),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.touch_app_rounded,
+                                  size: 14, color: Colors.grey[400]),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Tap to Call',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[400],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 
@@ -186,20 +462,8 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen> {
                 },
               ),
 
-              // Date Reminder Banner (Top of Home)
-              _buildScheduledDateCard(
-                partnerName: 'Ananya',
-                partnerAge: 24,
-                avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-                dateTimeText: 'Tonight, 7:30 PM',
-                venueName: 'Roastery Coffee House',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const DatePlanDetailsScreen()),
-                  );
-                },
-              ),
+              // --- RANDOM CALLS SECTION (Replaces Date Planning) ---
+              _buildRandomCallsSection(),
 
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
