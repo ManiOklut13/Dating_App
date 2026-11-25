@@ -1351,31 +1351,6 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
     );
   }
 
-  Widget _dobBox(String label, String val, Function(String) onChanged) {
-    return Expanded(
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: const Color(0xFF191C24),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0x1FFFFFFF)),
-        ),
-        alignment: Alignment.center,
-        child: TextField(
-          controller: TextEditingController(text: val),
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
-          decoration: InputDecoration(
-            border: InputBorder.none,
-            hintText: label,
-            hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
-          ),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
   Widget _genderPill(String key, String label) {
     final active = _gender == key;
     return Expanded(

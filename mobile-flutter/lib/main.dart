@@ -10,6 +10,7 @@ import 'screens/auth/sign_in_screen.dart';
 import 'screens/auth/basic_profile_page.dart';
 import 'screens/auth/landing_auth_screen.dart';
 import 'screens/auth/sign_up_page.dart';
+import 'screens/home/profile_swipe_deck_screen.dart';
 import 'screens/auth/create_password_screen.dart';
 import 'screens/auth/phone_entry_page.dart';
 import 'services/theme_service.dart';
@@ -125,6 +126,7 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
               '/profile-setup': (_) => const BasicProfilePage(),
               '/landing-auth': (_) => const LandingAuthScreen(),
               '/signup': (_) => const SignUpPage(),
+              '/profile-swipe-deck': (_) => const ProfileSwipeDeckScreen(),
               '/create-password': (ctx) {
                 final args = ModalRoute.of(ctx)?.settings.arguments as Map<String, dynamic>?;
                 return CreatePasswordScreen(

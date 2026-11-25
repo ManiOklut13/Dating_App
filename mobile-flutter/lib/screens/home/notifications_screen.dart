@@ -28,7 +28,7 @@ class _NotificationModel {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  String _filter = 'All'; // 'All' | 'Unread'
+  final String _filter = 'All'; // 'All' | 'Unread'
 
   final List<_NotificationModel> _notifications = [
     _NotificationModel(
@@ -144,6 +144,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ],
                     ),
                   ),
+                  if (_unreadCount > 0)
+                    TextButton(
+                      onPressed: _markAllRead,
+                      child: const Text(
+                        'Mark all read',
+                        style: TextStyle(
+                          color: Color(0xFFFB7185),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -253,31 +265,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _filterPill(String key, String label) {
-    final active = _filter == key;
-    return GestureDetector(
-      onTap: () => setState(() => _filter = key),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFFEC4899) : const Color(0xFF1B1119),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: active ? const Color(0xFFEC4899) : const Color(0xFF2E1E2B),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-            color: active ? Colors.white : const Color(0xFF9CA3AF),
-          ),
         ),
       ),
     );

@@ -3,10 +3,16 @@ import 'email_link_waiting_page.dart';
 
 class EmailEntryPage extends StatefulWidget {
   final bool startedWithEmail;
+  final bool isPrimaryFlow;
+  final String? verifiedPhone;
+  final String? createdPassword;
 
   const EmailEntryPage({
     super.key,
     this.startedWithEmail = true,
+    this.isPrimaryFlow = true,
+    this.verifiedPhone,
+    this.createdPassword,
   });
 
   @override
