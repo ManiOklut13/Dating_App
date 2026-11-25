@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../services/theme_service.dart';
 import 'phone_entry_page.dart';
 
 class CreatePasswordScreen extends StatefulWidget {
-  final String verifiedEmail; // Passed from the Email Verification screen
+  final String verifiedEmail;
 
   const CreatePasswordScreen({
     super.key,
@@ -17,12 +16,13 @@ class CreatePasswordScreen extends StatefulWidget {
 class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final FocusNode _passwordFocusNode = FocusNode();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
+  bool _isPasswordFocused = false;
 
   // Password rule states
   bool _hasMinLength = false;
@@ -35,6 +35,13 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
   void initState() {
     super.initState();
     _passwordController.addListener(_validatePasswordRules);
+    _passwordFocusNode.addListener(_handleFocusChange);
+  }
+
+  void _handleFocusChange() {
+    setState(() {
+      _isPasswordFocused = _passwordFocusNode.hasFocus;
+    });
   }
 
   void _validatePasswordRules() {
@@ -44,10 +51,13 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
       _hasUppercase = password.contains(RegExp(r'[A-Z]'));
       _hasLowercase = password.contains(RegExp(r'[a-z]'));
       _hasNumber = password.contains(RegExp(r'[0-9]'));
-      _hasSpecialChar =
-          password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-\\/\[\];~`+=]'));
+      _hasSpecialChar = password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-\\/\[\];~`+=]'));
     });
   }
+
+  // Visible ONLY when user taps into Create Password or has started typing
+  bool get _shouldShowRulesBox =>
+      _isPasswordFocused || _passwordController.text.isNotEmpty;
 
   bool get _isPasswordStrong =>
       _hasMinLength &&
@@ -60,8 +70,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
     if (!_isPasswordStrong) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('Please meet all password requirements before continuing.'),
+          content: Text('Please meet all password requirements before continuing.'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -72,19 +81,14 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
       setState(() => _isLoading = true);
 
       try {
-        // Simulated network delay or API call to set password
         await Future.delayed(const Duration(milliseconds: 800));
-
         if (!mounted) return;
 
-        // Navigate to Enter Mobile Number Screen
         if (Navigator.canPop(context)) {
           Navigator.pushNamed(
             context,
             '/enter-mobile-number',
-            arguments: {
-              'email': widget.verifiedEmail,
-            },
+            arguments: {'email': widget.verifiedEmail},
           );
         } else {
           Navigator.push(
@@ -98,7 +102,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save password: $e')),
+          SnackBar(content: Text('Error: $e')),
         );
       } finally {
         if (mounted) setState(() => _isLoading = false);
@@ -109,48 +113,23 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
   @override
   void dispose() {
     _passwordController.removeListener(_validatePasswordRules);
+    _passwordFocusNode.removeListener(_handleFocusChange);
+    _passwordFocusNode.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Widget _buildRuleItem(String text, bool met, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.0),
-      child: Row(
-        children: [
-          Icon(
-            met
-                ? Icons.check_circle_rounded
-                : Icons.radio_button_unchecked_rounded,
-            color: met ? Colors.greenAccent : (isDark ? Colors.grey[600] : Colors.grey[400]),
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              color: met
-                  ? (isDark ? Colors.greenAccent : Colors.green[800])
-                  : (isDark ? Colors.grey[400] : Colors.grey[600]),
-              fontSize: 13,
-              fontWeight: met ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const Color primaryColor = AppColors.flamePink;
+    const Color primaryColor = Color(0xFFE94057);
 
     final bgColor = isDark ? const Color(0xFF0B0B0F) : Colors.white;
     final cardColor = isDark ? const Color(0xFF16161D) : Colors.grey.shade50;
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.grey[400] : Colors.grey.shade600;
+    final borderColor = isDark ? Colors.white12 : Colors.grey.shade200;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -158,8 +137,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
         backgroundColor: bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new,
-              color: textColor, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, color: textColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -171,20 +149,18 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Verified badge pill
+                // Verified email badge
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.12),
+                    color: Colors.green.withOpacity(isDark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.green.withOpacity(0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.check_circle,
-                          color: Colors.green, size: 16),
+                      const Icon(Icons.check_circle, color: Colors.green, size: 16),
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
@@ -223,6 +199,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 // Create Password Field
                 TextFormField(
                   controller: _passwordController,
+                  focusNode: _passwordFocusNode,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
                   style: TextStyle(color: textColor, fontSize: 16),
@@ -233,73 +210,88 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     hintStyle: TextStyle(color: subTextColor?.withOpacity(0.6)),
                     filled: true,
                     fillColor: cardColor,
-                    prefixIcon:
-                        Icon(Icons.lock_outline, color: primaryColor, size: 20),
+                    prefixIcon: const Icon(Icons.lock_outline, color: primaryColor, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
                         color: subTextColor,
                         size: 20,
                       ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: isDark
-                          ? const BorderSide(color: Colors.white12)
-                          : BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(color: borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: borderColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide:
-                          const BorderSide(color: primaryColor, width: 1.5),
+                      borderSide: const BorderSide(color: primaryColor, width: 1.8),
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
-                    }
-                    if (!_isPasswordStrong) {
-                      return 'Password does not meet all requirements below';
-                    }
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 16),
 
-                // Password Rules Checklist
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? Colors.white10 : Colors.grey.shade200,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Password must contain:',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildRuleItem('At least 8 characters', _hasMinLength, isDark),
-                      _buildRuleItem('One uppercase letter (A-Z)', _hasUppercase, isDark),
-                      _buildRuleItem('One lowercase letter (a-z)', _hasLowercase, isDark),
-                      _buildRuleItem('One number (0-9)', _hasNumber, isDark),
-                      _buildRuleItem('One special character (!@#\$%^&*)', _hasSpecialChar, isDark),
-                    ],
-                  ),
+                // Password Rules Box — Hidden by default; reveals on tap/typing
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOut,
+                  child: _shouldShowRulesBox
+                      ? Container(
+                          margin: const EdgeInsets.only(top: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: cardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Password must contain:',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _RequirementRow(
+                                label: 'At least 8 characters',
+                                isMet: _hasMinLength,
+                                isDark: isDark,
+                              ),
+                              _RequirementRow(
+                                label: 'One uppercase letter (A-Z)',
+                                isMet: _hasUppercase,
+                                isDark: isDark,
+                              ),
+                              _RequirementRow(
+                                label: 'One lowercase letter (a-z)',
+                                isMet: _hasLowercase,
+                                isDark: isDark,
+                              ),
+                              _RequirementRow(
+                                label: 'One number (0-9)',
+                                isMet: _hasNumber,
+                                isDark: isDark,
+                              ),
+                              _RequirementRow(
+                                label: 'One special character (!@#\$%^&*)',
+                                isMet: _hasSpecialChar,
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
+
                 const SizedBox(height: 20),
 
                 // Confirm Password Field
@@ -307,39 +299,8 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _onContinue(),
                   style: TextStyle(color: textColor, fontSize: 16),
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    labelStyle: TextStyle(color: subTextColor),
-                    hintText: 'Re-enter your password',
-                    hintStyle: TextStyle(color: subTextColor?.withOpacity(0.6)),
-                    filled: true,
-                    fillColor: cardColor,
-                    prefixIcon:
-                        Icon(Icons.lock_reset_rounded, color: primaryColor, size: 20),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: subTextColor,
-                        size: 20,
-                      ),
-                      onPressed: () => setState(() =>
-                          _obscureConfirmPassword = !_obscureConfirmPassword),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: isDark
-                          ? const BorderSide(color: Colors.white12)
-                          : BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide:
-                          const BorderSide(color: primaryColor, width: 1.5),
-                    ),
-                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please confirm your password';
@@ -349,28 +310,60 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     }
                     return null;
                   },
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    labelStyle: TextStyle(color: subTextColor),
+                    hintText: 'Re-enter your password',
+                    hintStyle: TextStyle(color: subTextColor?.withOpacity(0.6)),
+                    filled: true,
+                    fillColor: cardColor,
+                    prefixIcon: const Icon(Icons.lock_reset_outlined, color: primaryColor, size: 20),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: subTextColor,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: primaryColor, width: 1.8),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 32),
 
-                // Continue CTA Button
+                // Continue Button
                 SizedBox(
                   width: double.infinity,
-                  height: 56,
+                  height: 54,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _onContinue,
+                    onPressed: (_isPasswordStrong && !_isLoading) ? _onContinue : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shadowColor: primaryColor.withOpacity(0.4),
+                      disabledBackgroundColor: isDark ? const Color(0xFF22222C) : Colors.grey.shade300,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(14),
                       ),
+                      elevation: 0,
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                            width: 22,
                             height: 22,
+                            width: 22,
                             child: CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 2.5,
@@ -381,6 +374,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                   ),
@@ -389,6 +383,45 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RequirementRow extends StatelessWidget {
+  final String label;
+  final bool isMet;
+  final bool isDark;
+
+  const _RequirementRow({
+    required this.label,
+    required this.isMet,
+    this.isDark = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3.0),
+      child: Row(
+        children: [
+          Icon(
+            isMet ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+            size: 16,
+            color: isMet ? Colors.green : (isDark ? Colors.grey.shade600 : Colors.grey.shade400),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: isMet
+                  ? (isDark ? Colors.greenAccent : Colors.green.shade700)
+                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+              fontWeight: isMet ? FontWeight.w500 : FontWeight.normal,
+            ),
+          ),
+        ],
       ),
     );
   }
