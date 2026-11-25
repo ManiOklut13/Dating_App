@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'phone_entry_page.dart';
+import 'create_password_screen.dart';
 
 class EmailLinkWaitingPage extends StatefulWidget {
   final String email;
@@ -44,10 +44,11 @@ class _EmailLinkWaitingPageState extends State<EmailLinkWaitingPage> {
   }
 
   void _onEmailLinkClicked() {
-    // Redirects to Mobile Number Entry (no OTP), which then goes to Create Your Identity
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const PhoneEntryPage()),
+      MaterialPageRoute(
+        builder: (context) => CreatePasswordScreen(verifiedEmail: widget.email),
+      ),
     );
   }
 

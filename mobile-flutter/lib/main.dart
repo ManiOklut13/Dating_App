@@ -8,6 +8,10 @@ import 'screens/connect/connect_tab_screen.dart';
 import 'screens/auth/splash_landing_screen.dart';
 import 'screens/auth/sign_in_screen.dart';
 import 'screens/auth/basic_profile_page.dart';
+import 'screens/auth/landing_auth_screen.dart';
+import 'screens/auth/sign_up_page.dart';
+import 'screens/auth/create_password_screen.dart';
+import 'screens/auth/phone_entry_page.dart';
 import 'services/theme_service.dart';
 import 'services/theme_provider.dart';
 import 'services/app_state_provider.dart';
@@ -119,6 +123,23 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
             routes: {
               '/home': (_) => const MainShellScreen(),
               '/profile-setup': (_) => const BasicProfilePage(),
+              '/landing-auth': (_) => const LandingAuthScreen(),
+              '/signup': (_) => const SignUpPage(),
+              '/create-password': (ctx) {
+                final args = ModalRoute.of(ctx)?.settings.arguments as Map<String, dynamic>?;
+                return CreatePasswordScreen(
+                  verifiedEmail: args?['email'] as String? ?? '',
+                );
+              },
+              '/enter-mobile-number': (ctx) =>
+                  const PhoneEntryPage(startedWithEmail: true),
+              '/onboarding-step-2': (ctx) {
+                final args = ModalRoute.of(ctx)?.settings.arguments as Map<String, dynamic>?;
+                return BasicProfilePage(
+                  initialEmail: args?['email'] as String?,
+                  initialPhone: args?['mobile'] as String?,
+                );
+              },
             },
             home: ProviderScope(child: const AuthGate()),
           );

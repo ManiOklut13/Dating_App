@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/discovery_connect_models.dart';
 import 'email_entry_page.dart';
+import 'phone_entry_page.dart';
 import 'sign_in_page.dart';
 
 class LandingPage extends StatelessWidget {
@@ -100,7 +101,7 @@ class LandingPage extends StatelessWidget {
                   ),
                   const Spacer(),
 
-                  // Primary Option: Continue with Email (Mobile button removed)
+                  // 1st Option: Continue with Email
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -141,6 +142,37 @@ class LandingPage extends StatelessWidget {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 2nd Option: Continue with Mobile Number
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: const Color(0xFF16161D),
+                        side: const BorderSide(color: Color(0xFFFF2E55), width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(Icons.phone_iphone_rounded,
+                          color: Color(0xFFFF2E55), size: 22),
+                      label: const Text(
+                        'Continue with Mobile Number',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PhoneEntryPage(startedWithEmail: false),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 18),

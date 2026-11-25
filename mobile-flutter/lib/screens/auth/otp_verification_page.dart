@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'phone_entry_page.dart';
 import 'basic_profile_page.dart';
+import 'create_password_screen.dart';
 
 class OtpVerificationPage extends StatefulWidget {
   final String destination;
@@ -74,11 +74,13 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     if (_enteredOtp.length < 6) return;
 
     if (widget.isEmailVerification) {
-      // After Email OTP is verified -> Ask for Mobile Number
-      Navigator.push(
+      // After Email is verified -> Create Password -> Mobile Number
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const PhoneEntryPage(startedWithEmail: true),
+          builder: (context) => CreatePasswordScreen(
+            verifiedEmail: widget.destination,
+          ),
         ),
       );
     } else {
