@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../services/theme_provider.dart';
+import 'final_onboarding_step.dart';
 
 class VoiceVerificationPage extends StatefulWidget {
   const VoiceVerificationPage({super.key});
@@ -129,11 +131,25 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
                 ),
                 onPressed: _isVerified
                     ? () {
-                        Navigator.pushNamedAndRemoveUntil(
-                            context, '/home', (route) => false);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FinalOnboardingStep(
+                              onThemeChanged: (mode) {
+                                try {
+                                  YoUnMeThemeScope.of(context).setThemeMode(mode);
+                                } catch (_) {}
+                              },
+                              onEnterHome: () {
+                                Navigator.pushNamedAndRemoveUntil(
+                                    context, '/home', (route) => false);
+                              },
+                            ),
+                          ),
+                        );
                       }
                     : null,
-                child: const Text('Complete & Enter Home',
+                child: const Text('Next: App Appearance (Step 5)',
                     style:
                         TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),

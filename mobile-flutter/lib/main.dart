@@ -8,6 +8,8 @@ import 'screens/connect/connect_tab_screen.dart';
 import 'screens/auth/splash_landing_screen.dart';
 import 'screens/auth/sign_in_screen.dart';
 import 'screens/auth/basic_profile_page.dart';
+import 'screens/auth/basic_profile_step.dart';
+import 'screens/auth/final_onboarding_step.dart';
 import 'screens/auth/landing_auth_screen.dart';
 import 'screens/auth/sign_up_page.dart';
 import 'screens/home/profile_swipe_deck_screen.dart';
@@ -142,6 +144,16 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
                   initialPhone: args?['mobile'] as String?,
                 );
               },
+              '/basic-profile-step': (ctx) => BasicProfileStep(
+                    onContinue: () => Navigator.pushNamed(ctx, '/home'),
+                  ),
+              '/final-onboarding-step': (ctx) => FinalOnboardingStep(
+                    onEnterHome: () => Navigator.pushNamedAndRemoveUntil(
+                      ctx,
+                      '/home',
+                      (route) => false,
+                    ),
+                  ),
             },
             home: ProviderScope(child: const AuthGate()),
           );
