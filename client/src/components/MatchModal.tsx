@@ -46,10 +46,10 @@ export const MatchModal: React.FC<MatchModalProps> = ({
           MUTUAL CONNECTION FOUND
         </div>
 
-        <h2 style={{ fontSize: '28px', fontWeight: 800, background: 'var(--gradient-flame)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 800, background: 'var(--gradient-flame)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '6px' }}>
           It's a Vibe Match!
         </h2>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '28px' }}>
+        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
           You and <strong>{matchedProfile.nickname}</strong> liked each other!
         </p>
 
