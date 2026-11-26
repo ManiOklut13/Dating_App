@@ -79,13 +79,26 @@ class DateTypeOption {
     modes: {DateMode.offline},
   );
 
+  static const parkWalk = DateTypeOption(
+    id: 'park-walk',
+    label: 'Park Walk',
+    icon: Icons.park_outlined,
+    modes: {DateMode.offline},
+  );
+  static const dessert = DateTypeOption(
+    id: 'dessert',
+    label: 'Dessert',
+    icon: Icons.cake_outlined,
+    modes: {DateMode.offline},
+  );
+
   /// Carousel entries shown for the active mode.
   static List<DateTypeOption> optionsFor(DateMode mode) {
     switch (mode) {
       case DateMode.virtual:
         return const [movie, games, coffee, dinner, music];
       case DateMode.offline:
-        return const [dinner, coffee, walk, artGallery, movie];
+        return const [movie, parkWalk, dessert, dinner, coffee, walk, artGallery];
     }
   }
 }
@@ -121,11 +134,15 @@ List<TodoItem> defaultDateTodos(DateMode mode, DateTypeOption type) {
   final texts = <String>[];
   switch (type.id) {
     case 'movie-night':
-      texts.addAll(
-        mode == DateMode.virtual
-            ? ['Pick a movie', 'Order popcorn', 'Set up online game']
-            : ['Book tickets', 'Pick snacks', 'Check show timings'],
-      );
+      if (mode == DateMode.offline) {
+        return const [
+          TodoItem(id: 'todo-0', text: 'Book a table', done: false),
+          TodoItem(id: 'todo-1', text: 'Choose a place', done: false),
+          TodoItem(id: 'todo-2', text: 'Pick a movie', done: true),
+          TodoItem(id: 'todo-3', text: 'Order popcorn', done: false),
+        ];
+      }
+      texts.addAll(['Pick a movie', 'Order popcorn', 'Set up online game']);
       break;
     case 'games':
       texts.addAll(['Choose games', 'Test the connection', 'Share invite link']);
