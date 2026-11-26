@@ -4,17 +4,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/chat/chat_tab_screen.dart';
 import 'screens/profile/profile_tab_screen.dart';
 import 'screens/home/discovery_tab_screen.dart';
+import 'screens/home/home_screen.dart';
 import 'screens/connect/connect_tab_screen.dart';
+import 'screens/connect/random_call_screen.dart';
 import 'screens/auth/splash_landing_screen.dart';
 import 'screens/auth/sign_in_screen.dart';
 import 'screens/auth/basic_profile_page.dart';
 import 'screens/auth/basic_profile_step.dart';
+import 'screens/auth/full_page_avatar_camera.dart';
+import 'screens/auth/preferences_step.dart';
+import 'screens/auth/relationship_goals_step.dart';
+import 'screens/auth/categorized_interests_step.dart';
 import 'screens/auth/final_onboarding_step.dart';
 import 'screens/auth/landing_auth_screen.dart';
 import 'screens/auth/sign_up_page.dart';
 import 'screens/home/profile_swipe_deck_screen.dart';
 import 'screens/auth/create_password_screen.dart';
 import 'screens/auth/phone_entry_page.dart';
+import 'services/app_theme.dart';
 import 'services/theme_service.dart';
 import 'services/theme_provider.dart';
 import 'services/app_state_provider.dart';
@@ -63,68 +70,12 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
             debugShowCheckedModeBanner: false,
             scrollBehavior: const AppScrollBehavior(),
             themeMode: _themeProvider.themeMode,
-            // ─── Light Mode ThemeData ───
-            theme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.light,
-              scaffoldBackgroundColor: AppColors.lightBackground,
-              cardColor: AppColors.lightCard,
-              dividerColor: AppColors.lightBorder,
-              colorScheme: const ColorScheme.light(
-                primary: AppColors.flamePink,
-                secondary: AppColors.cyanAccent,
-                surface: AppColors.lightSurface,
-                tertiary: AppColors.goldAccent,
-                onSurface: AppColors.lightTextPrimary,
-                outline: AppColors.lightBorder,
-              ),
-              appBarTheme: const AppBarTheme(
-                backgroundColor: AppColors.lightSurface,
-                foregroundColor: AppColors.lightTextPrimary,
-                elevation: 0,
-              ),
-              bottomSheetTheme: const BottomSheetThemeData(
-                backgroundColor: AppColors.lightSurface,
-                surfaceTintColor: Colors.transparent,
-              ),
-              dividerTheme: const DividerThemeData(
-                color: AppColors.lightBorder,
-                thickness: 1,
-              ),
-              extensions: const [YoUnMeThemeExtension.light],
-            ),
-            // ─── Dark Mode ThemeData ───
-            darkTheme: ThemeData(
-              useMaterial3: true,
-              brightness: Brightness.dark,
-              scaffoldBackgroundColor: AppColors.darkBackground,
-              cardColor: AppColors.darkCard,
-              dividerColor: AppColors.darkBorder,
-              colorScheme: const ColorScheme.dark(
-                primary: AppColors.flamePink,
-                secondary: AppColors.cyanAccent,
-                surface: AppColors.darkSurface,
-                tertiary: AppColors.goldAccent,
-                onSurface: AppColors.darkTextPrimary,
-                outline: AppColors.darkBorder,
-              ),
-              appBarTheme: const AppBarTheme(
-                backgroundColor: AppColors.darkSurface,
-                foregroundColor: AppColors.darkTextPrimary,
-                elevation: 0,
-              ),
-              bottomSheetTheme: const BottomSheetThemeData(
-                backgroundColor: AppColors.darkSurface,
-                surfaceTintColor: Colors.transparent,
-              ),
-              dividerTheme: const DividerThemeData(
-                color: AppColors.darkBorder,
-                thickness: 1,
-              ),
-              extensions: const [YoUnMeThemeExtension.dark],
-            ),
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
             routes: {
               '/home': (_) => const MainShellScreen(),
+              '/home-screen': (_) => const HomeScreen(),
+              '/random-call': (_) => const RandomCallScreen(),
               '/profile-setup': (_) => const BasicProfilePage(),
               '/landing-auth': (_) => const LandingAuthScreen(),
               '/signup': (_) => const SignUpPage(),
@@ -145,7 +96,17 @@ class _YoUnMeAppState extends State<YoUnMeApp> {
                 );
               },
               '/basic-profile-step': (ctx) => BasicProfileStep(
-                    onContinue: () => Navigator.pushNamed(ctx, '/home'),
+                    onContinue: () => Navigator.pushNamed(ctx, '/relationship-goals-step'),
+                  ),
+              '/full-page-avatar-camera': (_) => const FullPageAvatarCamera(),
+              '/relationship-goals-step': (ctx) => RelationshipGoalsStep(
+                    onContinue: () => Navigator.pushNamed(ctx, '/categorized-interests-step'),
+                  ),
+              '/preferences-step': (ctx) => PreferencesStep(
+                    onContinue: () => Navigator.pushNamed(ctx, '/categorized-interests-step'),
+                  ),
+              '/categorized-interests-step': (ctx) => CategorizedInterestsStep(
+                    onContinue: () => Navigator.pushNamed(ctx, '/final-onboarding-step'),
                   ),
               '/final-onboarding-step': (ctx) => FinalOnboardingStep(
                     onEnterHome: () => Navigator.pushNamedAndRemoveUntil(
@@ -209,9 +170,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = context.appTheme;
+    final appTheme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D070C),
+      backgroundColor: appTheme.scaffoldBackgroundColor,
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 220),
         child: KeyedSubtree(
@@ -228,6 +190,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
   // Chat (speech bubble), Profile (user). Active tab highlighted in #EC4899.
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildFloatingNavBar(YoUnMeThemeExtension theme) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
     final icons = <IconData, IconData>{
       Icons.local_fire_department_outlined: Icons.local_fire_department,
       Icons.favorite_border: Icons.favorite,
@@ -242,16 +206,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
         margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF1B1119),
+          color: isDark ? const Color(0xFF181A24) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: const Color(0xFF2E1E2B),
+            color: isDark ? Colors.white12 : Colors.grey.shade200,
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Color(0x33EC4899),
+              color: primary.withOpacity(0.14),
               blurRadius: 24,
-              offset: Offset(0, 8),
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -269,8 +233,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       active ? iconEntries[i].value : iconEntries[i].key,
                       size: 22,
                       color: active
-                          ? const Color(0xFFEC4899)
-                          : const Color(0xFF9CA3AF),
+                          ? primary
+                          : (isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600),
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -279,8 +243,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         fontSize: 11,
                         fontWeight: active ? FontWeight.w800 : FontWeight.w500,
                         color: active
-                            ? const Color(0xFFEC4899)
-                            : const Color(0xFF9CA3AF),
+                            ? primary
+                            : (isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600),
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -289,8 +253,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       height: 3,
                       width: active ? 30 : 0,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFE11D48), Color(0xFFEC4899)],
+                        gradient: LinearGradient(
+                          colors: [primary, const Color(0xFFEC4899)],
                         ),
                         borderRadius: BorderRadius.circular(2),
                       ),
@@ -326,7 +290,7 @@ class AuthGate extends ConsumerWidget {
           return SignInScreen(
             onBack: () => notifier.setAuthScreen(AuthScreen.splash),
             onLogin: (id, pw) => notifier.setAuthenticated(true),
-            onGoToSignUp: () => notifier.setAuthScreen(AuthScreen.onboarding),
+            onGoToSignUp: () => notifier.setAuthScreen(AuthScreen.splash),
           );
         case AuthScreen.onboarding:
           return const BasicProfilePage();

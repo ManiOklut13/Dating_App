@@ -188,8 +188,8 @@ const FullBleedProfileItem: React.FC<FullBleedProfileItemProps> = ({
         revertDirection === 'right'
           ? 'revert-animate-right'
           : revertDirection === 'left'
-          ? 'revert-animate-left'
-          : undefined
+            ? 'revert-animate-left'
+            : undefined
       }
       style={{
         position: 'absolute',
@@ -212,8 +212,8 @@ const FullBleedProfileItem: React.FC<FullBleedProfileItemProps> = ({
         boxShadow: isGlowing
           ? 'inset 0 0 45px rgba(239, 68, 68, 0.7)'
           : stackIndex === 0
-          ? '0 12px 32px rgba(0, 0, 0, 0.55)'
-          : '0 8px 24px rgba(0, 0, 0, 0.45)',
+            ? '0 12px 32px rgba(0, 0, 0, 0.55)'
+            : '0 8px 24px rgba(0, 0, 0, 0.45)',
       }}
     >
       {/* 1. FULL-BLEED PRIMARY PHOTO */}
@@ -713,7 +713,7 @@ export const DiscoveryDeck: React.FC<DiscoveryDeckProps> = ({
     if (e.button !== 0) return;
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {}
+    } catch { }
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     setDragCardId(cardId);
   };
@@ -729,16 +729,16 @@ export const DiscoveryDeck: React.FC<DiscoveryDeckProps> = ({
     if (e) {
       try {
         (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
     }
     if (dragCardId) {
       const threshold = 75;
       if (dragOffset.x > threshold) {
         // Swiped RIGHT -> LIKE 💚
-        handleCardAction(dragCardId, 'like');
+        handleCardAction(dragCardId, '✔');
       } else if (dragOffset.x < -threshold) {
         // Swiped LEFT -> PASS ✕
-        handleCardAction(dragCardId, 'pass');
+        handleCardAction(dragCardId, 'X');
       } else if (dragOffset.y < -90 && Math.abs(dragOffset.y) > Math.abs(dragOffset.x)) {
         // Swiped UP -> MEGA CRUSH 🔥
         handleCardAction(dragCardId, 'mega_crush');
@@ -928,8 +928,8 @@ export const DiscoveryDeck: React.FC<DiscoveryDeckProps> = ({
               revertCountUsed >= 5
                 ? '5/5 Reverts used today — Tap to refill with Rubies!'
                 : isRevertStackEmpty
-                ? 'No previous swipe to undo'
-                : `Undo last swipe (${5 - revertCountUsed} left)`
+                  ? 'No previous swipe to undo'
+                  : `Undo last swipe (${5 - revertCountUsed} left)`
             }
             aria-label="Undo last swipe"
             style={{
@@ -1233,7 +1233,7 @@ export const DiscoveryDeck: React.FC<DiscoveryDeckProps> = ({
                         origin: { y: 0.6 },
                         colors: ['#f43f5e', '#ffd700', '#22c55e'],
                       });
-                    } catch {}
+                    } catch { }
                   }}
                   style={{
                     display: 'flex',

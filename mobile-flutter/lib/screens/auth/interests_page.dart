@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/theme_service.dart';
 import 'face_verification_page.dart';
 
 class InterestsPage extends StatefulWidget {
@@ -9,180 +10,315 @@ class InterestsPage extends StatefulWidget {
 }
 
 class _InterestsPageState extends State<InterestsPage> {
-  final Set<String> _selected = {};
+  // Discovery Preference Sliders (Age Range & Distance Radius in km)
+  RangeValues _ageRange = const RangeValues(20, 32);
+  double _radiusKm = 25;
 
-  final List<Map<String, String>> _interests = [
-    {'name': 'Coffee Dates', 'icon': '☕'},
-    {'name': 'Road Trips', 'icon': '🚗'},
-    {'name': 'Gym & Fitness', 'icon': '🏋️'},
-    {'name': 'Telugu Movies', 'icon': '🎬'},
-    {'name': 'Music & Concerts', 'icon': '🎧'},
-    {'name': 'Photography', 'icon': '📸'},
-    {'name': 'Cooking & Baking', 'icon': '🍕'},
-    {'name': 'Gaming', 'icon': '🎮'},
-    {'name': 'Dog Lover', 'icon': '🐶'},
-    {'name': 'Cricket', 'icon': '🏏'},
-    {'name': 'Badminton', 'icon': '🏸'},
-    {'name': 'Late Night Drives', 'icon': '🌙'},
-    {'name': 'Street Food', 'icon': '🌮'},
-    {'name': 'Beach Walks', 'icon': '🏖️'},
-    {'name': 'Tech & Coding', 'icon': '💻'},
-    {'name': 'Stand-up Comedy', 'icon': '🎤'},
-    {'name': 'Reading', 'icon': '📚'},
-    {'name': 'Biryani', 'icon': '🍲'},
-    {'name': 'Travel', 'icon': '✈️'},
-    {'name': 'Art & Sketching', 'icon': '🎨'},
-  ];
+  final Map<String, List<String>> _categorizedInterests = const {
+    'Sports & Fitness': [
+      'Gym & Weight Training',
+      'Cricket',
+      'Badminton',
+      'Running',
+      'Yoga',
+      'Cycling',
+      'Swimming',
+      'Football',
+    ],
+    'Entertainment & Gaming': [
+      'PC Gaming',
+      'GTA V',
+      'Movies & Cinema',
+      'Anime',
+      'Stand-up Comedy',
+      'Web Series',
+      'Board Games',
+    ],
+    'Food & Cooking': [
+      'Street Food',
+      'Air Fryer Baking',
+      'Coffee Lover',
+      'Biryani',
+      'Dark Chocolate',
+      'Cooking',
+      'Vegan / Healthy Eating',
+    ],
+    'Music & Arts': [
+      'Telugu Melodies',
+      'Indie Music',
+      'Live Concerts',
+      'Photography',
+      'Video Editing',
+      'Sketching',
+      'Dancing',
+    ],
+    'Travel & Outdoors': [
+      'Road Trips',
+      'Bike Rides',
+      'Beach Getaways',
+      'Trekking',
+      'Solo Travel',
+      'Camping',
+      'City Exploration',
+    ],
+    'Tech & Lifestyle': [
+      'Coding & Tech',
+      'Stock Market & Trading',
+      'Startups',
+      'Podcasts',
+      'Reading',
+      'Pets & Dogs',
+      'Volunteering',
+    ],
+  };
 
-  bool get _hasMinimumFive => _selected.length >= 5;
+  final Set<String> _selectedInterests = {};
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primary = theme.colorScheme.primary;
+    final cardColor = isDark ? const Color(0xFF181A24) : Colors.white;
+    final chipBg = isDark ? const Color(0xFF16161D) : Colors.grey.shade100;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.grey[400] : Colors.grey.shade600;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0F),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Step 4 of 5 • Interests',
-            style: TextStyle(color: Colors.white70, fontSize: 15)),
+        iconTheme: IconThemeData(color: textColor),
+        title: Text(
+          'Step 4 of 5 • Discovery & Interests',
+          style: TextStyle(color: subTextColor, fontSize: 15),
+        ),
         centerTitle: true,
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Text(
+                '${_selectedInterests.length}/3 min',
+                style: TextStyle(
+                  color: _selectedInterests.length >= 3
+                      ? Colors.green
+                      : primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 10, 24, 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pick Your Interests',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Select at least 5 interests to continue',
-                      style: TextStyle(color: Colors.white60, fontSize: 13),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: _hasMinimumFive
-                        ? Colors.greenAccent.withOpacity(0.18)
-                        : const Color(0xFF16161D),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: _hasMinimumFive
-                          ? Colors.greenAccent
-                          : const Color(0xFFFF2E55),
-                    ),
-                  ),
-                  child: Text(
-                    '${_selected.length} / 5 min',
-                    style: TextStyle(
-                      color: _hasMinimumFive
-                          ? Colors.greenAccent
-                          : const Color(0xFFFF2E55),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-              child: Wrap(
-                spacing: 10,
-                runSpacing: 12,
-                children: _interests.map((item) {
-                  final name = item['name']!;
-                  final icon = item['icon']!;
-                  final isSelected = _selected.contains(name);
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (isSelected) {
-                          _selected.remove(name);
-                        } else {
-                          _selected.add(name);
-                        }
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFFFF2E55)
-                            : const Color(0xFF16161D),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFFFF2E55)
-                              : Colors.white12,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                // 1. AGE RANGE & DISTANCE RADIUS CARD
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? Colors.white12 : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Age Range Header + Live Value Pill
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(icon, style: const TextStyle(fontSize: 16)),
-                          const SizedBox(width: 8),
                           Text(
-                            name,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.w500,
+                            'Preferred Age Range',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${_ageRange.start.round()} - ${_ageRange.end.round()} yrs',
+                              style: TextStyle(
+                                color: primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      RangeSlider(
+                        values: _ageRange,
+                        min: 18,
+                        max: 60,
+                        divisions: 42,
+                        activeColor: primary,
+                        labels: RangeLabels(
+                          '${_ageRange.start.round()}',
+                          '${_ageRange.end.round()}',
+                        ),
+                        onChanged: (RangeValues newRange) {
+                          setState(() => _ageRange = newRange);
+                        },
+                      ),
+
+                      Divider(
+                        height: 20,
+                        color: isDark ? Colors.white12 : Colors.grey.shade200,
+                      ),
+
+                      // Radius Limit Header + Live Value Pill
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Maximum Distance Radius',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${_radiusKm.round()} km',
+                              style: TextStyle(
+                                color: primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Slider(
+                        value: _radiusKm,
+                        min: 2,
+                        max: 150,
+                        divisions: 148,
+                        activeColor: primary,
+                        label: '${_radiusKm.round()} km',
+                        onChanged: (double newRadius) {
+                          setState(() => _radiusKm = newRadius);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 2. CATEGORIZED INTERESTS SECTION
+                ..._categorizedInterests.entries.map((entry) {
+                  final category = entry.key;
+                  final items = entry.value;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 22),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: items.map((interest) {
+                            final isSelected =
+                                _selectedInterests.contains(interest);
+                            return FilterChip(
+                              label: Text(
+                                interest,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : textColor,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              selected: isSelected,
+                              selectedColor: AppColors.flamePink,
+                              backgroundColor: chipBg,
+                              checkmarkColor: Colors.white,
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.flamePink
+                                    : (isDark
+                                        ? Colors.white12
+                                        : Colors.grey.shade300),
+                              ),
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    _selectedInterests.add(interest);
+                                  } else {
+                                    _selectedInterests.remove(interest);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
                   );
-                }).toList(),
-              ),
+                }),
+              ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: SizedBox(
               width: double.infinity,
-              height: 56,
+              height: 54,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _hasMinimumFive
-                      ? const Color(0xFFFF2E55)
-                      : Colors.grey[850],
+                  backgroundColor: _selectedInterests.length >= 3
+                      ? primary
+                      : (isDark ? Colors.grey[850] : Colors.grey[300]),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
                 ),
-                onPressed: _hasMinimumFive
-                    ? () {
+                onPressed: _selectedInterests.length < 3
+                    ? null
+                    : () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const FaceVerificationPage()),
+                            builder: (_) => const FaceVerificationPage(),
+                          ),
                         );
-                      }
-                    : null,
+                      },
                 child: Text(
-                  _hasMinimumFive
-                      ? 'Continue (${_selected.length} Selected)'
-                      : 'Select ${5 - _selected.length} More',
+                  _selectedInterests.length < 3
+                      ? 'Select at least 3 interests (${_selectedInterests.length}/3)'
+                      : 'Continue (${_selectedInterests.length} Selected)',
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.bold),
                 ),

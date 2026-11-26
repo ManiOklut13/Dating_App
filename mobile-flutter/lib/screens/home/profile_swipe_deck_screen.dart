@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'discovery_filters_screen.dart';
 
 class DatingProfile {
   final String id;
@@ -292,12 +293,50 @@ class _ProfileSwipeDeckScreenState extends State<ProfileSwipeDeckScreen>
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              Icons.tune_rounded,
-              color: isDark ? Colors.white70 : Colors.black54,
+          Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: FilledButton.tonalIcon(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final updatedFilters = await Navigator.push<Map<String, dynamic>>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DiscoveryFiltersScreen(),
+                  ),
+                );
+                if (updatedFilters != null && mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Filters applied: Age ${updatedFilters['minAge']}-${updatedFilters['maxAge']} • ${updatedFilters['radiusKm']} km',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              icon: Icon(
+                Icons.tune_rounded,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              label: Text(
+                'Filters',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor:
+                    Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
             ),
-            onPressed: () {},
           ),
         ],
       ),

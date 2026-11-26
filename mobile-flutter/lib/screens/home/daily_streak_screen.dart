@@ -41,6 +41,7 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
   double _currentAngle = 0.0;
   double _targetAngle = 0.0;
   bool _hasSpunToday = false;
+  bool _showRewardDetails = false;
   String? _wonReward;
 
   final List<Map<String, dynamic>> _rewards = [
@@ -244,30 +245,70 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
                   size: 48,
                   color: Colors.white,
                 ),
-                // Center Spin Button
+                // Center Spin / Rewarded Hub Button
                 Positioned(
                   top: 112,
                   child: GestureDetector(
                     onTap: _spinWheel,
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 260),
                       width: 68,
                       height: 68,
                       decoration: BoxDecoration(
-                        color: _hasSpunToday ? Colors.grey[800] : Colors.white,
+                        gradient: _hasSpunToday
+                            ? const LinearGradient(
+                                colors: [Color(0xFF2D1B36), Color(0xFF1A1423)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        color: _hasSpunToday ? null : Colors.white,
                         shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black45, blurRadius: 8),
+                        border: _hasSpunToday
+                            ? Border.all(
+                                color: const Color(0xFFFFD166),
+                                width: 2.2,
+                              )
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _hasSpunToday
+                                ? const Color(0x66FFD166)
+                                : Colors.black45,
+                            blurRadius: _hasSpunToday ? 14 : 8,
+                          ),
                         ],
                       ),
                       alignment: Alignment.center,
-                      child: Text(
-                        _hasSpunToday ? 'DONE' : 'SPIN',
-                        style: TextStyle(
-                          color: _hasSpunToday ? Colors.white54 : Colors.black,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14,
-                        ),
-                      ),
+                      child: _hasSpunToday
+                          ? const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.emoji_events_rounded,
+                                  color: Color(0xFFFFD166),
+                                  size: 24,
+                                ),
+                                SizedBox(height: 1),
+                                Text(
+                                  'WON',
+                                  style: TextStyle(
+                                    color: Color(0xFFFFD166),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 10,
+                                    letterSpacing: 0.9,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              'SPIN',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -276,67 +317,140 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
 
             const SizedBox(height: 30),
 
-            // 4. Spin Wheel Reward Details Breakdown
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Reward Details & Odds',
-                style: TextStyle(
-                  color: Colors.grey[200],
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+            // 4. Collapsible Spin Wheel Reward Details & Odds
+            InkWell(
+              onTap: () =>
+                  setState(() => _showRewardDetails = !_showRewardDetails),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ..._rewards.map((reward) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E1E1E),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: (reward['color'] as Color).withOpacity(0.4),
-                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white12),
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: reward['color'] as Color,
-                        shape: BoxShape.circle,
+                    const Icon(
+                      Icons.card_giftcard_rounded,
+                      color: Color(0xFFFECA57),
+                      size: 19,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Reward Details & Odds',
+                        style: TextStyle(
+                          color: Colors.grey[200],
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            reward['label'] as String,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            reward['detail'] as String,
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white10,
+                        shape: BoxShape.circle,
+                      ),
+                      child: AnimatedRotation(
+                        turns: _showRewardDetails ? 0.5 : 0.0,
+                        duration: const Duration(milliseconds: 220),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              );
-            }),
+              ),
+            ),
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 240),
+              crossFadeState: _showRewardDetails
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              firstChild: const SizedBox.shrink(),
+              secondChild: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Column(
+                  children: _rewards.map((reward) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (reward['color'] as Color).withOpacity(0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: reward['color'] as Color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  reward['label'] as String,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  reward['detail'] as String,
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: (reward['color'] as Color).withOpacity(0.14),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '16.7%',
+                              style: TextStyle(
+                                color: reward['color'] as Color,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
           ],
         ),
       ),

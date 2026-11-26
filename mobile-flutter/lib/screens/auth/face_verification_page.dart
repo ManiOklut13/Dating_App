@@ -14,7 +14,6 @@ class _FaceVerificationPageState extends State<FaceVerificationPage> {
   bool _isCameraInitialized = false;
   bool _isDetecting = false;
   bool _isFaceVerified = false;
-  bool _pushNotifications = true;
 
   @override
   void initState() {
@@ -153,27 +152,6 @@ class _FaceVerificationPageState extends State<FaceVerificationPage> {
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Push Notifications Option Only
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF16161D),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFFFF2E55),
-                title: const Text('Push Notifications',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: Text('Get instant alerts for matches and messages',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 12)),
-                value: _pushNotifications,
-                onChanged: (v) => setState(() => _pushNotifications = v),
               ),
             ),
             const SizedBox(height: 16),

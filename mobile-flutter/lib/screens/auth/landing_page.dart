@@ -57,7 +57,9 @@ class LandingPage extends StatelessWidget {
                 children: [
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.all(18),
+                    width: 124,
+                    height: 124,
+                    padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: const LinearGradient(
@@ -73,14 +75,15 @@ class LandingPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Image.asset(
-                      'assets/images/younme_logo.png',
-                      width: 56,
-                      height: 56,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.favorite_rounded,
-                        color: Colors.white,
-                        size: 46,
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/younme_logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.favorite_rounded,
+                          color: Colors.white,
+                          size: 46,
+                        ),
                       ),
                     ),
                   ),
@@ -175,20 +178,6 @@ class LandingPage extends StatelessWidget {
                       },
                     ),
                   ),
-                  const SizedBox(height: 18),
-
-                  // Google & Apple SSO Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _socialBox(Icons.g_mobiledata_rounded, 'Google', () {}),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: _socialBox(Icons.apple_rounded, 'Apple', () {}),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 20),
 
                   // Sign In Option
@@ -249,23 +238,6 @@ class LandingPage extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _socialBox(IconData icon, String label, VoidCallback onTap) {
-    return SizedBox(
-      height: 52,
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: const Color(0xFF16161D),
-          side: const BorderSide(color: Colors.white12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        ),
-        icon: Icon(icon, size: 24),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        onPressed: onTap,
       ),
     );
   }

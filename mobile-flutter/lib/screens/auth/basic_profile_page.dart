@@ -2,8 +2,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../../services/theme_service.dart';
-import 'in_app_camera_screen.dart';
+import 'full_page_avatar_camera.dart';
 import 'intentions_orientation_page.dart';
 
 class BasicProfilePage extends StatefulWidget {
@@ -31,34 +32,11 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
   final ImagePicker _galleryPicker = ImagePicker();
 
   String? _photoPath;
-  String? _selectedAvatarAsset;
+  String? _bitmojiCapturedPath;
   bool _avatarGenerated = false;
-
-  int? _selectedDay;
-  int? _selectedMonth;
-  int? _selectedYear;
+  DateTime? _selectedDob;
   String? _ageErrorMessage;
   String? _gender = 'Man';
-
-  final List<String> _months = const [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  // Generates years from current year down to 1940
-  List<int> get _years {
-    final currentYear = DateTime.now().year;
-    return List.generate(currentYear - 1940 + 1, (index) => currentYear - index);
-  }
-
-  // Dynamically calculates valid days for the selected month & year
-  List<int> get _days {
-    if (_selectedYear == null || _selectedMonth == null) {
-      return List.generate(31, (index) => index + 1);
-    }
-    final daysInMonth = DateUtils.getDaysInMonth(_selectedYear!, _selectedMonth!);
-    return List.generate(daysInMonth, (index) => index + 1);
-  }
 
   @override
   void initState() {
@@ -72,33 +50,23 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
     _nameController = TextEditingController(text: nameInit);
 
     if (widget.initialAvatar != null) {
-      _photoPath = widget.initialAvatar;
+      _bitmojiCapturedPath = widget.initialAvatar;
       _avatarGenerated = true;
     }
   }
 
-  // Opens Live Camera to generate Bitmoji avatar
-  Future<void> _scanFaceWithCamera() async {
-    final resultPath = await Navigator.push<String>(
+  // Opens full-page camera with native aspect ratio for Bitmoji Avatar
+  Future<void> _openFullPageBitmojiCamera() async {
+    final result = await Navigator.push<dynamic>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const InAppCameraScreen(
-          title: 'Scan Face',
-          subtitle: 'Center your face in the frame to generate your Bitmoji avatar',
-          actionLabel: 'Capture & Create Avatar',
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const FullPageAvatarCamera()),
     );
 
-    if (resultPath != null && mounted) {
+    if (result != null && mounted) {
+      final path = result is File ? result.path : result.toString();
       setState(() {
-        _photoPath = resultPath;
-        _selectedAvatarAsset = 'bitmoji';
-        _avatarGenerated = true;
-      });
-    } else if (mounted) {
-      setState(() {
-        _selectedAvatarAsset = 'assets/avatars/default_bitmoji.png';
+        _bitmojiCapturedPath = path;
+        _photoPath = null;
         _avatarGenerated = true;
       });
     }
@@ -106,12 +74,32 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
 
   // Opens Gallery ONLY when Upload Photo is chosen
   Future<void> _uploadPhotoFromDevice() async {
-    final XFile? file = await _galleryPicker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final XFile? file = await _galleryPicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (file != null && mounted) {
       setState(() {
         _photoPath = file.path;
-        _selectedAvatarAsset = null;
+        _bitmojiCapturedPath = null;
         _avatarGenerated = false;
+      });
+    }
+  }
+
+  // Opens user-friendly Calendar Modal with quick Year & Month selectors + Calendar Grid
+  Future<void> _openAdvancedCalendarModal() async {
+    final DateTime? pickedDate = await showDialog<DateTime>(
+      context: context,
+      builder: (context) => _AdvancedCalendarDialog(
+        initialDate: _selectedDob ?? DateTime(2000, 1, 1),
+      ),
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        _selectedDob = pickedDate;
+        _ageErrorMessage = null;
       });
     }
   }
@@ -120,7 +108,10 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
     if (path.startsWith('assets/')) {
       return AssetImage(path);
     }
-    if (kIsWeb || path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+    if (kIsWeb ||
+        path.startsWith('http://') ||
+        path.startsWith('https://') ||
+        path.startsWith('blob:')) {
       return NetworkImage(path);
     }
     return FileImage(File(path));
@@ -141,36 +132,25 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
 
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your First Name or Nick Name')),
+        const SnackBar(content: Text('Please enter your First Name / Nick Name')),
       );
       return;
     }
 
-    if (_selectedDay == null || _selectedMonth == null || _selectedYear == null) {
-      setState(() {
-        _ageErrorMessage = 'Please select your complete Date of Birth.';
-      });
+    if (_selectedDob == null) {
+      setState(() => _ageErrorMessage = 'Please select your Date of Birth.');
       return;
     }
 
-    final dob = DateTime(_selectedYear!, _selectedMonth!, _selectedDay!);
-    if (dob.isAfter(DateTime.now())) {
-      setState(() {
-        _ageErrorMessage = 'Date of birth cannot be in the future.';
-      });
-      return;
-    }
-
-    final age = _calculateAge(dob);
-    if (age < 18) {
+    if (_calculateAge(_selectedDob!) < 18) {
       setState(() {
         _ageErrorMessage =
-            'Age requirement not met. You must be 18 or older to join this dating app.';
+            'Your age is under 18. Minors are not allowed to use this dating app.';
       });
       return;
     }
 
-    if (_photoPath == null && _selectedAvatarAsset == null) {
+    if (_photoPath == null && _bitmojiCapturedPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please choose a Bitmoji avatar or upload a photo')),
       );
@@ -200,8 +180,8 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
     final subTextColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final inputFill = isDark ? const Color(0xFF16161D) : const Color(0xFFFDE8EE);
 
-    final isAvatarSelected = _selectedAvatarAsset != null;
-    final isPhotoSelected = _photoPath != null && _selectedAvatarAsset == null;
+    final isAvatarSelected = _bitmojiCapturedPath != null;
+    final isPhotoSelected = _photoPath != null;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -210,7 +190,7 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
         title: Text(
-          'Step 2 of 5 • Basic Profile',
+          'Step 2 of 5 • Create Your Identity',
           style: TextStyle(color: subTextColor, fontSize: 15),
         ),
         centerTitle: true,
@@ -221,65 +201,50 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Create Your Identity',
+              'Choose Identity Style',
               style: TextStyle(
                 color: textColor,
-                fontSize: 28,
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              'Personalize your avatar, details, and birth date.',
+              'Use a quick half-screen camera scan for your Bitmoji avatar or upload a photo.',
               style: TextStyle(color: subTextColor, fontSize: 13),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            Text(
-              'Profile Picture or Avatar',
-              style: TextStyle(
-                color: textColor,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // DISTINCT UI FOR BITMOJI AVATAR VS UPLOAD PHOTO
+            // DISTINCT UI: Bitmoji Avatar (Half-Page Camera) vs Upload Photo
             Row(
               children: [
-                // 1. Bitmoji Avatar Option (Pill / Gradient Badge Style)
+                // 1. Bitmoji Avatar Option (Gradient Card + Full-Page Camera)
                 Expanded(
                   child: GestureDetector(
-                    onTap: _scanFaceWithCamera,
+                    onTap: _openFullPageBitmojiCamera,
                     child: Container(
-                      height: 145,
+                      height: 148,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isAvatarSelected
                               ? [const Color(0xFF8B1E62), const Color(0xFFFF2A6D)]
-                              : (isDark
-                                  ? [const Color(0xFF2B1238), const Color(0xFF1E1026)]
-                                  : [Colors.purple.shade50, Colors.pink.shade50]),
+                              : [Colors.deepPurple.shade500, Colors.indigo.shade600],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(22),
                         border: Border.all(
-                          color: isAvatarSelected
-                              ? AppColors.flamePink
-                              : (isDark ? Colors.white12 : Colors.purple.shade200),
-                          width: isAvatarSelected ? 2.2 : 1.2,
+                          color: isAvatarSelected ? AppColors.flamePink : Colors.transparent,
+                          width: 2,
                         ),
-                        boxShadow: isAvatarSelected
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.flamePink.withOpacity(0.35),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                )
-                              ]
-                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isAvatarSelected ? AppColors.flamePink : Colors.deepPurple)
+                                .withOpacity(0.28),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -287,79 +252,65 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
                           Container(
                             width: 60,
                             height: 60,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
                               shape: BoxShape.circle,
-                              color: isAvatarSelected
-                                  ? Colors.white
-                                  : (isDark ? const Color(0xFF331742) : Colors.white),
-                              border: Border.all(
-                                color: isAvatarSelected
-                                    ? AppColors.flamePink
-                                    : (isDark ? Colors.white24 : Colors.purple.shade200),
-                                width: 1.5,
-                              ),
                             ),
-                            child: Icon(
-                              Icons.face_retouching_natural,
-                              size: 32,
-                              color: isAvatarSelected
-                                  ? AppColors.flamePink
-                                  : (isDark ? Colors.white : AppColors.flamePurple),
+                            child: ClipOval(
+                              child: _bitmojiCapturedPath != null
+                                  ? Image(
+                                      image: _resolveAvatarImage(_bitmojiCapturedPath!)!,
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Icon(
+                                        Icons.face_retouching_natural,
+                                        size: 32,
+                                        color: Colors.deepPurple.shade700,
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.face_retouching_natural,
+                                      size: 32,
+                                      color: Colors.deepPurple.shade700,
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            _avatarGenerated ? 'Bitmoji Created!' : 'Bitmoji Avatar',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
+                            _avatarGenerated ? 'Avatar Ready' : 'Bitmoji Avatar',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                               fontSize: 14,
-                              color: isAvatarSelected
-                                  ? Colors.white
-                                  : textColor,
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _avatarGenerated ? 'Tap to Retake' : 'Create / Scan',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isAvatarSelected
-                                  ? Colors.white70
-                                  : subTextColor,
-                            ),
+                          const Text(
+                            'Quick Half-Cam',
+                            style: TextStyle(color: Colors.white70, fontSize: 12),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 14),
 
-                // 2. Upload Photo Option (Camera / Gallery Frame Style)
+                // 2. Upload Photo Option (Dropzone Card)
                 Expanded(
                   child: GestureDetector(
                     onTap: _uploadPhotoFromDevice,
                     child: Container(
-                      height: 145,
+                      height: 148,
                       decoration: BoxDecoration(
                         color: isPhotoSelected ? null : inputFill,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isPhotoSelected
                               ? AppColors.flamePink
-                              : (isDark ? Colors.white12 : Colors.grey.shade400),
-                          width: isPhotoSelected ? 2.2 : 1.2,
+                              : (isDark ? Colors.white24 : Colors.grey.shade400),
+                          width: isPhotoSelected ? 2.2 : 1.4,
                         ),
-                        boxShadow: isPhotoSelected
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.flamePink.withOpacity(0.35),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                )
-                              ]
-                            : null,
                         image: isPhotoSelected
                             ? DecorationImage(
                                 image: _resolveAvatarImage(_photoPath!)!,
@@ -376,16 +327,10 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
                                   decoration: BoxDecoration(
                                     color: isDark ? cardColor : Colors.white,
                                     shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
-                                        blurRadius: 6,
-                                      ),
-                                    ],
                                   ),
-                                  child: Icon(
-                                    Icons.add_a_photo_rounded,
-                                    size: 26,
+                                  child: const Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    size: 28,
                                     color: AppColors.flamePink,
                                   ),
                                 ),
@@ -393,18 +338,14 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
                                 Text(
                                   'Upload Photo',
                                   style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                     color: textColor,
+                                    fontSize: 14,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
                                 Text(
-                                  'From Gallery',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: subTextColor,
-                                  ),
+                                  'From Device',
+                                  style: TextStyle(color: subTextColor, fontSize: 12),
                                 ),
                               ],
                             )
@@ -428,7 +369,7 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
 
             const SizedBox(height: 24),
 
-            // REPLACED LABEL: First Name / Nick Name
+            // First Name / Nick Name
             Text(
               'First Name / Nick Name',
               style: TextStyle(
@@ -443,11 +384,11 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
               onChanged: (_) => setState(() {}),
               style: TextStyle(color: textColor, fontSize: 16),
               decoration: InputDecoration(
-                hintText: 'Enter your first name or nick name',
+                hintText: 'Enter first name or nick name',
                 hintStyle: TextStyle(color: subTextColor.withOpacity(0.6)),
                 filled: true,
                 fillColor: inputFill,
-                prefixIcon: Icon(Icons.person_outline, color: subTextColor),
+                prefixIcon: Icon(Icons.badge_outlined, color: subTextColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
@@ -465,7 +406,7 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
 
             const SizedBox(height: 24),
 
-            // DATE OF BIRTH (Removed "18+" helper text next to label)
+            // SINGLE CALENDAR TAB FOR DATE OF BIRTH (No "18+" text)
             Text(
               'Date of Birth',
               style: TextStyle(
@@ -475,141 +416,53 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
               ),
             ),
             const SizedBox(height: 8),
-
-            // ADVANCED 3-COLUMN DROPDOWN SELECTOR (Day, Month, Year)
-            Row(
-              children: [
-                // Day Dropdown
-                Expanded(
-                  flex: 2,
-                  child: DropdownButtonFormField<int>(
-                    value: _selectedDay != null && _days.contains(_selectedDay)
-                        ? _selectedDay
-                        : null,
-                    dropdownColor: cardColor,
-                    style: TextStyle(color: textColor, fontSize: 15),
-                    decoration: InputDecoration(
-                      labelText: 'Day',
-                      labelStyle: TextStyle(color: subTextColor),
-                      filled: true,
-                      fillColor: inputFill,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.flamePink, width: 1.8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                    ),
-                    items: _days
-                        .map((day) => DropdownMenuItem(
-                              value: day,
-                              child: Text(day.toString().padLeft(2, '0')),
-                            ))
-                        .toList(),
-                    onChanged: (val) => setState(() => _selectedDay = val),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                FocusScope.of(context).unfocus(); // Dismiss keyboard if open
+                _openAdvancedCalendarModal();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: inputFill,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _ageErrorMessage != null
+                        ? Colors.red
+                        : (isDark ? Colors.white12 : Colors.grey.shade400),
+                    width: 1.3,
                   ),
                 ),
-                const SizedBox(width: 8),
-
-                // Month Dropdown
-                Expanded(
-                  flex: 3,
-                  child: DropdownButtonFormField<int>(
-                    value: _selectedMonth,
-                    dropdownColor: cardColor,
-                    style: TextStyle(color: textColor, fontSize: 15),
-                    decoration: InputDecoration(
-                      labelText: 'Month',
-                      labelStyle: TextStyle(color: subTextColor),
-                      filled: true,
-                      fillColor: inputFill,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.flamePink, width: 1.8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_month_rounded,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                    items: List.generate(12, (index) {
-                      return DropdownMenuItem(
-                        value: index + 1,
-                        child: Text(_months[index], overflow: TextOverflow.ellipsis),
-                      );
-                    }),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedMonth = val;
-                        if (_selectedDay != null && _selectedDay! > _days.length) {
-                          _selectedDay = _days.length;
-                        }
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // Year Dropdown (all years down to 1940)
-                Expanded(
-                  flex: 3,
-                  child: DropdownButtonFormField<int>(
-                    value: _selectedYear,
-                    dropdownColor: cardColor,
-                    style: TextStyle(color: textColor, fontSize: 15),
-                    decoration: InputDecoration(
-                      labelText: 'Year',
-                      labelStyle: TextStyle(color: subTextColor),
-                      filled: true,
-                      fillColor: inputFill,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedDob != null
+                            ? DateFormat('dd MMMM yyyy').format(_selectedDob!)
+                            : 'Select Date, Month & Year',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight:
+                              _selectedDob != null ? FontWeight.w600 : FontWeight.normal,
+                          color: _selectedDob != null ? textColor : subTextColor,
+                        ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.flamePink, width: 1.8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                     ),
-                    items: _years
-                        .map((year) => DropdownMenuItem(
-                              value: year,
-                              child: Text(year.toString()),
-                            ))
-                        .toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedYear = val;
-                        if (_selectedDay != null && _selectedDay! > _days.length) {
-                          _selectedDay = _days.length;
-                        }
-                      });
-                    },
-                  ),
+                    Icon(Icons.keyboard_arrow_down_rounded, color: subTextColor),
+                  ],
                 ),
-              ],
+              ),
             ),
 
             // UNDER-18 VALIDATION ERROR BANNER
             if (_ageErrorMessage != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -619,8 +472,8 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red.shade400, size: 20),
-                    const SizedBox(width: 10),
+                    Icon(Icons.warning_amber_rounded, color: Colors.red.shade400),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _ageErrorMessage!,
@@ -680,8 +533,6 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
               }).toList(),
             ),
 
-            // NOTE: Theme Appearance removed from Step 2 and placed on Step 5 (FinalOnboardingStep)
-
             const SizedBox(height: 36),
 
             // Continue Button
@@ -706,6 +557,243 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Advanced Interactive Calendar Dialog (Month Dropdown + Year Dropdown till Today + Day Grid)
+class _AdvancedCalendarDialog extends StatefulWidget {
+  final DateTime initialDate;
+
+  const _AdvancedCalendarDialog({required this.initialDate});
+
+  @override
+  State<_AdvancedCalendarDialog> createState() => _AdvancedCalendarDialogState();
+}
+
+class _AdvancedCalendarDialogState extends State<_AdvancedCalendarDialog> {
+  late int _selectedYear;
+  late int _selectedMonth;
+  late int _selectedDay;
+
+  final List<String> _months = const [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedYear = widget.initialDate.year;
+    _selectedMonth = widget.initialDate.month;
+    _selectedDay = widget.initialDate.day;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final today = DateTime.now();
+    final years = List.generate(today.year - 1940 + 1, (i) => today.year - i);
+    final daysInMonth = DateUtils.getDaysInMonth(_selectedYear, _selectedMonth);
+    if (_selectedDay > daysInMonth) _selectedDay = daysInMonth;
+
+    final firstWeekday = DateTime(_selectedYear, _selectedMonth, 1).weekday % 7;
+    final totalCells = firstWeekday + daysInMonth;
+    final rowCount = (totalCells / 7).ceil();
+
+    return Dialog(
+      backgroundColor: isDark ? const Color(0xFF16161D) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Select Date of Birth',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Quick Month & Year Selectors at Top
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: DropdownButtonFormField<int>(
+                      value: _selectedMonth,
+                      isExpanded: true,
+                      dropdownColor: isDark ? const Color(0xFF1E1E26) : Colors.white,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontSize: 14,
+                      ),
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      items: List.generate(12, (idx) {
+                        final m = idx + 1;
+                        final isFutureMonth = _selectedYear == today.year && m > today.month;
+                        return DropdownMenuItem(
+                          value: m,
+                          enabled: !isFutureMonth,
+                          child: Text(
+                            _months[idx],
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isFutureMonth
+                                  ? Colors.grey
+                                  : (isDark ? Colors.white : Colors.black87),
+                            ),
+                          ),
+                        );
+                      }),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _selectedMonth = val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<int>(
+                      value: _selectedYear,
+                      isExpanded: true,
+                      dropdownColor: isDark ? const Color(0xFF1E1E26) : Colors.white,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontSize: 14,
+                      ),
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      items: years
+                          .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedYear = val;
+                            if (_selectedYear == today.year && _selectedMonth > today.month) {
+                              _selectedMonth = today.month;
+                            }
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // Weekday Headers
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                    .map((d) => Expanded(
+                          child: Center(
+                            child: Text(
+                              d,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: isDark ? Colors.grey[400] : Colors.grey[700],
+                              ),
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 8),
+
+              // Explicit Bounded Height for Calendar Grid (Fixes Dialog Render Crash)
+              SizedBox(
+                height: rowCount * 42.0,
+                child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: totalCells,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    mainAxisSpacing: 4,
+                    crossAxisSpacing: 4,
+                  ),
+                  itemBuilder: (context, index) {
+                    if (index < firstWeekday) return const SizedBox.shrink();
+                    final day = index - firstWeekday + 1;
+                    final candidateDate = DateTime(_selectedYear, _selectedMonth, day);
+                    final isFuture = candidateDate.isAfter(today);
+                    final isSelected = day == _selectedDay;
+
+                    return GestureDetector(
+                      onTap: isFuture ? null : () => setState(() => _selectedDay = day),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$day',
+                            style: TextStyle(
+                              color: isFuture
+                                  ? Colors.grey.shade600
+                                  : isSelected
+                                      ? Colors.white
+                                      : (isDark ? Colors.white : Colors.black87),
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[700]),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(100, 42),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(
+                        context,
+                        DateTime(_selectedYear, _selectedMonth, _selectedDay),
+                      );
+                    },
+                    child: const Text('Confirm'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
