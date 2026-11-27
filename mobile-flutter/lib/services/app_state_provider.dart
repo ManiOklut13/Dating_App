@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/profiles_data.dart';
+import '../features/plan_date/models/plan_date_model.dart';
+import '../models/discovery_connect_models.dart';
 
 enum AuthScreen { splash, signin, onboarding }
 
@@ -9,6 +12,10 @@ class AppState {
   final int streakDays;
   final String activeSubPage;
   final bool showRubyBoostToast;
+  final ScheduledDateModel? scheduledDate;
+  final PlanDate? plannedDate;
+
+  bool get hasDatePlan => scheduledDate != null || plannedDate != null;
 
   const AppState({
     this.isAuthenticated = false,
@@ -17,6 +24,8 @@ class AppState {
     this.streakDays = 4,
     this.activeSubPage = 'discovery',
     this.showRubyBoostToast = false,
+    this.scheduledDate,
+    this.plannedDate,
   });
 
   AppState copyWith({
@@ -26,6 +35,10 @@ class AppState {
     int? streakDays,
     String? activeSubPage,
     bool? showRubyBoostToast,
+    ScheduledDateModel? scheduledDate,
+    PlanDate? plannedDate,
+    bool clearScheduledDate = false,
+    bool clearPlannedDate = false,
   }) {
     return AppState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -34,12 +47,14 @@ class AppState {
       streakDays: streakDays ?? this.streakDays,
       activeSubPage: activeSubPage ?? this.activeSubPage,
       showRubyBoostToast: showRubyBoostToast ?? this.showRubyBoostToast,
+      scheduledDate: clearScheduledDate ? null : (scheduledDate ?? this.scheduledDate),
+      plannedDate: clearPlannedDate ? null : (plannedDate ?? this.plannedDate),
     );
   }
 }
 
 class AppStateNotifier extends StateNotifier<AppState> {
-  AppStateNotifier() : super(const AppState());
+  AppStateNotifier() : super(AppState(scheduledDate: kDemoScheduledDate));
 
   void setAuthenticated(bool v) => state = state.copyWith(isAuthenticated: v);
   void setAuthScreen(AuthScreen s) => state = state.copyWith(authScreen: s);
@@ -47,6 +62,18 @@ class AppStateNotifier extends StateNotifier<AppState> {
   void addRubies(int v) => state = state.copyWith(rubyBalance: state.rubyBalance + v);
   void setStreakDays(int v) => state = state.copyWith(streakDays: v);
   void setActiveSubPage(String v) => state = state.copyWith(activeSubPage: v);
+  void setScheduledDate(ScheduledDateModel? d) => state = state.copyWith(
+        scheduledDate: d,
+        clearScheduledDate: d == null,
+      );
+  void setPlannedDate(PlanDate? p) => state = state.copyWith(
+        plannedDate: p,
+        clearPlannedDate: p == null,
+      );
+  void clearDatePlans() => state = state.copyWith(
+        clearScheduledDate: true,
+        clearPlannedDate: true,
+      );
   void triggerDailyRubyBoost() {
     state = state.copyWith(rubyBalance: state.rubyBalance + 50, showRubyBoostToast: true);
   }

@@ -20,6 +20,7 @@ import '../widgets/meetup_spot_card.dart';
 import '../widgets/dress_code_notes.dart';
 import '../widgets/safety_tip.dart';
 import '../plan_date_theme.dart';
+import '../../../services/app_state_provider.dart';
 import 'date_proposed_screen.dart';
 
 class PlanDateScreen extends ConsumerWidget {
@@ -228,6 +229,7 @@ class PlanDateScreen extends ConsumerWidget {
     final notifier = ref.read(planDateFormProvider.notifier);
     final result = await notifier.submit();
     if (result != null && context.mounted) {
+      ref.read(appStateProvider.notifier).setPlannedDate(result);
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => DateProposedScreen(plan: result),

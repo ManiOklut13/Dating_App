@@ -9,6 +9,7 @@ import '../../widgets/mega_crush_celebration.dart';
 import '../../widgets/separated_profile_card.dart';
 import '../../widgets/streak_tracker_modal.dart';
 import 'daily_streak_screen.dart';
+import 'date_plan_details_screen.dart';
 import 'discovery_filters_screen.dart';
 import 'full_profile_screen.dart';
 import 'message_request_screen.dart';
@@ -241,6 +242,13 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+    );
+  }
+
+  void _openDatePlanScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DatePlanDetailsScreen()),
     );
   }
 
@@ -628,6 +636,53 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+
+          // Plan a Date icon (shows dot only when a date plan exists)
+          Padding(
+            padding: const EdgeInsets.only(right: 2),
+            child: InkWell(
+              onTap: _openDatePlanScreen,
+              borderRadius: BorderRadius.circular(18),
+              child: Tooltip(
+                message: appState.hasDatePlan
+                    ? 'Date Plan Details'
+                    : 'Plan a Date',
+                child: SizedBox(
+                  width: 34,
+                  height: 34,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.calendar_month_rounded,
+                        size: 20,
+                        color: theme.brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
+                      if (appState.hasDatePlan)
+                        Positioned(
+                          top: 6,
+                          right: 5,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF43F5E),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: theme.scaffoldBackgroundColor,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

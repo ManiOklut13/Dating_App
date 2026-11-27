@@ -105,7 +105,7 @@ export const CallsTab: React.FC<CallsTabProps> = ({
 
       osc.start();
       osc.stop(ctx.currentTime + 0.4);
-    } catch {}
+    } catch { }
   };
 
   // Automatically initiate realistic call flow upon entering
@@ -935,7 +935,7 @@ export const CallsTab: React.FC<CallsTabProps> = ({
               boxShadow: '0 4px 16px rgba(244, 63, 94, 0.35)',
             }}
           >
-            Return to Discovery
+            Return to Home
           </button>
         </div>
       )}

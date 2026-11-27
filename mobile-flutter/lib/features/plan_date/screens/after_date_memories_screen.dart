@@ -14,11 +14,13 @@ import '../widgets/gradient_text.dart';
 class AfterDateMemoriesScreen extends ConsumerWidget {
   final String dateId;
   final DateMode mode;
+  final bool popBackOnly;
 
   const AfterDateMemoriesScreen({
     super.key,
     required this.dateId,
     required this.mode,
+    this.popBackOnly = false,
   });
 
   @override
@@ -192,7 +194,13 @@ class AfterDateMemoriesScreen extends ConsumerWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
-      if (result != null) Navigator.of(context).popUntil((r) => r.isFirst);
+      if (result != null) {
+        if (popBackOnly) {
+          Navigator.of(context).pop();
+        } else {
+          Navigator.of(context).popUntil((r) => r.isFirst);
+        }
+      }
     }
   }
 }

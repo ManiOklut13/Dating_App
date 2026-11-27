@@ -16,7 +16,8 @@ class LiveInteractiveCallScreen extends StatefulWidget {
   });
 
   @override
-  State<LiveInteractiveCallScreen> createState() => _LiveInteractiveCallScreenState();
+  State<LiveInteractiveCallScreen> createState() =>
+      _LiveInteractiveCallScreenState();
 }
 
 class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
@@ -129,16 +130,20 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                         color: Color(0x66000000),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 18),
+                      child: const Icon(Icons.arrow_back,
+                          color: Colors.white, size: 18),
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       color: const Color(0xCC1B1119),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: _isConnected ? const Color(0x6622C55E) : const Color(0x66EC4899),
+                        color: _isConnected
+                            ? const Color(0x6622C55E)
+                            : const Color(0x66EC4899),
                       ),
                     ),
                     child: Row(
@@ -149,7 +154,9 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                           height: 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _isConnected ? const Color(0xFF22C55E) : const Color(0xFFF59E0B),
+                            color: _isConnected
+                                ? const Color(0xFF22C55E)
+                                : const Color(0xFFF59E0B),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -167,14 +174,18 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: const Color(0xCC1B1119),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       _formattedTime,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white),
                     ),
                   ),
                 ],
@@ -200,13 +211,17 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                   // ICEBREAKER TOPIC CARD
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: const Color(0xE61B1119),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: const Color(0xFF2E1E2B)),
                       boxShadow: const [
-                        BoxShadow(color: Colors.black54, blurRadius: 16, offset: Offset(0, 4)),
+                        BoxShadow(
+                            color: Colors.black54,
+                            blurRadius: 16,
+                            offset: Offset(0, 4)),
                       ],
                     ),
                     child: Column(
@@ -233,20 +248,27 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                             GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  _icebreakerIndex = (_icebreakerIndex + 1) % _icebreakers.length;
+                                  _icebreakerIndex = (_icebreakerIndex + 1) %
+                                      _icebreakers.length;
                                 });
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: const Color(0x3338BDF8),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: const Row(
                                   children: [
-                                    Text('Next', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF38BDF8))),
+                                    Text('Next',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF38BDF8))),
                                     SizedBox(width: 3),
-                                    Icon(Icons.refresh, size: 11, color: Color(0xFF38BDF8)),
+                                    Icon(Icons.refresh,
+                                        size: 11, color: Color(0xFF38BDF8)),
                                   ],
                                 ),
                               ),
@@ -270,7 +292,8 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
 
                   // BOTTOM DOCK
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: const Color(0xF21B1119),
                       borderRadius: BorderRadius.circular(999),
@@ -296,11 +319,13 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                         ),
                         // Camera toggle button
                         _dockButton(
-                          icon: _isCameraOn ? Icons.videocam : Icons.videocam_off,
+                          icon:
+                              _isCameraOn ? Icons.videocam : Icons.videocam_off,
                           label: _isCameraOn ? 'Video On' : 'Video Off',
                           active: _isCameraOn,
                           activeColor: const Color(0xFF38BDF8),
-                          onTap: () => setState(() => _isCameraOn = !_isCameraOn),
+                          onTap: () =>
+                              setState(() => _isCameraOn = !_isCameraOn),
                         ),
                         // Red End Call button
                         GestureDetector(
@@ -321,7 +346,8 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                                 ),
                               ],
                             ),
-                            child: const Icon(Icons.call_end, color: Colors.white, size: 24),
+                            child: const Icon(Icons.call_end,
+                                color: Colors.white, size: 24),
                           ),
                         ),
                       ],
@@ -353,7 +379,9 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: active ? activeColor.withValues(alpha: 0.25) : const Color(0x1AFFFFFF),
+              color: active
+                  ? activeColor.withValues(alpha: 0.25)
+                  : const Color(0x1AFFFFFF),
               border: Border.all(
                 color: active ? activeColor : const Color(0x33FFFFFF),
               ),
@@ -403,21 +431,27 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
             padding: const EdgeInsets.all(4),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(65),
-              child: SafeProfileImage(imageUrl: widget.avatarUrl, width: 122, height: 122),
+              child: SafeProfileImage(
+                  imageUrl: widget.avatarUrl, width: 122, height: 122),
             ),
           ),
           const SizedBox(height: 16),
           Text(
             widget.userName,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
           ),
           const SizedBox(height: 6),
           Text(
-            _isConnected ? '• Connected • Speaking...' : 'Connecting encrypted voice line...',
+            _isConnected
+                ? '• Connected • Speaking...'
+                : 'Connecting encrypted voice line...',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: _isConnected ? const Color(0xFF22C55E) : const Color(0xFFF59E0B),
+              color: _isConnected
+                  ? const Color(0xFF22C55E)
+                  : const Color(0xFFF59E0B),
             ),
           ),
           const SizedBox(height: 20),
@@ -429,14 +463,18 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
               return Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(14, (i) {
-                  final sinVal = sin((_waveController.value * 2 * pi) + (i * 0.45));
-                  final height = _isConnected ? (12.0 + (sinVal.abs() * 28.0)) : 8.0;
+                  final sinVal =
+                      sin((_waveController.value * 2 * pi) + (i * 0.45));
+                  final height =
+                      _isConnected ? (12.0 + (sinVal.abs() * 28.0)) : 8.0;
                   return Container(
                     width: 4,
                     height: height,
                     margin: const EdgeInsets.symmetric(horizontal: 2.5),
                     decoration: BoxDecoration(
-                      color: _isConnected ? const Color(0xFFEC4899) : const Color(0x4DFFFFFF),
+                      color: _isConnected
+                          ? const Color(0xFFEC4899)
+                          : const Color(0x4DFFFFFF),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   );
@@ -495,7 +533,8 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0x66FFFFFF), width: 1.5),
           boxShadow: const [
-            BoxShadow(color: Colors.black54, blurRadius: 16, offset: Offset(0, 4)),
+            BoxShadow(
+                color: Colors.black54, blurRadius: 16, offset: Offset(0, 4)),
           ],
         ),
         child: Stack(
@@ -503,7 +542,8 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
           children: [
             // Selfie camera simulation (realistic portrait of Aarav or user avatar)
             const SafeProfileImage(
-              imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
+              imageUrl:
+                  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80',
               fit: BoxFit.cover,
             ),
             // Pill: • You
@@ -521,7 +561,11 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                   children: [
                     CircleAvatar(radius: 3, backgroundColor: Color(0xFF22C55E)),
                     SizedBox(width: 4),
-                    Text('You', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('You',
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
                   ],
                 ),
               ),
@@ -548,34 +592,46 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                   height: 90,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF22C55E), width: 3),
+                    border:
+                        Border.all(color: const Color(0xFF22C55E), width: 3),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(45),
-                    child: SafeProfileImage(imageUrl: widget.avatarUrl, width: 90, height: 90),
+                    child: SafeProfileImage(
+                        imageUrl: widget.avatarUrl, width: 90, height: 90),
                   ),
                 ),
                 const SizedBox(height: 18),
                 const Text(
                   'Call Ended',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '${widget.isVideo ? 'Video' : 'Audio'} session with ${widget.userName}',
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+                  style:
+                      const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Duration: $_formattedTime',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF22C55E)),
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF22C55E)),
                 ),
                 const SizedBox(height: 28),
 
                 // 5-star interactive rating bar
                 Text(
                   'Rate connection quality with ${widget.userName}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white70),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white70),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -597,7 +653,7 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                 ),
                 const SizedBox(height: 36),
 
-                // Return to Discovery pink button
+                // Return to Connect pink button
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(
@@ -619,7 +675,10 @@ class _LiveInteractiveCallScreenState extends State<LiveInteractiveCallScreen>
                     alignment: Alignment.center,
                     child: const Text(
                       'Return to Discovery',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white),
                     ),
                   ),
                 ),
