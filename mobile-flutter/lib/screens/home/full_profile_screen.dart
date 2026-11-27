@@ -28,18 +28,28 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = widget.profile;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final headerBg = isDark ? const Color(0xFF140A12) : Colors.white;
+    final cardBg = isDark ? const Color(0xFF191C24) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200;
+    final primaryText = isDark ? Colors.white : const Color(0xFF181A24);
+    final bodyText = isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade800;
+    final mutedText = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
+    final iconBg = isDark ? const Color(0x1AFFFFFF) : Colors.grey.shade100;
+    final iconBorder = isDark ? const Color(0x26FFFFFF) : Colors.grey.shade300;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D070C),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
             // Top App Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xFF140A12),
-                border: Border(bottom: BorderSide(color: Color(0xFF2E1E2B))),
+              decoration: BoxDecoration(
+                color: headerBg,
+                border: Border(bottom: BorderSide(color: borderColor)),
               ),
               child: Row(
                 children: [
@@ -49,20 +59,21 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: const Color(0x1AFFFFFF),
+                        color: iconBg,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0x26FFFFFF)),
+                        border: Border.all(color: iconBorder),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Colors.white),
+                      child: Icon(Icons.arrow_back_ios_new,
+                          size: 16, color: primaryText),
                     ),
                   ),
                   const SizedBox(width: 14),
                   Text(
                     '${profile.nickname}\'s Profile',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: primaryText,
                     ),
                   ),
                 ],
@@ -218,10 +229,10 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
                       children: [
                         Text(
                           '${profile.nickname}, ${profile.age}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: primaryText,
                             letterSpacing: -0.3,
                           ),
                         ),
@@ -232,19 +243,19 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '📍 ${profile.city} • ${profile.distanceKm} km away',
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                      style: TextStyle(fontSize: 13, color: mutedText),
                     ),
                     const SizedBox(height: 16),
 
                     // About Me Bio
                     const Text(
                       'About Me',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFFF8DA1)),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFE11D48)),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       profile.bio,
-                      style: const TextStyle(fontSize: 13.5, color: Color(0xFFCBD5E1), height: 1.45),
+                      style: TextStyle(fontSize: 13.5, color: bodyText, height: 1.45),
                     ),
                     const SizedBox(height: 18),
 
@@ -252,9 +263,9 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF191C24),
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0x1FFFFFFF)),
+                        border: Border.all(color: borderColor),
                       ),
                       child: Row(
                         children: [
@@ -264,10 +275,14 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Looking For', style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8))),
+                                Text('Looking For',
+                                    style: TextStyle(fontSize: 10.5, color: mutedText)),
                                 Text(
                                   profile.preference,
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: primaryText),
                                 ),
                               ],
                             ),
@@ -280,7 +295,7 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
                     // Passions & Shared Interests
                     const Text(
                       'Passions & Shared Interests',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFFF8DA1)),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFE11D48)),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -290,13 +305,20 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: const Color(0x2BF43F5E),
+                            color: isDark
+                                ? const Color(0x2BF43F5E)
+                                : const Color(0xFFFFE4EC),
                             borderRadius: BorderRadius.circular(999),
                             border: Border.all(color: const Color(0x66F43F5E)),
                           ),
                           child: Text(
                             interest,
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1)),
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? const Color(0xFFFF8DA1)
+                                    : const Color(0xFFE11D48)),
                           ),
                         );
                       }).toList(),
@@ -310,9 +332,9 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
             // Fixed Bottom Action Dock
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              decoration: const BoxDecoration(
-                color: Color(0xFF140A12),
-                border: Border(top: BorderSide(color: Color(0xFF2E1E2B))),
+              decoration: BoxDecoration(
+                color: headerBg,
+                border: Border(top: BorderSide(color: borderColor)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -320,19 +342,19 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
                   _dockAction(Icons.close, const Color(0xFFEF4444), () {
                     Navigator.pop(context);
                     widget.onPass?.call();
-                  }),
+                  }, isDark: isDark),
                   _dockAction(Icons.local_fire_department, const Color(0xFFF97316), () {
                     Navigator.pop(context);
                     widget.onMegaCrush?.call();
-                  }, isLarge: true),
+                  }, isLarge: true, isDark: isDark),
                   _dockAction(Icons.favorite, const Color(0xFF22C55E), () {
                     Navigator.pop(context);
                     widget.onLike?.call();
-                  }),
+                  }, isDark: isDark),
                   _dockAction(Icons.chat_bubble_outline, const Color(0xFF38BDF8), () {
                     Navigator.pop(context);
                     widget.onDirectMessage?.call();
-                  }),
+                  }, isDark: isDark),
                 ],
               ),
             ),
@@ -342,7 +364,8 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
     );
   }
 
-  Widget _dockAction(IconData icon, Color color, VoidCallback onTap, {bool isLarge = false}) {
+  Widget _dockAction(IconData icon, Color color, VoidCallback onTap,
+      {bool isLarge = false, bool isDark = true}) {
     final double size = isLarge ? 58 : 46;
     return GestureDetector(
       onTap: onTap,
@@ -350,13 +373,13 @@ class _FullProfileScreenState extends State<FullProfileScreen> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: const Color(0xFF191C24),
+          color: isDark ? const Color(0xFF191C24) : Colors.white,
           shape: BoxShape.circle,
           border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.35),
-              blurRadius: 16,
+              color: color.withValues(alpha: 0.25),
+              blurRadius: 14,
               offset: const Offset(0, 4),
             ),
           ],

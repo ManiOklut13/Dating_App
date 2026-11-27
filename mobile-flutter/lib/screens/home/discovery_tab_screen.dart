@@ -1,6 +1,7 @@
-import 'dart:math' as math;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/profiles_data.dart';
 import '../../widgets/discovery_action_dock.dart';
 import '../../widgets/live_profiles_strip.dart';
 import '../../widgets/match_modal.dart';
@@ -36,8 +37,10 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
   int _profileIndex = 0;
   int _photoIndex = 0;
   bool _isAnimatingCard = false;
+  bool _isWheelScrolling = false;
 
   Offset _dragOffset = Offset.zero;
+  late final PageController _profilePageController;
   late final AnimationController _swipeAnimController;
   late final AnimationController _photoStatusCtrl;
   Animation<Offset>? _swipeAnimation;
@@ -88,63 +91,8 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
     },
   ];
 
-  // Discovery Stack Profiles
-  final List<Map<String, dynamic>> _allProfiles = const [
-    {
-      'name': 'Ananya',
-      'age': 24,
-      'role': 'UI/UX Designer • Hyderabad',
-      'distance': '3 km away',
-      'distanceKm': 3,
-      'goal': 'Long-term Partner',
-      'verified': true,
-      'bio':
-          'Weekend café explorer, street photographer, and always up for a late-evening drive.',
-      'interests': ['Coffee Lover', 'Photography', 'Road Trips', 'Telugu Melodies'],
-      'imageUrl': 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900',
-      'imageUrls': [
-        'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900',
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900',
-        'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=900',
-      ],
-    },
-    {
-      'name': 'Riya',
-      'age': 23,
-      'role': 'Product Analyst • Jubilee Hills',
-      'distance': '5 km away',
-      'distanceKm': 5,
-      'goal': 'New Friends',
-      'verified': true,
-      'bio':
-          'Badminton addict, biryani critic, and binge-watching sci-fi series on weekends.',
-      'interests': ['Badminton', 'Anime', 'Street Food', 'Live Concerts'],
-      'imageUrl': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=900',
-      'imageUrls': [
-        'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=900',
-        'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=900',
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900',
-      ],
-    },
-    {
-      'name': 'Meghana',
-      'age': 25,
-      'role': 'Software Engineer • Gachibowli',
-      'distance': '4 km away',
-      'distanceKm': 4,
-      'goal': 'Long-term Partner',
-      'verified': true,
-      'bio':
-          'Building apps by day, baking in my air fryer by night. Looking for great playlists.',
-      'interests': ['Coding & Tech', 'Air Fryer Baking', 'Trekking', 'Podcasts'],
-      'imageUrl': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900',
-      'imageUrls': [
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=900',
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900',
-        'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900',
-      ],
-    },
-  ];
+  // Discovery Stack Profiles (shared 24-profile catalog)
+  List<Map<String, dynamic>> get _allProfiles => kDiscoveryProfiles;
 
   List<Map<String, dynamic>> get _profiles {
     if (_activeFilters == null) return _allProfiles;
@@ -169,6 +117,7 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
   @override
   void initState() {
     super.initState();
+    _profilePageController = PageController(initialPage: _profileIndex);
     _swipeAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 280),
@@ -202,6 +151,7 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
 
   @override
   void dispose() {
+    _profilePageController.dispose();
     _swipeAnimController.dispose();
     _photoStatusCtrl.dispose();
     super.dispose();
@@ -309,6 +259,9 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
         _swipeHistory.clear();
         _photoIndex = 0;
       });
+      if (_profilePageController.hasClients) {
+        _profilePageController.jumpToPage(0);
+      }
       _photoStatusCtrl.forward(from: 0.0);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -375,9 +328,12 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
       if (_swipeHistory.length > 3) {
         _swipeHistory.removeAt(0);
       }
-      _profileIndex = (_profileIndex + 1) % _profiles.length;
+      _profileIndex = _profileIndex + 1;
       _dragOffset = Offset.zero;
     });
+    if (_profilePageController.hasClients) {
+      _profilePageController.jumpToPage(_profileIndex);
+    }
     _resetPhotoStatus();
 
     // 25% chance of triggering mutual match celebration modal on Like
@@ -398,11 +354,11 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
     required bool wasLiked,
   }) {
     if (_isAnimatingCard) return;
-    final currentIdx = _profileIndex % _profiles.length;
+    final currentPage = _profileIndex;
     _animateToOffset(
       exitOffset,
       onComplete: () => _recordHistoryAndAdvance(
-        profileIndex: currentIdx,
+        profileIndex: currentPage,
         exitOffset: exitOffset,
         wasLiked: wasLiked,
       ),
@@ -459,9 +415,12 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
     final prevProfile = _profiles[entry.profileIndex % _profiles.length];
 
     setState(() {
-      _profileIndex = entry.profileIndex % _profiles.length;
+      _profileIndex = entry.profileIndex;
       _dragOffset = entry.exitOffset;
     });
+    if (_profilePageController.hasClients) {
+      _profilePageController.jumpToPage(_profileIndex);
+    }
     _resetPhotoStatus();
     _animateToOffset(Offset.zero);
 
@@ -506,50 +465,65 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
     );
   }
 
-  void _onPanStart(DragStartDetails details) {
+  void _onProfilePageChanged(int newIndex) {
+    if (_isAnimatingCard || _profileIndex == newIndex) return;
+    setState(() {
+      _profileIndex = newIndex;
+      _dragOffset = Offset.zero;
+    });
+    _resetPhotoStatus();
+  }
+
+  void _handleReelsPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    GestureBinding.instance.pointerSignalResolver.register(event, (e) {
+      if (_isWheelScrolling || !mounted || !_profilePageController.hasClients) {
+        return;
+      }
+      final dy = (e as PointerScrollEvent).scrollDelta.dy;
+      if (dy.abs() < 6) return;
+      final targetPage = dy > 0 ? _profileIndex + 1 : _profileIndex - 1;
+      if (targetPage < 0) return;
+
+      _isWheelScrolling = true;
+      _profilePageController
+          .animateToPage(
+            targetPage,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+          )
+          .whenComplete(() {
+        if (mounted) _isWheelScrolling = false;
+      });
+    });
+  }
+
+  void _onHorizontalDragStart(DragStartDetails details) {
     _swipeAnimController.stop();
     _isAnimatingCard = false;
   }
 
-  void _onPanUpdate(DragUpdateDetails details) {
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
     setState(() {
-      _dragOffset += details.delta;
+      _dragOffset = Offset(_dragOffset.dx + details.delta.dx, 0);
     });
   }
 
-  void _onPanEnd(DragEndDetails details, Size screenSize) {
+  void _onHorizontalDragEnd(DragEndDetails details, Size screenSize) {
     final horizontalThreshold = screenSize.width * 0.25;
-    final verticalThreshold = screenSize.height * 0.16;
-    final currentIdx = _profileIndex % _profiles.length;
+    final currentPage = _profileIndex;
 
-    // Horizontal Left / Right Swipe -> Smooth slide out while next card rises underneath
+    // Horizontal Left / Right Swipe -> Smooth slide out
     if (_dragOffset.dx.abs() > horizontalThreshold) {
       final liked = _dragOffset.dx > 0;
       final exitX = liked ? screenSize.width * 1.3 : -screenSize.width * 1.3;
-      final exitOffset = Offset(exitX, _dragOffset.dy * 0.8);
+      final exitOffset = Offset(exitX, 0);
       _animateToOffset(
         exitOffset,
         onComplete: () => _recordHistoryAndAdvance(
-          profileIndex: currentIdx,
+          profileIndex: currentPage,
           exitOffset: exitOffset,
           wasLiked: liked,
-        ),
-      );
-      return;
-    }
-
-    // Vertical Up / Down Swipe -> Separates cleanly as individual card (never attached)
-    if (_dragOffset.dy.abs() > verticalThreshold) {
-      final exitY = _dragOffset.dy > 0
-          ? screenSize.height * 1.1
-          : -screenSize.height * 1.1;
-      final exitOffset = Offset(_dragOffset.dx * 0.4, exitY);
-      _animateToOffset(
-        exitOffset,
-        onComplete: () => _recordHistoryAndAdvance(
-          profileIndex: currentIdx,
-          exitOffset: exitOffset,
-          wasLiked: false,
         ),
       );
       return;
@@ -569,16 +543,6 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
     final profiles = _profiles;
     final safeIdx = _profileIndex % profiles.length;
     final currentProfile = profiles[safeIdx];
-    final nextProfile = profiles[(safeIdx + 1) % profiles.length];
-
-    // 0.0 (at rest) -> 1.0 (fully swiped) drives smooth rise of background card
-    final dragProgress = math.min(
-      1.0,
-      math.max(
-        _dragOffset.dx.abs() / (screenSize.width * 0.42),
-        _dragOffset.dy.abs() / (screenSize.height * 0.32),
-      ),
-    );
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -741,57 +705,155 @@ class _DiscoveryTabScreenState extends ConsumerState<DiscoveryTabScreen>
                   ),
                 ),
 
-                // 3. FULL-WIDTH SEPARATED DISCOVERY CARD DECK (with bottom 5-button dock inside card)
+                // 3. VERTICAL REELS-SCROLLABLE DISCOVERY PROFILE CARDS (with next card rising behind)
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // NEXT PROFILE IN BACKGROUND: Smoothly rises up & scales in while swiping
-                        Transform.translate(
-                          offset: Offset(0, 18 * (1 - dragProgress)),
-                          child: Transform.scale(
-                            scale: 0.93 + (0.07 * dragProgress),
-                            child: Opacity(
-                              opacity: 0.85 + (0.15 * dragProgress),
-                              child: SeparatedProfileCard(
-                                profile: nextProfile,
-                                swipeProgressDx: 0,
-                              ),
-                            ),
-                          ),
-                        ),
+                        // BACKGROUND NEXT PROFILE: Slowly rises, scales in, and fades up as top card moves
+                        if (profiles.length > 1)
+                          AnimatedBuilder(
+                            animation: _profilePageController,
+                            builder: (context, _) {
+                              final double page =
+                                  _profilePageController.hasClients
+                                      ? (_profilePageController.page ??
+                                          _profileIndex.toDouble())
+                                      : _profileIndex.toDouble();
+                              final int basePage =
+                                  page.floor() < 0 ? 0 : page.floor();
+                              final double scrollFraction =
+                                  (page - basePage).clamp(0.0, 1.0);
+                              final double swipeFraction =
+                                  (_dragOffset.dx.abs() /
+                                          (screenSize.width * 0.42))
+                                      .clamp(0.0, 1.0);
+                              final double progress =
+                                  scrollFraction > swipeFraction
+                                      ? scrollFraction
+                                      : swipeFraction;
 
-                        // ACTIVE FRONT PROFILE CARD: Smooth sliding, gentle tilt & 3s status photos
-                        GestureDetector(
-                          onDoubleTap: () =>
-                              _handleSpark(currentProfile, screenSize),
-                          onPanStart: _onPanStart,
-                          onPanUpdate: _onPanUpdate,
-                          onPanEnd: (details) =>
-                              _onPanEnd(details, screenSize),
-                          child: Transform.translate(
-                            offset: _dragOffset,
-                            child: Transform.rotate(
-                              angle: (_dragOffset.dx / screenSize.width) * 0.16,
-                              child: SeparatedProfileCard(
-                                profile: currentProfile,
-                                swipeProgressDx: _dragOffset.dx,
-                                activePhotoIndex: _photoIndex,
-                                photoProgress: _photoStatusCtrl,
-                                isFrontCard: true,
-                                onPrevPhoto: () => _prevPhoto(currentProfile),
-                                onNextPhoto: () => _nextPhoto(currentProfile),
-                                onSelectPhoto: (idx) =>
-                                    _selectPhoto(currentProfile, idx),
-                                onOpenProfile: () => _openFullProfile(
-                                  currentProfile,
-                                  safeIdx,
-                                  screenSize,
+                              final bgProfile =
+                                  profiles[(basePage + 1) % profiles.length];
+                              return Transform.translate(
+                                offset: Offset(0, 18 * (1 - progress)),
+                                child: Transform.scale(
+                                  scale: 0.93 + (0.07 * progress),
+                                  child: Opacity(
+                                    opacity: 0.85 + (0.15 * progress),
+                                    child: SeparatedProfileCard(
+                                      profile: bgProfile,
+                                      swipeProgressDx: 0,
+                                    ),
+                                  ),
                                 ),
+                              );
+                            },
+                          ),
+
+                        // FOREGROUND REELS-SCROLLABLE + HORIZONTALLY SWIPEABLE PROFILE DECK
+                        ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(context).copyWith(
+                            dragDevices: {
+                              PointerDeviceKind.touch,
+                              PointerDeviceKind.mouse,
+                              PointerDeviceKind.trackpad,
+                              PointerDeviceKind.stylus,
+                            },
+                          ),
+                          child: PageView.builder(
+                            controller: _profilePageController,
+                            scrollDirection: Axis.vertical,
+                            physics: const ReelsSnapScrollPhysics(
+                              parent: ClampingScrollPhysics(
+                                parent: AlwaysScrollableScrollPhysics(),
                               ),
                             ),
+                            onPageChanged: _onProfilePageChanged,
+                            itemBuilder: (context, idx) {
+                              return Listener(
+                                behavior: HitTestBehavior.translucent,
+                                onPointerSignal: _handleReelsPointerSignal,
+                                child: AnimatedBuilder(
+                                  animation: _profilePageController,
+                                  builder: (context, _) {
+                                    final double page =
+                                        _profilePageController.hasClients
+                                            ? (_profilePageController.page ??
+                                                _profileIndex.toDouble())
+                                            : _profileIndex.toDouble();
+                                    final int basePage =
+                                        page.floor() < 0 ? 0 : page.floor();
+
+                                    if (idx != basePage) {
+                                      return const SizedBox.expand();
+                                    }
+
+                                    final profileIdx = idx % profiles.length;
+                                    final profile = profiles[profileIdx];
+                                    final isCurrent = idx == _profileIndex;
+
+                                    return GestureDetector(
+                                      onDoubleTap: isCurrent
+                                          ? () =>
+                                              _handleSpark(profile, screenSize)
+                                          : null,
+                                      onHorizontalDragStart: isCurrent
+                                          ? _onHorizontalDragStart
+                                          : null,
+                                      onHorizontalDragUpdate: isCurrent
+                                          ? _onHorizontalDragUpdate
+                                          : null,
+                                      onHorizontalDragEnd: isCurrent
+                                          ? (details) => _onHorizontalDragEnd(
+                                              details, screenSize)
+                                          : null,
+                                      child: Transform.translate(
+                                        offset: isCurrent
+                                            ? _dragOffset
+                                            : Offset.zero,
+                                        child: Transform.rotate(
+                                          angle: isCurrent
+                                              ? (_dragOffset.dx /
+                                                      screenSize.width) *
+                                                  0.16
+                                              : 0.0,
+                                          child: SeparatedProfileCard(
+                                            profile: profile,
+                                            swipeProgressDx:
+                                                isCurrent ? _dragOffset.dx : 0.0,
+                                            activePhotoIndex:
+                                                isCurrent ? _photoIndex : 0,
+                                            photoProgress: isCurrent
+                                                ? _photoStatusCtrl
+                                                : null,
+                                            isFrontCard: true,
+                                            onPrevPhoto: isCurrent
+                                                ? () => _prevPhoto(profile)
+                                                : null,
+                                            onNextPhoto: isCurrent
+                                                ? () => _nextPhoto(profile)
+                                                : null,
+                                            onSelectPhoto: isCurrent
+                                                ? (pIdx) =>
+                                                    _selectPhoto(profile, pIdx)
+                                                : null,
+                                            onOpenProfile: () =>
+                                                _openFullProfile(
+                                              profile,
+                                              profileIdx,
+                                              screenSize,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
                           ),
                         ),
 

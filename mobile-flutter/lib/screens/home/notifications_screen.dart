@@ -97,17 +97,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ? _notifications.where((n) => n.isUnread).toList()
         : _notifications;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final headerBg = isDark ? const Color(0xFF140A12) : Colors.white;
+    final cardBg = isDark ? const Color(0xFF1B1119) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200;
+    final titleColor = isDark ? Colors.white : const Color(0xFF181A24);
+    final subColor = isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600;
+    final iconBg = isDark ? const Color(0x1AFFFFFF) : Colors.grey.shade100;
+    final iconBorder = isDark ? const Color(0x26FFFFFF) : Colors.grey.shade300;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0D070C),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            // Header: < Back, "Notifications" (Activity & updates), "✓ Mark all read" button
+            // Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xFF140A12),
-                border: Border(bottom: BorderSide(color: Color(0xFF2E1E2B))),
+              decoration: BoxDecoration(
+                color: headerBg,
+                border: Border(bottom: BorderSide(color: borderColor)),
               ),
               child: Row(
                 children: [
@@ -117,15 +127,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: const Color(0x1AFFFFFF),
+                        color: iconBg,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0x26FFFFFF)),
+                        border: Border.all(color: iconBorder),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Colors.white),
+                      child: Icon(Icons.arrow_back_ios_new,
+                          size: 16, color: titleColor),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -134,12 +145,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: titleColor,
                           ),
                         ),
                         Text(
                           'Activity & updates',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                          style: TextStyle(fontSize: 11, color: subColor),
                         ),
                       ],
                     ),
@@ -163,15 +174,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             // Notification Cards clean list
             Expanded(
               child: _notifications.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.notifications_none, size: 48, color: Color(0xFF6B7280)),
-                          SizedBox(height: 12),
+                          const Icon(Icons.notifications_none,
+                              size: 48, color: Color(0xFF6B7280)),
+                          const SizedBox(height: 12),
                           Text(
                             'No notifications yet',
-                            style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                            style: TextStyle(fontSize: 14, color: subColor),
                           ),
                         ],
                       ),
@@ -189,14 +201,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             margin: const EdgeInsets.only(bottom: 10),
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1B1119),
+                              color: cardBg,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: n.isUnread ? const Color(0x66EC4899) : const Color(0xFF2E1E2B),
+                                color: n.isUnread
+                                    ? const Color(0x66EC4899)
+                                    : borderColor,
                               ),
                               boxShadow: n.isUnread
                                   ? const [
-                                      BoxShadow(color: Color(0x26EC4899), blurRadius: 10, offset: Offset(0, 2)),
+                                      BoxShadow(
+                                          color: Color(0x26EC4899),
+                                          blurRadius: 10,
+                                          offset: Offset(0, 2)),
                                     ]
                                   : null,
                             ),
@@ -209,7 +226,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: n.iconColor.withValues(alpha: 0.15),
-                                    border: Border.all(color: n.iconColor.withValues(alpha: 0.4)),
+                                    border: Border.all(
+                                        color: n.iconColor.withValues(alpha: 0.4)),
                                   ),
                                   child: Icon(n.icon, size: 20, color: n.iconColor),
                                 ),
@@ -223,10 +241,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         children: [
                                           Text(
                                             n.title,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 13.5,
                                               fontWeight: FontWeight.w800,
-                                              color: Colors.white,
+                                              color: titleColor,
                                             ),
                                           ),
                                           if (n.isUnread)
@@ -243,16 +261,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                       const SizedBox(height: 3),
                                       Text(
                                         n.subtitle,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 11.5,
-                                          color: Color(0xFF9CA3AF),
+                                          color: subColor,
                                           height: 1.35,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         n.time,
-                                        style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+                                        style: const TextStyle(
+                                            fontSize: 10, color: Color(0xFF6B7280)),
                                       ),
                                     ],
                                   ),

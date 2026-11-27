@@ -54,14 +54,21 @@ class _FaceVerificationPageState extends State<FaceVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final scaffoldBg = isDark ? const Color(0xFF0B0B0F) : theme.scaffoldBackgroundColor;
+    final titleColor = isDark ? Colors.white70 : Colors.black87;
+    final cardBg = isDark ? const Color(0xFF16161D) : Colors.grey.shade100;
+    final waitingText = isDark ? Colors.white60 : Colors.grey.shade700;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0F),
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Step 5 of 5 • Live Face Verification',
-            style: TextStyle(color: Colors.white70, fontSize: 15)),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
+        title: Text('Step 5 of 5 • Live Face Verification',
+            style: TextStyle(color: titleColor, fontSize: 15)),
         centerTitle: true,
       ),
       body: Padding(
@@ -73,7 +80,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage> {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF16161D),
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
                     color: _isFaceVerified
@@ -89,14 +96,14 @@ class _FaceVerificationPageState extends State<FaceVerificationPage> {
                     if (_isCameraInitialized && _cameraController != null)
                       CameraPreview(_cameraController!)
                     else
-                      const Center(
+                      Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CircularProgressIndicator(color: Color(0xFFFF2E55)),
-                            SizedBox(height: 12),
+                            const CircularProgressIndicator(color: Color(0xFFFF2E55)),
+                            const SizedBox(height: 12),
                             Text('Starting camera preview...',
-                                style: TextStyle(color: Colors.white60, fontSize: 13)),
+                                style: TextStyle(color: waitingText, fontSize: 13)),
                           ],
                         ),
                       ),

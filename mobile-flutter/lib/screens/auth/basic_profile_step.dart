@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../widgets/identity_photo_picker_sheet.dart';
 import 'full_page_avatar_camera.dart';
 
 class BasicProfileStep extends StatefulWidget {
@@ -16,7 +16,7 @@ class BasicProfileStep extends StatefulWidget {
 
 class _BasicProfileStepState extends State<BasicProfileStep> {
   final TextEditingController _nameController = TextEditingController();
-  String? _uploadedPhotoPath;
+  final List<String> _uploadedPhotos = [];
   String? _bitmojiCapturedPath;
   DateTime? _selectedDob;
   String? _ageErrorMessage;
@@ -32,17 +32,21 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
       final path = result is File ? result.path : result.toString();
       setState(() {
         _bitmojiCapturedPath = path;
-        _uploadedPhotoPath = null;
+        _uploadedPhotos.clear();
       });
     }
   }
 
   Future<void> _pickGalleryPhoto() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (picked != null) {
+    final picked = await showIdentityPhotoPickerSheet(
+      context,
+      initialPhotos: _uploadedPhotos,
+    );
+    if (picked != null && picked.isNotEmpty && mounted) {
       setState(() {
-        _uploadedPhotoPath = picked.path;
+        _uploadedPhotos
+          ..clear()
+          ..addAll(picked);
         _bitmojiCapturedPath = null;
       });
     }
@@ -93,7 +97,8 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
 
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your First Name / Nick Name')),
+        const SnackBar(
+            content: Text('Please enter your First Name / Nick Name')),
       );
       return;
     }
@@ -108,6 +113,25 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
         _ageErrorMessage =
             'Your age is under 18. Minors are not allowed to use this dating app.';
       });
+      return;
+    }
+
+    if (_bitmojiCapturedPath == null && _uploadedPhotos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Please choose a Bitmoji avatar or upload 2 to 5 photos'),
+        ),
+      );
+      return;
+    }
+
+    if (_bitmojiCapturedPath == null && _uploadedPhotos.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least 2 photos (max 5)'),
+        ),
+      );
       return;
     }
 
@@ -133,7 +157,8 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
           children: [
             Text(
               'Choose Identity Style',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
@@ -147,7 +172,10 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
                       height: 145,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.deepPurple.shade500, Colors.indigo.shade600],
+                          colors: [
+                            Colors.deepPurple.shade500,
+                            Colors.indigo.shade600
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -173,7 +201,8 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
                             child: ClipOval(
                               child: _bitmojiCapturedPath != null
                                   ? Image(
-                                      image: _resolveImage(_bitmojiCapturedPath!)!,
+                                      image:
+                                          _resolveImage(_bitmojiCapturedPath!)!,
                                       width: 60,
                                       height: 60,
                                       fit: BoxFit.cover,
@@ -193,11 +222,14 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
                           const SizedBox(height: 10),
                           const Text(
                             'Bitmoji Avatar',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
                           ),
                           const Text(
-                            'Quick Half-Cam',
-                            style: TextStyle(color: Colors.white70, fontSize: 12),
+                            'Cam',
+                            style:
+                                TextStyle(color: Colors.white70, fontSize: 12),
                           ),
                         ],
                       ),
@@ -213,15 +245,22 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.grey.shade400, width: 1.5),
-                        image: _uploadedPhotoPath != null
+                        border: Border.all(
+                          color: _uploadedPhotos.isNotEmpty
+                              ? theme.primaryColor
+                              : Colors.grey.shade400,
+                          width: _uploadedPhotos.isNotEmpty ? 2.0 : 1.5,
+                        ),
+                        image: _uploadedPhotos.isNotEmpty
                             ? DecorationImage(
-                                image: _resolveImage(_uploadedPhotoPath!)!,
+                                image: resolveIdentityImageProvider(
+                                  _uploadedPhotos.first,
+                                ),
                                 fit: BoxFit.cover,
                               )
                             : null,
                       ),
-                      child: _uploadedPhotoPath == null
+                      child: _uploadedPhotos.isEmpty
                           ? Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -231,8 +270,10 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
                                     color: Colors.white,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(Icons.add_photo_alternate_outlined,
-                                      size: 28, color: theme.primaryColor),
+                                  child: Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      size: 28,
+                                      color: theme.primaryColor),
                                 ),
                                 const SizedBox(height: 10),
                                 const Text(
@@ -240,24 +281,79 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
                                   style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 Text(
-                                  'From Device',
-                                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                  '2–5 Photos',
+                                  style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12),
                                 ),
                               ],
                             )
-                          : null,
+                          : Stack(
+                              children: [
+                                Positioned(
+                                  top: 8,
+                                  left: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme.primaryColor,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${_uploadedPhotos.length}/5',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Container(
+                                    margin: const EdgeInsets.all(8),
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                 ),
               ],
             ),
 
+            if (_uploadedPhotos.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              IdentityPhotoGridPreview(
+                photos: _uploadedPhotos,
+                onAddTap: _pickGalleryPhoto,
+                onRemoveAt: (index) {
+                  setState(() => _uploadedPhotos.removeAt(index));
+                },
+              ),
+            ],
+
             const SizedBox(height: 24),
 
             // First Name / Nick Name
             Text(
               'First Name / Nick Name',
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -265,7 +361,8 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
               decoration: InputDecoration(
                 hintText: 'Enter first name or nick name',
                 prefixIcon: const Icon(Icons.badge_outlined),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
 
@@ -274,7 +371,8 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
             // SINGLE CALENDAR TAB FOR DATE OF BIRTH (No "18+" text)
             Text(
               'Date of Birth',
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             GestureDetector(
@@ -284,17 +382,21 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
                 _openAdvancedCalendarModal();
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _ageErrorMessage != null ? Colors.red : Colors.grey.shade400,
+                    color: _ageErrorMessage != null
+                        ? Colors.red
+                        : Colors.grey.shade400,
                     width: 1.3,
                   ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_month_rounded, color: theme.colorScheme.primary),
+                    Icon(Icons.calendar_month_rounded,
+                        color: theme.colorScheme.primary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -303,8 +405,9 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
                             : 'Select Date, Month & Year',
                         style: TextStyle(
                           fontSize: 15,
-                          fontWeight:
-                              _selectedDob != null ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight: _selectedDob != null
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                           color: _selectedDob != null
                               ? theme.textTheme.bodyLarge?.color
                               : Colors.grey.shade600,
@@ -328,12 +431,14 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.red.shade700),
+                    Icon(Icons.warning_amber_rounded,
+                        color: Colors.red.shade700),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _ageErrorMessage!,
-                        style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+                        style:
+                            TextStyle(color: Colors.red.shade800, fontSize: 13),
                       ),
                     ),
                   ],
@@ -348,7 +453,8 @@ class _BasicProfileStepState extends State<BasicProfileStep> {
               child: ElevatedButton(
                 onPressed: _handleContinue,
                 style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
                 ),
                 child: const Text('Continue', style: TextStyle(fontSize: 16)),
               ),
@@ -367,7 +473,8 @@ class _AdvancedCalendarDialog extends StatefulWidget {
   const _AdvancedCalendarDialog({required this.initialDate});
 
   @override
-  State<_AdvancedCalendarDialog> createState() => _AdvancedCalendarDialogState();
+  State<_AdvancedCalendarDialog> createState() =>
+      _AdvancedCalendarDialogState();
 }
 
 class _AdvancedCalendarDialogState extends State<_AdvancedCalendarDialog> {
@@ -376,8 +483,18 @@ class _AdvancedCalendarDialogState extends State<_AdvancedCalendarDialog> {
   late int _selectedDay;
 
   final List<String> _months = const [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
   ];
 
   @override
@@ -424,19 +541,23 @@ class _AdvancedCalendarDialogState extends State<_AdvancedCalendarDialog> {
                       value: _selectedMonth,
                       isExpanded: true,
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       items: List.generate(12, (idx) {
                         final m = idx + 1;
-                        final isFutureMonth = _selectedYear == today.year && m > today.month;
+                        final isFutureMonth =
+                            _selectedYear == today.year && m > today.month;
                         return DropdownMenuItem(
                           value: m,
                           enabled: !isFutureMonth,
                           child: Text(
                             _months[idx],
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: isFutureMonth ? Colors.grey : null),
+                            style: TextStyle(
+                                color: isFutureMonth ? Colors.grey : null),
                           ),
                         );
                       }),
@@ -452,17 +573,21 @@ class _AdvancedCalendarDialogState extends State<_AdvancedCalendarDialog> {
                       value: _selectedYear,
                       isExpanded: true,
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                       items: years
-                          .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
+                          .map((y) =>
+                              DropdownMenuItem(value: y, child: Text('$y')))
                           .toList(),
                       onChanged: (val) {
                         if (val != null) {
                           setState(() {
                             _selectedYear = val;
-                            if (_selectedYear == today.year && _selectedMonth > today.month) {
+                            if (_selectedYear == today.year &&
+                                _selectedMonth > today.month) {
                               _selectedMonth = today.month;
                             }
                           });
@@ -482,7 +607,8 @@ class _AdvancedCalendarDialogState extends State<_AdvancedCalendarDialog> {
                     .map((d) => Expanded(
                           child: Center(
                             child: Text(d,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 12)),
                           ),
                         ))
                     .toList(),
@@ -503,12 +629,15 @@ class _AdvancedCalendarDialogState extends State<_AdvancedCalendarDialog> {
                   itemBuilder: (context, index) {
                     if (index < firstWeekday) return const SizedBox.shrink();
                     final day = index - firstWeekday + 1;
-                    final candidateDate = DateTime(_selectedYear, _selectedMonth, day);
+                    final candidateDate =
+                        DateTime(_selectedYear, _selectedMonth, day);
                     final isFuture = candidateDate.isAfter(today);
                     final isSelected = day == _selectedDay;
 
                     return GestureDetector(
-                      onTap: isFuture ? null : () => setState(() => _selectedDay = day),
+                      onTap: isFuture
+                          ? null
+                          : () => setState(() => _selectedDay = day),
                       child: Container(
                         decoration: BoxDecoration(
                           color: isSelected
@@ -525,7 +654,9 @@ class _AdvancedCalendarDialogState extends State<_AdvancedCalendarDialog> {
                                   : isSelected
                                       ? Colors.white
                                       : null,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                         ),

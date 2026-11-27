@@ -93,26 +93,32 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
   }
 
   void _showSnack(String msg) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
         duration: const Duration(seconds: 2),
-        backgroundColor: const Color(0xFF1B1119),
+        backgroundColor: isDark ? const Color(0xFF1B1119) : const Color(0xFF1F2937),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   void _openChatSettingsSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1B1119),
+      backgroundColor: isDark ? const Color(0xFF1B1119) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final sheetDark = Theme.of(context).brightness == Brightness.dark;
+            final titleColor = sheetDark ? Colors.white : const Color(0xFF181A24);
+            final handleColor = sheetDark ? Colors.white24 : Colors.grey.shade300;
+            final subColor = sheetDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600;
             return SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -125,20 +131,23 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                         width: 36,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.white24,
+                          color: handleColor,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Chat settings',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: titleColor),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Who can message me',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+                      style: TextStyle(fontSize: 13, color: subColor),
                     ),
                     const SizedBox(height: 14),
                     _settingsRadio('Everyone', 'everyone', 'Anyone on YoUnMe can send message requests', setSheetState),
@@ -157,6 +166,11 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
 
   Widget _settingsRadio(String title, String val, String subtitle, StateSetter setSheetState) {
     final selected = _whoCanMessage == val;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tileBg = isDark ? const Color(0xFF241822) : Colors.grey.shade100;
+    final borderColor = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade300;
+    final titleColor = isDark ? Colors.white : const Color(0xFF181A24);
+    final subColor = isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600;
     return GestureDetector(
       onTap: () {
         setSheetState(() => _whoCanMessage = val);
@@ -166,17 +180,19 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? const Color(0x33EC4899) : const Color(0xFF241822),
+          color: selected ? const Color(0x33EC4899) : tileBg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected ? const Color(0xFFEC4899) : const Color(0xFF2E1E2B),
+            color: selected ? const Color(0xFFEC4899) : borderColor,
           ),
         ),
         child: Row(
           children: [
             Icon(
               selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? const Color(0xFFEC4899) : Colors.white54,
+              color: selected
+                  ? const Color(0xFFEC4899)
+                  : (isDark ? Colors.white54 : Colors.grey.shade500),
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -184,8 +200,12 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
-                  Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: titleColor)),
+                  Text(subtitle, style: TextStyle(fontSize: 11, color: subColor)),
                 ],
               ),
             ),
@@ -219,8 +239,15 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
           }
         }).toList();
 
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        final cardBg = isDark ? const Color(0xFF1B1119) : Colors.white;
+        final borderColor = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200;
+        final primaryText = isDark ? Colors.white : const Color(0xFF181A24);
+        final mutedText = isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600;
+
         return Scaffold(
-          backgroundColor: const Color(0xFF0D070C),
+          backgroundColor: theme.scaffoldBackgroundColor,
           body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -231,7 +258,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -239,14 +266,14 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: primaryText,
                               letterSpacing: -0.5,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             'Messages, requests & connections',
-                            style: TextStyle(fontSize: 11.5, color: Color(0xFF9CA3AF)),
+                            style: TextStyle(fontSize: 11.5, color: mutedText),
                           ),
                         ],
                       ),
@@ -259,11 +286,11 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1B1119),
+                                color: cardBg,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFF2E1E2B)),
+                                border: Border.all(color: borderColor),
                               ),
-                              child: const Icon(Icons.call_outlined, color: Colors.white, size: 18),
+                              child: Icon(Icons.call_outlined, color: primaryText, size: 18),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -275,11 +302,11 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1B1119),
+                                color: cardBg,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFF2E1E2B)),
+                                border: Border.all(color: borderColor),
                               ),
-                              child: const Icon(Icons.videocam_outlined, color: Colors.white, size: 18),
+                              child: Icon(Icons.videocam_outlined, color: primaryText, size: 18),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -291,11 +318,11 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1B1119),
+                                color: cardBg,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFF2E1E2B)),
+                                border: Border.all(color: borderColor),
                               ),
-                              child: const Icon(Icons.settings_outlined, color: Colors.white, size: 18),
+                              child: Icon(Icons.settings_outlined, color: primaryText, size: 18),
                             ),
                           ),
                         ],
@@ -308,9 +335,9 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1B1119),
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF2E1E2B)),
+                      border: Border.all(color: borderColor),
                     ),
                     child: Row(
                       children: [
@@ -327,24 +354,25 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                       height: 44,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1B1119),
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFF2E1E2B)),
+                        border: Border.all(color: borderColor),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.search, size: 18, color: Color(0xFF9CA3AF)),
+                          Icon(Icons.search, size: 18, color: mutedText),
                           const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               controller: _searchController,
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              style: TextStyle(color: primaryText, fontSize: 13),
                               onChanged: (val) => setState(() => _searchQuery = val),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Search chats by name',
-                                hintStyle: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+                                hintStyle: TextStyle(color: mutedText, fontSize: 13),
                                 border: InputBorder.none,
                                 isDense: true,
+                                filled: false,
                               ),
                             ),
                           ),
@@ -354,7 +382,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
                               },
-                              child: const Icon(Icons.close, size: 16, color: Color(0xFF9CA3AF)),
+                              child: Icon(Icons.close, size: 16, color: mutedText),
                             ),
                         ],
                       ),
@@ -365,9 +393,9 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1B1119),
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF2E1E2B)),
+                        border: Border.all(color: borderColor),
                       ),
                       child: Row(
                         children: [
@@ -378,15 +406,22 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                               color: Color(0x33EC4899),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.person_add_outlined, color: Color(0xFFEC4899), size: 20),
+                            child: const Icon(Icons.person_add_outlined,
+                                color: Color(0xFFEC4899), size: 20),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Invite to App', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Colors.white)),
-                                Text('Sync phone contacts to find friends discreetly', style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                                Text('Invite to App',
+                                    style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: primaryText)),
+                                Text(
+                                    'Sync phone contacts to find friends discreetly',
+                                    style: TextStyle(fontSize: 11, color: mutedText)),
                               ],
                             ),
                           ),
@@ -443,6 +478,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
 
   Widget _tabToggle(String label, String key) {
     final active = _selectedTab == key;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _selectedTab = key),
@@ -460,7 +496,9 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-              color: active ? Colors.white : const Color(0xFF9CA3AF),
+              color: active
+                  ? Colors.white
+                  : (isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade700),
             ),
           ),
         ),
@@ -470,16 +508,20 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
 
   Widget _filterChip(String label, String key, int count) {
     final active = _selectedFilter == key;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final chipBg = isDark ? const Color(0xFF1B1119) : Colors.white;
+    final chipBorder = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade300;
+    final chipText = isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade700;
     return GestureDetector(
       onTap: () => setState(() => _selectedFilter = key),
       child: Container(
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? const Color(0x33EC4899) : const Color(0xFF1B1119),
+          color: active ? const Color(0x33EC4899) : chipBg,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: active ? const Color(0xFFEC4899) : const Color(0xFF2E1E2B),
+            color: active ? const Color(0xFFEC4899) : chipBorder,
           ),
         ),
         child: Row(
@@ -489,7 +531,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                color: active ? const Color(0xFFEC4899) : const Color(0xFF9CA3AF),
+                color: active ? const Color(0xFFEC4899) : chipText,
               ),
             ),
             if (count > 0) ...[
@@ -510,6 +552,11 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
 
   Widget _buildConversationTile(ChatConversationModel conv) {
     final hasUnread = conv.unreadCount > 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1B1119) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200;
+    final primaryText = isDark ? Colors.white : const Color(0xFF181A24);
+    final mutedText = isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -521,10 +568,10 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1B1119),
+          color: cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: hasUnread ? const Color(0x66EC4899) : const Color(0xFF2E1E2B),
+            color: hasUnread ? const Color(0x66EC4899) : borderColor,
           ),
         ),
         child: Row(
@@ -534,9 +581,12 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                 CircleAvatar(
                   radius: 24,
                   backgroundImage: conv.avatarAsset != null ? AssetImage(conv.avatarAsset!) : null,
-                  backgroundColor: const Color(0xFF241822),
+                  backgroundColor: isDark ? const Color(0xFF241822) : Colors.pink.shade50,
                   child: conv.avatarAsset == null
-                      ? Text(conv.name[0], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
+                      ? Text(conv.name[0],
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFFE11D48)))
                       : null,
                 ),
                 if (conv.isOnline)
@@ -549,7 +599,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF22C55E),
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF1B1119), width: 2),
+                        border: Border.all(color: cardBg, width: 2),
                       ),
                     ),
                   ),
@@ -567,7 +617,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w700,
-                          color: Colors.white,
+                          color: primaryText,
                         ),
                       ),
                       if (conv.isVerified) ...[
@@ -577,7 +627,9 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                       const Spacer(),
                       Text(
                         conv.timestamp,
-                        style: TextStyle(fontSize: 10.5, color: hasUnread ? const Color(0xFFEC4899) : const Color(0xFF6B7280)),
+                        style: TextStyle(
+                            fontSize: 10.5,
+                            color: hasUnread ? const Color(0xFFEC4899) : mutedText),
                       ),
                     ],
                   ),
@@ -591,7 +643,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 12,
-                            color: hasUnread ? Colors.white : const Color(0xFF9CA3AF),
+                            color: hasUnread ? primaryText : mutedText,
                             fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
                           ),
                         ),
@@ -624,6 +676,10 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
   // REQUESTS [3] VIEW
   // ─────────────────────────────────────────────────────────────────────────────
   Widget _buildRequestsView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1B1119) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200;
+    final primaryText = isDark ? Colors.white : const Color(0xFF181A24);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -641,20 +697,23 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B1119),
+            color: cardBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2E1E2B)),
+            border: Border.all(color: borderColor),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Text('✉️', style: TextStyle(fontSize: 14)),
-                  SizedBox(width: 6),
+                  const Text('✉️', style: TextStyle(fontSize: 14)),
+                  const SizedBox(width: 6),
                   Text(
                     '3/10 requests used today',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: primaryText),
                   ),
                 ],
               ),
@@ -688,15 +747,20 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
 
   Widget _requestsSubPill(String label, String key) {
     final active = _requestsSubTab == key;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () => setState(() => _requestsSubTab = key),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFFEC4899) : const Color(0xFF1B1119),
+          color: active
+              ? const Color(0xFFEC4899)
+              : (isDark ? const Color(0xFF1B1119) : Colors.white),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: active ? const Color(0xFFEC4899) : const Color(0xFF2E1E2B),
+            color: active
+                ? const Color(0xFFEC4899)
+                : (isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade300),
           ),
         ),
         child: Text(
@@ -704,7 +768,9 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-            color: active ? Colors.white : const Color(0xFF9CA3AF),
+            color: active
+                ? Colors.white
+                : (isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade700),
           ),
         ),
       ),
@@ -712,13 +778,20 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
   }
 
   Widget _buildRequestCard(_ChatRequestItem req, {bool isSent = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1B1119) : Colors.white;
+    final elevatedBg = isDark ? const Color(0xFF241822) : const Color(0xFFF3F4F6);
+    final borderColor = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200;
+    final primaryText = isDark ? Colors.white : const Color(0xFF181A24);
+    final bodyText = isDark ? const Color(0xFFE2E8F0) : Colors.grey.shade800;
+    final mutedText = isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1119),
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2E1E2B)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,7 +803,11 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
               Expanded(
                 child: Row(
                   children: [
-                    Text(req.name, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Colors.white)),
+                    Text(req.name,
+                        style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: primaryText)),
                     if (req.isVerified) ...[
                       const SizedBox(width: 4),
                       const Icon(Icons.verified, size: 14, color: Color(0xFF38BDF8)),
@@ -738,7 +815,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                   ],
                 ),
               ),
-              Text(req.time, style: const TextStyle(fontSize: 10.5, color: Color(0xFF6B7280))),
+              Text(req.time, style: TextStyle(fontSize: 10.5, color: mutedText)),
             ],
           ),
           const SizedBox(height: 10),
@@ -769,7 +846,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
           else
             Text(
               req.message,
-              style: const TextStyle(fontSize: 12, color: Color(0xFFE2E8F0), height: 1.35),
+              style: TextStyle(fontSize: 12, color: bodyText, height: 1.35),
             ),
 
           if (!isSent) ...[
@@ -782,11 +859,15 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF241822),
+                      color: elevatedBg,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF2E1E2B)),
+                      border: Border.all(color: borderColor),
                     ),
-                    child: const Text('Decline', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF))),
+                    child: Text('Decline',
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: mutedText)),
                   ),
                 ),
                 const SizedBox(width: 10),

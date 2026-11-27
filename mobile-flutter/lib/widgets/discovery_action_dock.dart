@@ -75,11 +75,6 @@ class DiscoveryActionDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dockBg =
-        isDark ? const Color(0xCC0D101A) : Colors.white.withOpacity(0.94);
-    final dockBorder = isDark
-        ? const Color(0x26FFFFFF)
-        : Colors.black.withOpacity(0.08);
     final btnBg =
         isDark ? const Color(0xFF191C24) : const Color(0xFFF8FAFC);
     final mutedBorder = isDark
@@ -87,21 +82,8 @@ class DiscoveryActionDock extends StatelessWidget {
         : Colors.grey.shade300;
     final hasRevert = revertCount > 0;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: dockBg,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: dockBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.54 : 0.12),
-            blurRadius: 18,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -270,4 +252,17 @@ class _DockCircleButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Instagram Reels / YouTube Shorts style vertical page-snapping physics.
+class ReelsSnapScrollPhysics extends PageScrollPhysics {
+  const ReelsSnapScrollPhysics({super.parent});
+
+  @override
+  ReelsSnapScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return ReelsSnapScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  double get minFlingVelocity => 100.0;
 }

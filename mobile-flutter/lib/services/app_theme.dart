@@ -12,6 +12,7 @@ class AppTheme {
     brightness: Brightness.light,
     scaffoldBackgroundColor: lightBg,
     colorScheme: ColorScheme.fromSeed(
+      brightness: Brightness.light,
       seedColor: primaryColor,
       primary: primaryColor,
       secondary: accentTint,

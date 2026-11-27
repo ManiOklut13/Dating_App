@@ -129,18 +129,26 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF181A24);
+    final textSecondary = isDark ? Colors.grey[400]! : Colors.grey.shade600;
+    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final cardBorder = isDark ? Colors.white12 : Colors.grey.shade300;
+    final iconButtonBg = isDark ? Colors.white10 : Colors.grey.shade200;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: isDark ? const Color(0xFF121212) : theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios_new, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Daily Streak & Rewards',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -201,10 +209,10 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
             const SizedBox(height: 30),
 
             // 3. Daily Spin Wheel Section
-            const Text(
+            Text(
               'Daily Lucky Spin',
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -215,7 +223,9 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
                   ? 'You won: $_wonReward!'
                   : 'Spin once every 24 hours for free dating perks',
               style: TextStyle(
-                color: _hasSpunToday ? const Color(0xFFFECA57) : Colors.grey[400],
+                color: _hasSpunToday
+                    ? (isDark ? const Color(0xFFFECA57) : const Color(0xFFD97706))
+                    : textSecondary,
                 fontSize: 14,
                 fontWeight: _hasSpunToday ? FontWeight.bold : FontWeight.normal,
               ),
@@ -240,10 +250,10 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
                   ),
                 ),
                 // Top Pointer Triangle
-                const Icon(
+                Icon(
                   Icons.arrow_drop_down,
                   size: 48,
-                  color: Colors.white,
+                  color: textPrimary,
                 ),
                 // Center Spin / Rewarded Hub Button
                 Positioned(
@@ -328,9 +338,9 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: cardBorder),
                 ),
                 child: Row(
                   children: [
@@ -344,7 +354,7 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
                       child: Text(
                         'Reward Details & Odds',
                         style: TextStyle(
-                          color: Colors.grey[200],
+                          color: textPrimary,
                           fontSize: 15.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -353,15 +363,15 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.white10,
+                        color: iconButtonBg,
                         shape: BoxShape.circle,
                       ),
                       child: AnimatedRotation(
                         turns: _showRewardDetails ? 0.5 : 0.0,
                         duration: const Duration(milliseconds: 220),
-                        child: const Icon(
+                        child: Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white,
+                          color: textPrimary,
                           size: 22,
                         ),
                       ),
@@ -387,10 +397,10 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
+                        color: cardColor,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: (reward['color'] as Color).withOpacity(0.4),
+                          color: (reward['color'] as Color).withOpacity(0.45),
                         ),
                       ),
                       child: Row(
@@ -410,8 +420,8 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
                               children: [
                                 Text(
                                   reward['label'] as String,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: textPrimary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -419,7 +429,7 @@ class _StreakPageState extends State<StreakPage> with SingleTickerProviderStateM
                                 Text(
                                   reward['detail'] as String,
                                   style: TextStyle(
-                                    color: Colors.grey[400],
+                                    color: textSecondary,
                                     fontSize: 12,
                                   ),
                                 ),

@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../services/theme_service.dart';
+import '../../widgets/identity_photo_picker_sheet.dart';
 import 'full_page_avatar_camera.dart';
 import 'intentions_orientation_page.dart';
 
@@ -29,9 +29,8 @@ class BasicProfilePage extends StatefulWidget {
 
 class _BasicProfilePageState extends State<BasicProfilePage> {
   late final TextEditingController _nameController;
-  final ImagePicker _galleryPicker = ImagePicker();
 
-  String? _photoPath;
+  final List<String> _uploadedPhotos = [];
   String? _bitmojiCapturedPath;
   bool _avatarGenerated = false;
   DateTime? _selectedDob;
@@ -66,21 +65,23 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
       final path = result is File ? result.path : result.toString();
       setState(() {
         _bitmojiCapturedPath = path;
-        _photoPath = null;
+        _uploadedPhotos.clear();
         _avatarGenerated = true;
       });
     }
   }
 
-  // Opens Gallery ONLY when Upload Photo is chosen
+  // Opens phone-style gallery picker requiring 2 to 5 photos
   Future<void> _uploadPhotoFromDevice() async {
-    final XFile? file = await _galleryPicker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
+    final List<String>? picked = await showIdentityPhotoPickerSheet(
+      context,
+      initialPhotos: _uploadedPhotos,
     );
-    if (file != null && mounted) {
+    if (picked != null && picked.isNotEmpty && mounted) {
       setState(() {
-        _photoPath = file.path;
+        _uploadedPhotos
+          ..clear()
+          ..addAll(picked);
         _bitmojiCapturedPath = null;
         _avatarGenerated = false;
       });
@@ -150,9 +151,19 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
       return;
     }
 
-    if (_photoPath == null && _bitmojiCapturedPath == null) {
+    if (_bitmojiCapturedPath == null && _uploadedPhotos.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please choose a Bitmoji avatar or upload a photo')),
+        const SnackBar(
+          content: Text('Please choose a Bitmoji avatar or upload 2 to 5 photos'),
+        ),
+      );
+      return;
+    }
+    if (_bitmojiCapturedPath == null && _uploadedPhotos.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least 2 photos (max 5)'),
+        ),
       );
       return;
     }
@@ -181,7 +192,7 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
     final inputFill = isDark ? const Color(0xFF16161D) : const Color(0xFFFDE8EE);
 
     final isAvatarSelected = _bitmojiCapturedPath != null;
-    final isPhotoSelected = _photoPath != null;
+    final isPhotoSelected = _uploadedPhotos.isNotEmpty;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -313,7 +324,9 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
                         ),
                         image: isPhotoSelected
                             ? DecorationImage(
-                                image: _resolveAvatarImage(_photoPath!)!,
+                                image: resolveIdentityImageProvider(
+                                  _uploadedPhotos.first,
+                                ),
                                 fit: BoxFit.cover,
                               )
                             : null,
@@ -344,28 +357,69 @@ class _BasicProfilePageState extends State<BasicProfilePage> {
                                   ),
                                 ),
                                 Text(
-                                  'From Device',
+                                  '2–5 Photos',
                                   style: TextStyle(color: subTextColor, fontSize: 12),
                                 ),
                               ],
                             )
-                          : Align(
-                              alignment: Alignment.bottomRight,
-                              child: Container(
-                                margin: const EdgeInsets.all(8),
-                                padding: const EdgeInsets.all(6),
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
+                          : Stack(
+                              children: [
+                                Positioned(
+                                  top: 8,
+                                  left: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.flamePink,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${_uploadedPhotos.length}/5',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                child: const Icon(Icons.edit, color: Colors.white, size: 16),
-                              ),
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Container(
+                                    margin: const EdgeInsets.all(8),
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                     ),
                   ),
                 ),
               ],
             ),
+
+            if (_uploadedPhotos.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              IdentityPhotoGridPreview(
+                photos: _uploadedPhotos,
+                onAddTap: _uploadPhotoFromDevice,
+                onRemoveAt: (index) {
+                  setState(() => _uploadedPhotos.removeAt(index));
+                },
+              ),
+            ],
 
             const SizedBox(height: 24),
 

@@ -86,19 +86,27 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final scaffoldBg = isDark ? const Color(0xFF0B0B0F) : theme.scaffoldBackgroundColor;
+    final cardBg = isDark ? const Color(0xFF16161D) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF181A24);
+    final textSub = isDark ? Colors.grey[400]! : Colors.grey.shade600;
+    final idleBarColor = isDark ? Colors.white24 : Colors.grey.shade300;
     final waveColor = _isVerified
-        ? Colors.greenAccent
-        : (_isRecording ? const Color(0xFFFF2E55) : Colors.white24);
+        ? (isDark ? Colors.greenAccent : Colors.green)
+        : (_isRecording ? const Color(0xFFFF2E55) : idleBarColor);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0F),
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
+        iconTheme: IconThemeData(color: textPrimary),
+        title: Text(
           'Voice Verification',
-          style: TextStyle(color: Colors.white70, fontSize: 15),
+          style: TextStyle(
+              color: isDark ? Colors.white70 : Colors.black87, fontSize: 15),
         ),
         centerTitle: true,
       ),
@@ -108,10 +116,10 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(),
-            const Text(
+            Text(
               'Verify Your Voice',
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
@@ -120,7 +128,7 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
             Text(
               'Tap the microphone button and read the phrase below clearly',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[400], fontSize: 14),
+              style: TextStyle(color: textSub, fontSize: 14),
             ),
             const SizedBox(height: 24),
 
@@ -128,17 +136,17 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF16161D),
+                color: cardBg,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: const Color(0xFFFF2E55).withOpacity(0.5),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 '"Hey YoUnMe, this is my real voice and I am ready to connect."',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: textPrimary,
                   fontSize: 17.5,
                   fontStyle: FontStyle.italic,
                   height: 1.4,
@@ -152,14 +160,14 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF16161D),
+                color: cardBg,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: _isRecording
                       ? const Color(0xFFFF2E55).withOpacity(0.75)
                       : (_isVerified
-                          ? Colors.greenAccent.withOpacity(0.6)
-                          : Colors.white12),
+                          ? Colors.green.withOpacity(0.6)
+                          : (isDark ? Colors.white12 : Colors.grey.shade300)),
                   width: 1.4,
                 ),
               ),
@@ -173,16 +181,18 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
                       shape: BoxShape.circle,
                       color: _isRecording
                           ? const Color(0xFFFF2E55)
-                          : (_isVerified ? Colors.greenAccent : Colors.white30),
+                          : (_isVerified
+                              ? Colors.green
+                              : (isDark ? Colors.white30 : Colors.grey.shade400)),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     _formattedDuration,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: textPrimary,
                       fontWeight: FontWeight.w700,
-                      fontFeatures: [FontFeature.tabularFigures()],
+                      fontFeatures: const [FontFeature.tabularFigures()],
                       fontSize: 13.5,
                     ),
                   ),
@@ -228,9 +238,7 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
                   shape: BoxShape.circle,
                   color: _isVerified
                       ? Colors.green
-                      : (_isRecording
-                          ? const Color(0xFFFF2E55)
-                          : const Color(0xFFFF2E55)),
+                      : const Color(0xFFFF2E55),
                   boxShadow: [
                     BoxShadow(
                       color: (_isVerified
@@ -259,7 +267,9 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
                       ? 'Voice Verified Successfully!'
                       : 'Tap Mic to Start'),
               style: TextStyle(
-                color: _isVerified ? Colors.greenAccent : Colors.white70,
+                color: _isVerified
+                    ? (isDark ? Colors.greenAccent : Colors.green.shade700)
+                    : textSub,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),
@@ -268,14 +278,14 @@ class _VoiceVerificationPageState extends State<VoiceVerificationPage> {
               const SizedBox(height: 6),
               TextButton.icon(
                 onPressed: _startVoiceCheck,
-                icon: const Icon(
+                icon: Icon(
                   Icons.replay_rounded,
                   size: 16,
-                  color: Colors.white60,
+                  color: textSub,
                 ),
-                label: const Text(
+                label: Text(
                   'Record Again',
-                  style: TextStyle(color: Colors.white60, fontSize: 13),
+                  style: TextStyle(color: textSub, fontSize: 13),
                 ),
               ),
             ],

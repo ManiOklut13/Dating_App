@@ -131,9 +131,17 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
   }
 
   void _openIcebreakersSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF131620) : Colors.white;
+    final cardBg = isDark ? const Color(0xFF191C24) : const Color(0xFFF8FAFC);
+    final borderColor = isDark ? const Color(0x1FFFFFFF) : Colors.grey.shade300;
+    final primaryText = isDark ? Colors.white : const Color(0xFF181A24);
+    final mutedText = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
+    final accentPink = isDark ? const Color(0xFFFF8DA1) : const Color(0xFFE11D48);
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF131620),
+      backgroundColor: sheetBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -151,29 +159,29 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0x33FFFFFF),
+                      color: isDark ? const Color(0x33FFFFFF) : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                 ),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.lightbulb_outline_rounded, color: Color(0xFFFF8DA1), size: 20),
-                    SizedBox(width: 8),
+                    Icon(Icons.lightbulb_outline_rounded, color: accentPink, size: 20),
+                    const SizedBox(width: 8),
                     Text(
                       'Choose an Icebreaker',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: primaryText,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Tap any prompt to immediately auto-fill your message request:',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                  style: TextStyle(fontSize: 12, color: mutedText),
                 ),
                 const SizedBox(height: 14),
                 ConstrainedBox(
@@ -192,13 +200,13 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF191C24),
+                            color: cardBg,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0x1FFFFFFF)),
+                            border: Border.all(color: borderColor),
                           ),
                           child: Text(
                             prompt,
-                            style: const TextStyle(fontSize: 12.5, color: Colors.white, height: 1.35),
+                            style: TextStyle(fontSize: 12.5, color: primaryText, height: 1.35),
                           ),
                         ),
                       );
@@ -216,18 +224,33 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
   @override
   Widget build(BuildContext context) {
     final profile = widget.profile;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final scaffoldBg = isDark ? const Color(0xFF0D070C) : theme.scaffoldBackgroundColor;
+    final barBg = isDark ? const Color(0xFF140A12) : Colors.white;
+    final barBorder = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200;
+    final cardBg = isDark ? const Color(0xFF191C24) : Colors.white;
+    final cardBorder = isDark ? const Color(0x1FFFFFFF) : Colors.grey.shade200;
+    final inputFill = isDark ? const Color(0xFF191C24) : const Color(0xFFF1F5F9);
+    final inputBorder = isDark ? const Color(0x26FFFFFF) : Colors.grey.shade300;
+    final primaryText = isDark ? Colors.white : const Color(0xFF181A24);
+    final bodyText = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155);
+    final bioText = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569);
+    final mutedText = isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
+    final chipBg = isDark ? const Color(0x1AFFFFFF) : const Color(0xFFF8FAFC);
+    final accentPink = isDark ? const Color(0xFFFF8DA1) : const Color(0xFFE11D48);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D070C),
+      backgroundColor: scaffoldBg,
       body: SafeArea(
         child: Column(
           children: [
             // Top App Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xFF140A12),
-                border: Border(bottom: BorderSide(color: Color(0xFF2E1E2B))),
+              decoration: BoxDecoration(
+                color: barBg,
+                border: Border(bottom: BorderSide(color: barBorder)),
               ),
               child: Row(
                 children: [
@@ -237,11 +260,11 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: const Color(0x1AFFFFFF),
+                        color: chipBg,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0x26FFFFFF)),
+                        border: Border.all(color: inputBorder),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Colors.white),
+                      child: Icon(Icons.arrow_back_ios_new, size: 16, color: primaryText),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -266,10 +289,10 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                           children: [
                             Text(
                               profile.nickname,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: primaryText,
                               ),
                             ),
                             const SizedBox(width: 5),
@@ -278,7 +301,7 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                         ),
                         Text(
                           'Message Request • ${profile.city}',
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                          style: TextStyle(fontSize: 11, color: mutedText),
                         ),
                       ],
                     ),
@@ -286,18 +309,18 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0x2BF43F5E),
+                      color: isDark ? const Color(0x2BF43F5E) : const Color(0xFFFFE4EC),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(color: const Color(0x66F43F5E)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.mark_email_unread_outlined, size: 12, color: Color(0xFFFF8DA1)),
-                        SizedBox(width: 4),
+                        Icon(Icons.mark_email_unread_outlined, size: 12, color: accentPink),
+                        const SizedBox(width: 4),
                         Text(
                           'Direct Vibe',
-                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1)),
+                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: accentPink),
                         ),
                       ],
                     ),
@@ -317,14 +340,14 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF191C24),
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0x26FFFFFF)),
-                        boxShadow: const [
+                        border: Border.all(color: cardBorder),
+                        boxShadow: [
                           BoxShadow(
-                            color: Color(0x26000000),
+                            color: isDark ? const Color(0x26000000) : const Color(0x12000000),
                             blurRadius: 16,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -351,10 +374,16 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                                   children: [
                                     Text(
                                       '${profile.nickname}, ${profile.age}',
-                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: primaryText),
                                     ),
                                     const SizedBox(width: 4),
-                                    Text('• ${profile.preference}', style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                                    Flexible(
+                                      child: Text(
+                                        '• ${profile.preference}',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: 11, color: mutedText),
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
@@ -362,7 +391,7 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                                   profile.bio,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 11.5, color: Color(0xFFCBD5E1), height: 1.3),
+                                  style: TextStyle(fontSize: 11.5, color: bioText, height: 1.3),
                                 ),
                               ],
                             ),
@@ -374,9 +403,9 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
 
                     // Shared Interests Badges
                     if (profile.sharedInterests.isNotEmpty) ...[
-                      const Text(
+                      Text(
                         'Shared Passions',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1)),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentPink),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -390,16 +419,16 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
-                                color: const Color(0x1AFFFFFF),
+                                color: chipBg,
                                 borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: const Color(0x26FFFFFF)),
+                                border: Border.all(color: inputBorder),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(interest, style: const TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.w600)),
+                                  Text(interest, style: TextStyle(fontSize: 11.5, color: primaryText, fontWeight: FontWeight.w600)),
                                   const SizedBox(width: 4),
-                                  const Icon(Icons.add, size: 12, color: Color(0xFFFF8DA1)),
+                                  Icon(Icons.add, size: 12, color: accentPink),
                                 ],
                               ),
                             ),
@@ -413,13 +442,13 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.auto_awesome, size: 14, color: Color(0xFFFF8DA1)),
-                            SizedBox(width: 6),
+                            Icon(Icons.auto_awesome, size: 14, color: accentPink),
+                            const SizedBox(width: 6),
                             Text(
                               'Instant Icebreaker Ideas',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF8DA1)),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentPink),
                             ),
                           ],
                         ),
@@ -427,7 +456,7 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                           onTap: _openIcebreakersSheet,
                           child: const Text(
                             'View All',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF38BDF8)),
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF0284C7)),
                           ),
                         ),
                       ],
@@ -442,20 +471,20 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF191C24),
+                                color: cardBg,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: const Color(0x1FFFFFFF)),
+                                border: Border.all(color: cardBorder),
                               ),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Text(
                                       prompt,
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFFE2E8F0), height: 1.3),
+                                      style: TextStyle(fontSize: 12, color: bodyText, height: 1.3),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFFFF8DA1)),
+                                  Icon(Icons.arrow_forward_ios, size: 12, color: accentPink),
                                 ],
                               ),
                             ),
@@ -480,11 +509,11 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.mic, size: 16, color: Color(0xFF38BDF8)),
+                    const Icon(Icons.mic, size: 16, color: Color(0xFF0284C7)),
                     const SizedBox(width: 8),
                     Text(
                       'Voice Note Attached (${_voiceSeconds}s)',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: primaryText),
                     ),
                     const Spacer(),
                     GestureDetector(
@@ -501,7 +530,7 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0x33EF4444),
+                  color: isDark ? const Color(0x33EF4444) : const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0x80EF4444)),
                 ),
@@ -530,7 +559,7 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                     const SizedBox(width: 10),
                     Text(
                       'Recording voice note... 0:${_voiceSeconds.toString().padLeft(2, '0')} / 0:30',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: primaryText),
                     ),
                     const Spacer(),
                     GestureDetector(
@@ -551,9 +580,9 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
             // Bottom Composer Dock (Chat Box + Icebreaker Icon + Voice Note + Send)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: const BoxDecoration(
-                color: Color(0xFF140A12),
-                border: Border(top: BorderSide(color: Color(0xFF2E1E2B))),
+              decoration: BoxDecoration(
+                color: barBg,
+                border: Border(top: BorderSide(color: barBorder)),
               ),
               child: Row(
                 children: [
@@ -564,35 +593,41 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF191C24),
+                        color: inputFill,
                         shape: BoxShape.circle,
                         border: Border.all(color: const Color(0x33FF4D88)),
                       ),
-                      child: const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFFFF8DA1), size: 20),
+                      child: Icon(Icons.lightbulb_outline_rounded, color: accentPink, size: 20),
                     ),
                   ),
                   const SizedBox(width: 8),
 
-                  // Chat text typing box
+                  // Chat text typing box (explicitly overrides InputDecorationTheme in light/dark mode)
                   Expanded(
                     child: Container(
                       constraints: const BoxConstraints(maxHeight: 100),
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF191C24),
+                        color: inputFill,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0x26FFFFFF)),
+                        border: Border.all(color: inputBorder),
                       ),
                       alignment: Alignment.centerLeft,
                       child: TextField(
                         controller: _msgCtrl,
                         focusNode: _focusNode,
                         maxLines: null,
-                        style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                        cursorColor: const Color(0xFFE11D48),
+                        style: TextStyle(color: primaryText, fontSize: 13.5),
                         decoration: InputDecoration(
+                          filled: false,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
                           hintText: 'Message to ${profile.nickname}...',
-                          hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                          hintStyle: TextStyle(color: mutedText, fontSize: 13),
                         ),
                       ),
                     ),
@@ -606,7 +641,7 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: _isRecordingVoice ? const Color(0xFFEF4444) : const Color(0xFF191C24),
+                        color: _isRecordingVoice ? const Color(0xFFEF4444) : inputFill,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: _isRecordingVoice ? const Color(0xFFEF4444) : const Color(0x3338BDF8),
@@ -615,7 +650,7 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                       ),
                       child: Icon(
                         _isRecordingVoice ? Icons.stop : Icons.mic_none_rounded,
-                        color: _isRecordingVoice ? Colors.white : const Color(0xFF38BDF8),
+                        color: _isRecordingVoice ? Colors.white : const Color(0xFF0284C7),
                         size: 20,
                       ),
                     ),
@@ -628,12 +663,12 @@ class _MessageRequestScreenState extends State<MessageRequestScreen> with Single
                     child: Container(
                       width: 42,
                       height: 42,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
                           colors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
                         ),
                         shape: BoxShape.circle,
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
                             color: Color(0x59F43F5E),
                             blurRadius: 12,

@@ -40,18 +40,28 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final headerBg = isDark ? const Color(0xFF140A12) : Colors.white;
+    final cardBg = isDark ? const Color(0xFF1B1119) : Colors.white;
+    final innerBg = isDark ? const Color(0xFF140A12) : const Color(0xFFFFF7ED);
+    final borderColor = isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200;
+    final primaryText = isDark ? Colors.white : const Color(0xFF181A24);
+    final mutedText = isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600;
+    final iconBg = isDark ? const Color(0x1AFFFFFF) : Colors.grey.shade100;
+    final iconBorder = isDark ? const Color(0x26FFFFFF) : Colors.grey.shade300;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D070C),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
             // Header: < Back, "YoUnMe Rubies"
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xFF140A12),
-                border: Border(bottom: BorderSide(color: Color(0xFF2E1E2B))),
+              decoration: BoxDecoration(
+                color: headerBg,
+                border: Border(bottom: BorderSide(color: borderColor)),
               ),
               child: Row(
                 children: [
@@ -61,20 +71,21 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: const Color(0x1AFFFFFF),
+                        color: iconBg,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0x26FFFFFF)),
+                        border: Border.all(color: iconBorder),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Colors.white),
+                      child: Icon(Icons.arrow_back_ios_new,
+                          size: 16, color: primaryText),
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Text(
+                  Text(
                     'YoUnMe Rubies',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: primaryText,
                     ),
                   ),
                 ],
@@ -87,12 +98,14 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Balance Card: "CURRENT RUBY BALANCE", "290 Rubies", glowing pink diamond icon
+                    // Balance Card (brand gradient stays rich & legible in both modes)
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF2E1225), Color(0xFF1B1119)],
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [const Color(0xFF2E1225), const Color(0xFF1B1119)]
+                              : [const Color(0xFFFFE4EC), const Color(0xFFFFFFFF)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -111,12 +124,12 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                           Container(
                             width: 54,
                             height: 54,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 colors: [Color(0xFFE11D48), Color(0xFFEC4899)],
                               ),
-                              boxShadow: const [
+                              boxShadow: [
                                 BoxShadow(
                                   color: Color(0x80EC4899),
                                   blurRadius: 18,
@@ -131,22 +144,22 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'CURRENT RUBY BALANCE',
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.8,
-                                    color: Color(0xFF9CA3AF),
+                                    color: mutedText,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${appState.rubyBalance} Rubies',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 26,
                                     fontWeight: FontWeight.w900,
-                                    color: Colors.white,
+                                    color: primaryText,
                                   ),
                                 ),
                               ],
@@ -157,59 +170,73 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Expandable accordion: "How Rubies Work" (with "Ways to Earn Free Rubies" nested inside)
+                    // Expandable accordion: "How Rubies Work"
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1B1119),
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF2E1E2B)),
+                        border: Border.all(color: borderColor),
                       ),
                       child: Theme(
                         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                         child: ExpansionTile(
                           initiallyExpanded: _howWorksOpen,
                           onExpansionChanged: (v) => setState(() => _howWorksOpen = v),
-                          title: const Text(
+                          title: Text(
                             'How Rubies Work',
-                            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Colors.white),
+                            style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: primaryText),
                           ),
-                          leading: const Icon(Icons.help_outline, color: Color(0xFFEC4899), size: 20),
+                          leading: const Icon(Icons.help_outline,
+                              color: Color(0xFFEC4899), size: 20),
                           children: [
-                            const Padding(
-                              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                               child: Text(
                                 '• 20 Rubies/min for HD instant live random voice & video calls.\n'
                                 '• 50 Rubies to send a priority Mega Crush directly to top admirers.\n'
                                 '• 10 Rubies to unlock an additional swipe rewind if daily free undo is used.\n'
                                 '• Rubies never expire and can be earned daily through streaks.',
-                                style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), height: 1.5),
+                                style: TextStyle(
+                                    fontSize: 12, color: mutedText, height: 1.5),
                               ),
                             ),
                             Container(
                               margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF140A12),
+                                color: innerBg,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: const Color(0x33F59E0B)),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Row(
+                                  Row(
                                     children: [
-                                      Icon(Icons.stars, color: Color(0xFFF59E0B), size: 16),
-                                      SizedBox(width: 6),
+                                      const Icon(Icons.stars,
+                                          color: Color(0xFFF59E0B), size: 16),
+                                      const SizedBox(width: 6),
                                       Text(
                                         'Ways to Earn Free Rubies',
-                                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white),
+                                        style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: primaryText),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  _freeRubyRow('Daily Streak check-in', '+10 to +70 Rubies daily'),
-                                  _freeRubyRow('Complete biometric face verification', '+50 Rubies instant'),
-                                  _freeRubyRow('Invite a friend with your code', '+100 Rubies per invite'),
+                                  _freeRubyRow('Daily Streak check-in',
+                                      '+10 to +70 Rubies daily', primaryText),
+                                  _freeRubyRow(
+                                      'Complete biometric face verification',
+                                      '+50 Rubies instant',
+                                      primaryText),
+                                  _freeRubyRow('Invite a friend with your code',
+                                      '+100 Rubies per invite', primaryText),
                                 ],
                               ),
                             ),
@@ -219,15 +246,20 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Top Up Rubies (INR) Section
-                    const Text(
+                    Text(
                       'Top Up Rubies (INR)',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: primaryText),
                     ),
                     const SizedBox(height: 10),
 
-                    // Package 1: Starter Crush (Quick Refill) — 100 Rubies — ₹99 button
                     _buildRubyPackageCard(
+                      isDark: isDark,
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      primaryText: primaryText,
                       name: 'Starter Crush',
                       badge: 'Quick Refill',
                       rubies: 100,
@@ -237,8 +269,11 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Package 2: Popular Flame (Most Popular, pink border) — 500 Rubies +50 Free Bonus — ₹399 pink button
                     _buildRubyPackageCard(
+                      isDark: isDark,
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      primaryText: primaryText,
                       name: 'Popular Flame',
                       badge: 'Most Popular',
                       rubies: 550,
@@ -249,8 +284,11 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Package 3: VIP Inferno (Best Value) — 1200 Rubies +200 Free Bonus — ₹799 button
                     _buildRubyPackageCard(
+                      isDark: isDark,
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      primaryText: primaryText,
                       name: 'VIP Inferno',
                       badge: 'Best Value',
                       rubies: 1400,
@@ -261,56 +299,69 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Transaction History Section
-                    const Text(
+                    Text(
                       'Transaction History',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: primaryText),
                     ),
                     const SizedBox(height: 10),
 
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1B1119),
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: const Color(0xFF2E1E2B)),
+                        border: Border.all(color: borderColor),
                       ),
                       child: ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: _transactions.length,
-                        separatorBuilder: (_, __) => const Divider(color: Color(0xFF2E1E2B), height: 1),
+                        separatorBuilder: (_, __) =>
+                            Divider(color: borderColor, height: 1),
                         itemBuilder: (context, i) {
                           final tx = _transactions[i];
                           final isCredit = tx['isCredit'] as bool;
                           return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
                             leading: Container(
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: isCredit ? const Color(0x2622C55E) : const Color(0x26EF4444),
+                                color: isCredit
+                                    ? const Color(0x2622C55E)
+                                    : const Color(0x26EF4444),
                               ),
                               child: Icon(
                                 isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                                color: isCredit ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                                color: isCredit
+                                    ? const Color(0xFF22C55E)
+                                    : const Color(0xFFEF4444),
                                 size: 18,
                               ),
                             ),
                             title: Text(
                               tx['title'] as String,
-                              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white),
+                              style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: primaryText),
                             ),
                             subtitle: Text(
                               tx['time'] as String,
-                              style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                              style: TextStyle(fontSize: 11, color: mutedText),
                             ),
                             trailing: Text(
                               '${tx['amount']} 💎',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
-                                color: isCredit ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                                color: isCredit
+                                    ? const Color(0xFF22C55E)
+                                    : const Color(0xFFEF4444),
                               ),
                             ),
                           );
@@ -329,6 +380,10 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
   }
 
   Widget _buildRubyPackageCard({
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color primaryText,
     required String name,
     required String badge,
     required int rubies,
@@ -340,18 +395,18 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1119),
+        color: cardBg,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isPopular ? const Color(0xFFEC4899) : const Color(0xFF2E1E2B),
+          color: isPopular ? const Color(0xFFEC4899) : borderColor,
           width: isPopular ? 1.5 : 1,
         ),
         boxShadow: isPopular
             ? [
-                BoxShadow(
-                  color: const Color(0x33EC4899),
+                const BoxShadow(
+                  color: Color(0x33EC4899),
                   blurRadius: 14,
-                  offset: const Offset(0, 3),
+                  offset: Offset(0, 3),
                 ),
               ]
             : null,
@@ -363,7 +418,9 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isPopular ? const Color(0x33EC4899) : const Color(0x1AFFFFFF),
+              color: isPopular
+                  ? const Color(0x33EC4899)
+                  : (isDark ? const Color(0x1AFFFFFF) : Colors.pink.shade50),
             ),
             child: Icon(
               Icons.diamond,
@@ -380,13 +437,18 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: primaryText),
                     ),
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                       decoration: BoxDecoration(
-                        color: isPopular ? const Color(0x33EC4899) : const Color(0x2638BDF8),
+                        color: isPopular
+                            ? const Color(0x33EC4899)
+                            : const Color(0x2638BDF8),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -394,7 +456,9 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: isPopular ? const Color(0xFFEC4899) : const Color(0xFF38BDF8),
+                          color: isPopular
+                              ? const Color(0xFFEC4899)
+                              : const Color(0xFF38BDF8),
                         ),
                       ),
                     ),
@@ -405,13 +469,19 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                   children: [
                     Text(
                       '$rubies Rubies',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFB7185)),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFFB7185)),
                     ),
                     if (bonusText != null) ...[
                       const SizedBox(width: 6),
                       Text(
                         bonusText,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF22C55E)),
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF22C55E)),
                       ),
                     ],
                   ],
@@ -428,12 +498,20 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
                 gradient: isPopular
                     ? const LinearGradient(colors: [Color(0xFFE11D48), Color(0xFFEC4899)])
                     : null,
-                color: isPopular ? null : const Color(0xFF2E1E2B),
-                border: isPopular ? null : Border.all(color: const Color(0x33FFFFFF)),
+                color: isPopular
+                    ? null
+                    : (isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200),
+                border: isPopular
+                    ? null
+                    : Border.all(
+                        color: isDark ? const Color(0x33FFFFFF) : Colors.grey.shade300),
               ),
               child: Text(
                 price,
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.white),
+                style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: isPopular ? Colors.white : primaryText),
               ),
             ),
           ),
@@ -442,14 +520,18 @@ class _RubiesScreenState extends ConsumerState<RubiesScreen> {
     );
   }
 
-  Widget _freeRubyRow(String title, String reward) {
+  Widget _freeRubyRow(String title, String reward, Color textColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(fontSize: 12, color: Colors.white)),
-          Text(reward, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF22C55E))),
+          Text(title, style: TextStyle(fontSize: 12, color: textColor)),
+          Text(reward,
+              style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF22C55E))),
         ],
       ),
     );

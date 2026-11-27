@@ -19,6 +19,18 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
 
   late final AnimationController _waveCtrl;
 
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get _cardBg => _isDark ? const Color(0xFF1B1119) : Colors.white;
+  Color get _elevatedBg =>
+      _isDark ? const Color(0xFF241822) : const Color(0xFFF3F4F6);
+  Color get _innerBg =>
+      _isDark ? const Color(0xFF140A12) : const Color(0xFFF8FAFC);
+  Color get _borderCol =>
+      _isDark ? const Color(0xFF2E1E2B) : Colors.grey.shade200;
+  Color get _primaryText => _isDark ? Colors.white : const Color(0xFF181A24);
+  Color get _mutedText =>
+      _isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600;
+
   final List<String> _filters = [
     'Recommended',
     'Nearby',
@@ -140,8 +152,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
       final isOnline = user['isOnline'] as bool;
       final userInterests = (user['interests'] as List<String>).toSet();
 
-      if (age < _ageRange.start.round() || age > _ageRange.end.round())
+      if (age < _ageRange.start.round() || age > _ageRange.end.round()) {
         return false;
+      }
       if (dist > _maxRadiusKm.round()) return false;
       if (_genderFilter != 'Everyone' && gender != _genderFilter) return false;
       if (_selectedLanguage != 'Any' && lang != _selectedLanguage) return false;
@@ -203,7 +216,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1B1119),
+      backgroundColor: _cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -225,12 +238,12 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Random Call Filters',
                           style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white),
+                              color: _primaryText),
                         ),
                         TextButton(
                           onPressed: () {
@@ -249,9 +262,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Text('Call Mode',
+                    Text('Call Mode',
                         style: TextStyle(
-                            fontWeight: FontWeight.w600, color: Colors.white)),
+                            fontWeight: FontWeight.w600, color: _primaryText)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -262,19 +275,19 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                               style: TextStyle(
                                   color: selected
                                       ? Colors.white
-                                      : Colors.grey[400])),
+                                      : _mutedText)),
                           selected: selected,
                           selectedColor: const Color(0xFFEC4899),
-                          backgroundColor: const Color(0xFF241822),
+                          backgroundColor: _elevatedBg,
                           onSelected: (_) =>
                               setSheetState(() => tempCallType = t),
                         );
                       }).toList(),
                     ),
                     const SizedBox(height: 14),
-                    const Text('Show Me',
+                    Text('Show Me',
                         style: TextStyle(
-                            fontWeight: FontWeight.w600, color: Colors.white)),
+                            fontWeight: FontWeight.w600, color: _primaryText)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -286,10 +299,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                               style: TextStyle(
                                   color: selected
                                       ? Colors.white
-                                      : Colors.grey[400])),
+                                      : _mutedText)),
                           selected: selected,
                           selectedColor: const Color(0xFFEC4899),
-                          backgroundColor: const Color(0xFF241822),
+                          backgroundColor: _elevatedBg,
                           onSelected: (_) =>
                               setSheetState(() => tempGender = g),
                         );
@@ -299,10 +312,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Age Range',
+                        Text('Age Range',
                             style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white)),
+                                color: _primaryText)),
                         Text(
                             '${tempAge.start.round()} - ${tempAge.end.round()} yrs',
                             style: const TextStyle(
@@ -321,10 +334,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Max Distance',
+                        Text('Max Distance',
                             style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white)),
+                                color: _primaryText)),
                         Text('${tempRadius.round()} km',
                             style: const TextStyle(
                                 color: Color(0xFFEC4899),
@@ -339,9 +352,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                       activeColor: const Color(0xFFEC4899),
                       onChanged: (val) => setSheetState(() => tempRadius = val),
                     ),
-                    const Text('Language',
+                    Text('Language',
                         style: TextStyle(
-                            fontWeight: FontWeight.w600, color: Colors.white)),
+                            fontWeight: FontWeight.w600, color: _primaryText)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -353,10 +366,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                               style: TextStyle(
                                   color: selected
                                       ? Colors.white
-                                      : Colors.grey[400])),
+                                      : _mutedText)),
                           selected: selected,
                           selectedColor: const Color(0xFFEC4899),
-                          backgroundColor: const Color(0xFF241822),
+                          backgroundColor: _elevatedBg,
                           onSelected: (_) =>
                               setSheetState(() => tempLang = lang),
                         );
@@ -364,8 +377,8 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Verified Profiles Only',
-                          style: TextStyle(color: Colors.white)),
+                      title: Text('Verified Profiles Only',
+                          style: TextStyle(color: _primaryText)),
                       activeColor: const Color(0xFFEC4899),
                       value: tempVerified,
                       onChanged: (val) =>
@@ -455,10 +468,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
       builder: (ctx) {
         return Container(
           padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-            color: Color(0xFF1B1119),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: Color(0xFF2E1E2B))),
+          decoration: BoxDecoration(
+            color: _cardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: _borderCol)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -469,14 +482,13 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                 children: [
                   Text(
                     'Pick Prompt for $partnerName',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white),
+                        color: _primaryText),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close,
-                        color: Color(0xFF9CA3AF), size: 18),
+                    icon: Icon(Icons.close, color: _mutedText, size: 18),
                     onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
@@ -488,17 +500,17 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF241822),
+                    color: _elevatedBg,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF2E1E2B)),
+                    border: Border.all(color: _borderCol),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(
                           prompt,
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.white, height: 1.3),
+                          style: TextStyle(
+                              fontSize: 12, color: _primaryText, height: 1.3),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -545,7 +557,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D070C),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -555,9 +567,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1B1119),
+                  color: _cardBg,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF2E1E2B)),
+                  border: Border.all(color: _borderCol),
                 ),
                 child: Row(
                   children: [
@@ -606,7 +618,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-              color: active ? Colors.white : const Color(0xFF9CA3AF),
+              color: active ? Colors.white : _mutedText,
             ),
           ),
         ),
@@ -668,14 +680,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: active
-                          ? const Color(0xFFEC4899)
-                          : const Color(0xFF1B1119),
+                      color: active ? const Color(0xFFEC4899) : _cardBg,
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: active
-                            ? const Color(0xFFEC4899)
-                            : const Color(0xFF2E1E2B),
+                        color: active ? const Color(0xFFEC4899) : _borderCol,
                       ),
                     ),
                     child: Text(
@@ -683,7 +691,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                        color: active ? Colors.white : const Color(0xFF9CA3AF),
+                        color: active ? Colors.white : _mutedText,
                       ),
                     ),
                   ),
@@ -697,12 +705,12 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                   decoration: BoxDecoration(
                     color: hasMoreFiltersActive
                         ? const Color(0x26EC4899)
-                        : const Color(0xFF1B1119),
+                        : _cardBg,
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
                       color: hasMoreFiltersActive
                           ? const Color(0xFFEC4899)
-                          : const Color(0xFF2E1E2B),
+                          : _borderCol,
                     ),
                   ),
                   child: Row(
@@ -713,7 +721,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                         size: 14,
                         color: hasMoreFiltersActive
                             ? const Color(0xFFEC4899)
-                            : const Color(0xFF9CA3AF),
+                            : _mutedText,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -723,7 +731,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                           fontWeight: FontWeight.w600,
                           color: hasMoreFiltersActive
                               ? const Color(0xFFEC4899)
-                              : const Color(0xFF9CA3AF),
+                              : _mutedText,
                         ),
                       ),
                     ],
@@ -833,14 +841,14 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B1119),
+            color: _cardBg,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFF2E1E2B)),
-            boxShadow: const [
+            border: Border.all(color: _borderCol),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x40000000),
+                color: Colors.black.withOpacity(_isDark ? 0.25 : 0.06),
                 blurRadius: 16,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -850,19 +858,19 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.waves, size: 18, color: Color(0xFFEC4899)),
-                      SizedBox(width: 6),
+                      const Icon(Icons.waves, size: 18, color: Color(0xFFEC4899)),
+                      const SizedBox(width: 6),
                       Text(
                         'Random calls',
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white),
+                            color: _primaryText),
                       ),
-                      SizedBox(width: 8),
-                      Text(
+                      const SizedBox(width: 8),
+                      const Text(
                         '[Live]',
                         style: TextStyle(
                             fontSize: 11,
@@ -871,8 +879,8 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                       ),
                     ],
                   ),
-                  const Text('Tap avatar to connect',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                  Text('Tap avatar to connect',
+                      style: TextStyle(fontSize: 11, color: _mutedText)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -978,14 +986,14 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                                   ),
                                   const SizedBox(height: 3),
                                   Text(p.name,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 10.5,
                                           fontWeight: FontWeight.w800,
-                                          color: Colors.white)),
+                                          color: _primaryText)),
                                   Text(p.language,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 9,
-                                          color: Color(0xFF9CA3AF))),
+                                          color: _mutedText)),
                                   if (isExpanded) ...[
                                     const SizedBox(height: 3),
                                     Row(
@@ -1041,29 +1049,28 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B1119),
+            color: _cardBg,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF2E1E2B)),
+            border: Border.all(color: _borderCol),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.assessment_outlined,
+                  const Icon(Icons.assessment_outlined,
                       color: Color(0xFF38BDF8), size: 18),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     'Random Call Metrics',
                     style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white),
+                        color: _primaryText),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   Text('Weekly Activity',
-                      style:
-                          TextStyle(fontSize: 10.5, color: Color(0xFF9CA3AF))),
+                      style: TextStyle(fontSize: 10.5, color: _mutedText)),
                 ],
               ),
               const SizedBox(height: 14),
@@ -1087,12 +1094,12 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Random Call History',
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white),
+                  color: _primaryText),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1132,7 +1139,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
       width: (MediaQuery.of(context).size.width - 76) / 3,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF140A12),
+        color: _innerBg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
@@ -1141,13 +1148,12 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
           Icon(icon, size: 16, color: color),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white)),
+                  color: _primaryText)),
           const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(fontSize: 9.5, color: Color(0xFF9CA3AF))),
+          Text(label, style: TextStyle(fontSize: 9.5, color: _mutedText)),
         ],
       ),
     );
@@ -1160,9 +1166,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1119),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2E1E2B)),
+        border: Border.all(color: _borderCol),
       ),
       child: Row(
         children: [
@@ -1175,10 +1181,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                 Row(
                   children: [
                     Text(name,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white)),
+                            color: _primaryText)),
                     const SizedBox(width: 6),
                     Text(rating,
                         style: const TextStyle(
@@ -1186,8 +1192,7 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                   ],
                 ),
                 Text(typeAndDuration,
-                    style: const TextStyle(
-                        fontSize: 10.5, color: Color(0xFF9CA3AF))),
+                    style: TextStyle(fontSize: 10.5, color: _mutedText)),
                 Text(time,
                     style: const TextStyle(
                         fontSize: 9.5, color: Color(0xFF64748B))),
@@ -1247,12 +1252,12 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               '🔥 Mega Crushes (5)',
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white),
+                  color: _primaryText),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1282,9 +1287,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                 margin: const EdgeInsets.only(right: 10),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1B1119),
+                  color: _cardBg,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF2E1E2B)),
+                  border: Border.all(color: _borderCol),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1296,10 +1301,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                     const SizedBox(height: 6),
                     Text(
                       '${s.name}, ${s.age}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white),
+                          color: _primaryText),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Text(
@@ -1321,26 +1326,26 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B1119),
+            color: _cardBg,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFF2E1E2B)),
+            border: Border.all(color: _borderCol),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.analytics_outlined,
+                  const Icon(Icons.analytics_outlined,
                       color: Color(0xFF38BDF8), size: 16),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Text('Weekly Activity & Insights',
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white)),
-                  Spacer(),
+                          color: _primaryText)),
+                  const Spacer(),
                   Text('Live Analytics',
-                      style: TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+                      style: TextStyle(fontSize: 10, color: _mutedText)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1362,11 +1367,11 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('10 People Liked You',
+            Text('10 People Liked You',
                 style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white)),
+                    color: _primaryText)),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
@@ -1407,11 +1412,11 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Likes History (50 Profiles)',
+            Text('Likes History (50 Profiles)',
                 style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white)),
+                    color: _primaryText)),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
@@ -1439,9 +1444,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Container(
           height: 380,
           decoration: BoxDecoration(
-            color: const Color(0xFF140A12),
+            color: _innerBg,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF2E1E2B)),
+            border: Border.all(color: _borderCol),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
@@ -1464,12 +1469,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1B1119),
+                    color: _cardBg,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isMegaCrush
-                          ? const Color(0x66EC4899)
-                          : const Color(0xFF2E1E2B),
+                      color: isMegaCrush ? const Color(0x66EC4899) : _borderCol,
                     ),
                   ),
                   child: Row(
@@ -1485,10 +1488,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                             Row(
                               children: [
                                 Text('${h.name}, ${h.age}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.white)),
+                                        color: _primaryText)),
                                 const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -1514,8 +1517,8 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                             ),
                             const SizedBox(height: 3),
                             Text('${h.city} • ${h.timestamp}',
-                                style: const TextStyle(
-                                    fontSize: 11, color: Color(0xFF9CA3AF))),
+                                style:
+                                    TextStyle(fontSize: 11, color: _mutedText)),
                             Text(
                               h.interests.take(2).join(' • '),
                               style: const TextStyle(
@@ -1564,13 +1567,12 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
     return Column(
       children: [
         Text(val,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
-                color: Colors.white)),
+                color: _primaryText)),
         const SizedBox(height: 2),
-        Text(label,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+        Text(label, style: TextStyle(fontSize: 10, color: _mutedText)),
         const SizedBox(height: 2),
         Text(trend,
             style: const TextStyle(
@@ -1594,12 +1596,12 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               '🏆 Weekly Vibe Scoreboard',
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white),
+                  color: _primaryText),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1633,11 +1635,11 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         const SizedBox(height: 18),
 
         // Make First Move (Break the ice)
-        const Text('Make First Move',
+        Text('Make First Move',
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: Colors.white)),
+                color: _primaryText)),
         const SizedBox(height: 10),
 
         Row(
@@ -1654,11 +1656,11 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         const SizedBox(height: 18),
 
         // Matches History (50)
-        const Text('Matches History (50)',
+        Text('Matches History (50)',
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: Colors.white)),
+                color: _primaryText)),
         const SizedBox(height: 10),
 
         ListView.builder(
@@ -1671,9 +1673,9 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1B1119),
+                color: _cardBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF2E1E2B)),
+                border: Border.all(color: _borderCol),
               ),
               child: Row(
                 children: [
@@ -1685,13 +1687,12 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('${m.name}, ${m.age} • ${m.matchPercentage}%',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white)),
+                                color: _primaryText)),
                         Text('${m.city} • ${m.lastActive}',
-                            style: const TextStyle(
-                                fontSize: 10.5, color: Color(0xFF9CA3AF))),
+                            style: TextStyle(fontSize: 10.5, color: _mutedText)),
                       ],
                     ),
                   ),
@@ -1718,11 +1719,11 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         const SizedBox(height: 16),
 
         // Potential Matches (10)
-        const Text('Potential Matches (10)',
+        Text('Potential Matches (10)',
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
-                color: Colors.white)),
+                color: _primaryText)),
         const SizedBox(height: 10),
 
         SizedBox(
@@ -1757,21 +1758,21 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B1119),
+            color: _cardBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2E1E2B)),
+            border: Border.all(color: _borderCol),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.bolt, color: Color(0xFFF59E0B), size: 16),
-              SizedBox(width: 6),
+              const Icon(Icons.bolt, color: Color(0xFFF59E0B), size: 16),
+              const SizedBox(width: 6),
               Text(
                 '18.4% swipe-to-match • 94% avg compatibility',
                 style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF9CA3AF)),
+                    color: _mutedText),
               ),
             ],
           ),
@@ -1787,10 +1788,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF1B1119),
+          color: _cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isGold ? const Color(0xFFF59E0B) : const Color(0xFF2E1E2B),
+            color: isGold ? const Color(0xFFF59E0B) : _borderCol,
             width: isGold ? 1.5 : 1,
           ),
         ),
@@ -1800,10 +1801,10 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
             const SizedBox(height: 6),
             Text(
               rankAndName,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white),
+                  color: _primaryText),
               overflow: TextOverflow.ellipsis,
             ),
             Text(
@@ -1825,19 +1826,19 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B1119),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2E1E2B)),
+        border: Border.all(color: _borderCol),
       ),
       child: Column(
         children: [
           CircleAvatar(radius: 26, backgroundImage: NetworkImage(avatar)),
           const SizedBox(height: 6),
           Text(name,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white)),
+                  color: _primaryText)),
           Text(matchPercent,
               style: const TextStyle(
                   fontSize: 10.5,
@@ -1856,16 +1857,16 @@ class _ConnectTabScreenState extends State<ConnectTabScreen>
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF241822),
+                      color: _elevatedBg,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF2E1E2B)),
+                      border: Border.all(color: _borderCol),
                     ),
                     alignment: Alignment.center,
-                    child: const Text('Chat',
+                    child: Text('Chat',
                         style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white)),
+                            color: _primaryText)),
                   ),
                 ),
               ),
